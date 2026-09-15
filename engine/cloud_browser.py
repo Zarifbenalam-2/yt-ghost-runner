@@ -20,21 +20,29 @@ DEFAULT_ARGS = [
 
 
 def detect_chromium_executable():
-    """Find CloakBrowser binary on Windows, or return None to use Playwright bundled Chromium."""
+    """Find CloakBrowser binary (Windows .exe or Linux chrome), fallback to None for Playwright default."""
     env_bin = os.environ.get("BROWSER_EXECUTABLE_PATH")
     if env_bin and Path(env_bin).exists():
         return Path(env_bin)
 
+    home = Path(os.path.expanduser("~")) / ".cloakbrowser"
+
     if sys.platform == "win32":
-        home = Path(os.path.expanduser("~")) / ".cloakbrowser"
         pinned = home / "chromium-146.0.7680.177.5" / "chrome.exe"
         if pinned.exists():
             return pinned
         candidates = sorted(glob.glob(str(home / "chromium-*" / "chrome.exe")))
         if candidates:
             return Path(candidates[-1])
+    else:
+        # Linux: CloakBrowser installs to ~/.cloakbrowser/chromium-<ver>/chrome
+        pinned = home / "chromium-146.0.7680.177.5" / "chrome"
+        if pinned.exists():
+            return pinned
+        candidates = sorted(glob.glob(str(home / "chromium-*" / "chrome")))
+        if candidates:
+            return Path(candidates[-1])
 
-    # On Linux CI or standard environments, return None to use Playwright default Chromium
     return None
 
 

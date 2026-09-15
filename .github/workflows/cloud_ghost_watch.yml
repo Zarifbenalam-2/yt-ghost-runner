@@ -37,13 +37,18 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install Xvfb & Playwright System Dependencies
+      - name: Install Xvfb & CloakBrowser
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
+          pip install cloakbrowser
+          npx cloakbrowser install || python -c "import cloakbrowser; print('cloakbrowser installed')"
+
+      - name: Install Playwright System Dependencies
+        run: |
           pip install playwright
-          playwright install --with-deps chromium
+          playwright install-deps chromium
 
       - name: Run Ghost Watcher in Virtual 1080p Display
         env:
