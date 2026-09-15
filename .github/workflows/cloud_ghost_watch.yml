@@ -1,6 +1,8 @@
 name: Cloud Ghost Watcher Matrix
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       video_url:
@@ -49,11 +51,11 @@ jobs:
       - name: Run Ghost Watcher in Virtual 1080p Display
         env:
           CI: "true"
-          STREAM_TARGET_URL: ${{ github.event.inputs.stream_target }}
+          STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
-              --url "${{ github.event.inputs.video_url }}" \
-              --tabs ${{ github.event.inputs.tabs_per_runner }} \
+              --url "${{ github.event.inputs.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }}" \
+              --tabs ${{ github.event.inputs.tabs_per_runner || '2' }} \
               --depth-lo 60 \
               --depth-hi 95
