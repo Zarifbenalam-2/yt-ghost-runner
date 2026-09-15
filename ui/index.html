@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamStress Ghost Watcher Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --border: #1f293d;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --gold: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-weight: 800; font-family: 'JetBrains Mono';
+    }
+    .brand h1 { font-size: 20px; font-weight: 700; }
+    .hud-stats { display: flex; gap: 16px; }
+    .stat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-gold { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+    .dot-green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 28px;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto auto auto;
+      gap: 16px;
+      align-items: end;
+    }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field select {
+      width: 100%;
+      background: #0d1322;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
+    button {
+      padding: 11px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-cloud { background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; }
+    .btn-cloud:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px var(--accent-glow); }
+    .btn-harvest { background: #1f293d; color: var(--gold); border: 1px solid #374151; }
+    .btn-harvest:hover { background: #374151; }
+    .btn-local { background: #1f293d; color: var(--text); border: 1px solid #374151; }
+    .btn-local:hover { background: #374151; }
+
+    .grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .grid-header h2 { font-size: 16px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .tab-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s;
+    }
+    .tab-card:hover { border-color: #374151; }
+
+    .screen-preview {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      background: #000;
+      display: grid; place-items: center;
+    }
+    .screen-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .live-badge {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(16, 185, 129, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .live-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; }
+
+    .tab-info {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tab-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #1f293d;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #10b981);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .tab-metrics {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .ip-tag {
+      background: #0d1322;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">G</div>
+      <div>
+        <h1>Ghost Watcher Live Command HUD</h1>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-pill">
+        <span class="dot dot-gold"></span>
+        <span id="gold-count">0</span> Gold IPs
+      </div>
+      <div class="stat-pill">
+        <span class="dot dot-green"></span>
+        <span id="active-tabs-count">0</span> Active Screens
+      </div>
+    </div>
+  </header>
+
+  <div class="control-panel">
+    <div class="field">
+      <label>Target YouTube Video URL</label>
+      <input type="text" id="video-url" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
+    </div>
+    <div class="field">
+      <label>Tabs / Concurrency</label>
+      <select id="tab-count">
+        <option value="2" selected>2 Tabs (Test Run)</option>
+        <option value="5">5 Tabs (1 Cloud Runner)</option>
+        <option value="10">10 Tabs (2 Cloud Runners)</option>
+        <option value="25">25 Tabs (5 Cloud Runners)</option>
+        <option value="50">50 Tabs (10 Cloud Runners)</option>
+        <option value="100">100 Tabs (20 Cloud Runners)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Watch Depth</label>
+      <select id="depth-range">
+        <option value="50-80">50% - 80%</option>
+        <option value="60-95" selected>60% - 95% (Safe)</option>
+        <option value="90-100">90% - 100% (Full)</option>
+      </select>
+    </div>
+    <button class="btn-local" id="btn-run-local" title="Run instant test tabs on local machine">
+      ⚡ Run Local Test
+    </button>
+    <button class="btn-cloud" id="btn-spawn-cloud" title="Dispatch to 100% GitHub Cloud Runners">
+      ☁️ Spawn Cloud Actions
+    </button>
+    <button class="btn-harvest" id="btn-harvest" title="Harvest new Gold IPs">
+      ⛏️ Harvest IPs
+    </button>
+  </div>
+
+  <div class="grid-header">
+    <h2>Live Browser Screen Feed (<span id="screens-label">0</span>)</h2>
+  </div>
+
+  <div class="screens-grid" id="screens-grid">
+    <div class="empty-state">
+      <h3>No Active Tabs Running</h3>
+      <p style="margin-top: 8px; font-size: 13px;">Enter a video link above and click <strong>"Run Local Test"</strong> or <strong>"Spawn Cloud Actions"</strong> to start watching.</p>
+    </div>
+  </div>
+
+  <div id="toast" style="position:fixed; bottom:20px; right:20px; background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; padding:12px 20px; border-radius:8px; font-size:14px; display:none; z-index:9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+
+  <script>
+    const grid = document.getElementById('screens-grid');
+    const goldCountEl = document.getElementById('gold-count');
+    const activeTabsEl = document.getElementById('active-tabs-count');
+    const screensLabel = document.getElementById('screens-label');
+    const toastEl = document.getElementById('toast');
+
+    function showToast(msg, isError=false) {
+      toastEl.textContent = msg;
+      toastEl.style.borderColor = isError ? '#ef4444' : '#38bdf8';
+      toastEl.style.color = isError ? '#ef4444' : '#38bdf8';
+      toastEl.style.display = 'block';
+      setTimeout(() => { toastEl.style.display = 'none'; }, 4000);
+    }
+
+    async function pollState() {
+      try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+        
+        goldCountEl.textContent = data.ipStats ? data.ipStats.gold : 0;
+        activeTabsEl.textContent = data.tabCount || 0;
+        screensLabel.textContent = data.tabCount || 0;
+
+        renderGrid(data.tabs || []);
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.appendChild(document.createTextNode(s));
+      return d.innerHTML;
+    }
+
+    function renderGrid(tabs) {
+      if (!tabs || tabs.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <h3>No Active Tabs Running</h3>
+            <p style="margin-top: 8px; font-size: 13px;">Enter a video link above and click <strong>"Run Local Test"</strong> or <strong>"Spawn Cloud Actions"</strong> to start watching.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = tabs.map(t => {
+        const tel = t.telemetry || {};
+        const pct = tel.progressPct || 0;
+        const cur = tel.currentTime ? Math.floor(tel.currentTime) + 's' : '0s';
+        const dur = tel.duration ? Math.floor(tel.duration) + 's' : '...';
+        const ip = escapeHtml(tel.ip || 'direct');
+        const status = escapeHtml(tel.status || 'running');
+        const title = escapeHtml(tel.title || 'YouTube Video Playback');
+        const tabId = escapeHtml(String(t.tabId || ''));
+        const imgSrc = t.image || '';
+
+        return `
+          <div class="tab-card">
+            <div class="screen-preview">
+              ${imgSrc ? `<img src="${imgSrc}" alt="Tab ${tabId}" />` : '<span style="color:#666">Connecting Screen...</span>'}
+              <div class="live-badge">
+                <span class="live-dot"></span>
+                TAB #${tabId} (${status.toUpperCase()})
+              </div>
+            </div>
+            <div class="tab-info">
+              <div class="tab-title" title="${title}">${title}</div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${pct}%"></div>
+              </div>
+              <div class="tab-metrics">
+                <span>⏱️ ${cur} / ${dur} (${pct}%)</span>
+                <span class="ip-tag">${ip}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Button triggers
+    document.getElementById('btn-run-local').addEventListener('click', async () => {
+      const url = document.getElementById('video-url').value;
+      const tabs = document.getElementById('tab-count').value;
+      if (!url) return showToast('Enter a YouTube URL', true);
+
+      showToast(`Starting ${tabs} local test tabs...`);
+      try {
+        const res = await fetch('/api/run_local', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ url, tabs: parseInt(tabs) })
+        });
+        const d = await res.json();
+        showToast(d.message || 'Started local test');
+      } catch (err) {
+        showToast('Failed: ' + err.message, true);
+      }
+    });
+
+    document.getElementById('btn-spawn-cloud').addEventListener('click', async () => {
+      const url = document.getElementById('video-url').value;
+      const tabs = document.getElementById('tab-count').value;
+      if (!url) return showToast('Enter a YouTube URL', true);
+
+      const ghToken = prompt("Enter your GitHub Personal Access Token (or configure GITHUB_TOKEN env):");
+      const repo = prompt("Enter your GitHub repo (owner/repo_name, e.g. user/yt-ghost-runner):");
+      if (!ghToken || !repo) return;
+
+      showToast(`Dispatching ${tabs} cloud tabs to GitHub Actions...`);
+      try {
+        const res = await fetch('/api/spawn_cloud', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ url, tabs: parseInt(tabs), ghToken, repo })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showToast(`Dispatched ${tabs} tabs to GitHub Actions cloud runners!`);
+        } else {
+          showToast('Error: ' + d.error, true);
+        }
+      } catch (err) {
+        showToast('Failed to spawn: ' + err.message, true);
+      }
+    });
+
+    document.getElementById('btn-harvest').addEventListener('click', async () => {
+      showToast('IP Harvesting triggered in background...');
+      try {
+        const res = await fetch('/api/harvest', { method: 'POST' });
+        const d = await res.json();
+        showToast(d.message || 'Harvesting started');
+      } catch (err) {
+        showToast('Harvest failed: ' + err.message, true);
+      }
+    });
+
+    setInterval(pollState, 1500);
+    pollState();
+  </script>
+</body>
+</html>

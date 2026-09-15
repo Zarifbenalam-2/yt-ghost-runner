@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP SHELF — IP wing of YT Channel Automation</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1a1e24; --line:#262b33;
+    --txt:#c9cdd4; --dim:#7a828e; --amber:#e8a33d; --amber-dim:#5c4418;
+    --ok:#4caf6d; --bad:#c94f4f; --warn:#c9a227;
+    --mono:'Consolas','SF Mono','Cascadia Code',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px 60px}
+
+  /* header */
+  header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand h1{font-family:var(--mono);font-size:20px;letter-spacing:3px;color:#fff}
+  .brand h1 span{color:var(--amber)}
+  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px}
+  .hbtns{display:flex;gap:10px;align-items:center}
+  .btn{font-family:var(--mono);font-size:12px;padding:9px 18px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;letter-spacing:1px}
+  .btn:hover{border-color:var(--amber)}
+  .btn.primary{background:var(--amber);color:#181104;border-color:var(--amber);font-weight:700}
+  .btn.primary:hover{background:#f5b64e}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  /* status chips in the header (sweep / harvest) */
+  .chips{display:flex;gap:8px;align-items:center}
+  .schip{font-family:var(--mono);font-size:10.5px;padding:5px 10px;border:1px solid var(--line);color:var(--dim);letter-spacing:.5px;white-space:nowrap}
+  .schip.run{border-color:#4a4322;color:var(--warn)}
+  .schip.done{border-color:#2c4a38;color:var(--ok)}
+  .spin{display:inline-block;width:10px;height:10px;border:2px solid var(--warn);border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-1px;margin-right:5px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* hierarchy strip: main project -> this panel -> supply */
+  .hier{display:grid;grid-template-columns:1fr 26px 1.15fr 26px 1fr;align-items:stretch;gap:0;margin-bottom:16px}
+  .hbox{border:1px solid var(--line);background:var(--panel);padding:11px 14px}
+  .hbox.main{border-left:3px solid var(--ok)}
+  .hbox.self{border-left:3px solid var(--amber)}
+  .hbox.supply{border-left:3px solid var(--dim)}
+  .hbox .role{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--dim);margin-bottom:4px}
+  .hbox.main .role{color:var(--ok)} .hbox.self .role{color:var(--amber)}
+  .hbox .nm{font-size:13px;color:#fff;font-weight:600}
+  .hbox .ds{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5}
+
+  /* verified-only banner */
+  .stamp{font-family:var(--mono);font-size:11px;border:1px dashed var(--amber-dim);color:var(--amber);padding:8px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px;letter-spacing:.5px}
+  .stamp b{letter-spacing:2px}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--amber-dim);padding:14px 16px}
+  .stat.crit{border-top-color:var(--bad)}
+  .stat .label{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+  .stat .value{font-family:var(--mono);font-size:26px;color:#fff}
+  .stat .value small{font-size:13px;color:var(--dim)}
+  .stat .value.bad{color:var(--bad)}
+  .stat .meta{font-size:11px;color:var(--dim);margin-top:6px}
+
+  /* tabs */
+  .tabs{display:flex;gap:2px;margin-bottom:0}
+  .tab{font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:10px 22px;background:var(--panel);border:1px solid var(--line);border-bottom:none;color:var(--dim);cursor:pointer;text-transform:uppercase}
+  .tab.active{color:var(--amber);background:var(--panel2);border-top:2px solid var(--amber)}
+  .panelbox{background:var(--panel2);border:1px solid var(--line);padding:20px}
+
+  /* shelves */
+  .shelf-rack{border-left:3px solid var(--amber-dim);background:var(--panel);margin-bottom:14px;display:grid;grid-template-columns:180px 1fr 210px;align-items:stretch}
+  .shelf-rack.crit{border-left-color:var(--bad)}
+  .shelf-head{padding:16px;border-right:1px solid var(--line)}
+  .shelf-head .cc{font-family:var(--mono);font-size:22px;color:#fff;letter-spacing:2px}
+  .shelf-head .cn{font-size:12px;color:var(--dim)}
+  .shelf-head .cnt{font-family:var(--mono);color:var(--amber);font-size:13px;margin-top:8px}
+  .shelf-head .cnt.bad{color:var(--bad)}
+  .shelf-slots{display:flex;gap:8px;padding:14px;flex-wrap:wrap;align-content:center}
+  .slot{width:150px;background:var(--bg);border:1px solid var(--line);padding:9px 10px;font-family:var(--mono);font-size:10px}
+  .slot .addr{color:#fff;font-size:11px;margin-bottom:4px}
+  .slot .row{color:var(--dim);display:flex;justify-content:space-between;margin-bottom:2px}
+  .slot .row b{color:var(--ok);font-weight:400}
+  .slot.load{border-color:var(--amber-dim);background:transparent;border-style:dashed}
+  .slot.load div{color:var(--dim);text-align:center;padding:14px 0;letter-spacing:1px}
+  .shelf-side{padding:14px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:4px;font-family:var(--mono);font-size:11px}
+  .shelf-side .k{color:var(--dim)} .shelf-side .v{color:var(--txt)}
+  .shelf-side .alert{color:var(--bad);font-size:10.5px;line-height:1.6;margin-top:4px}
+  .bar{height:5px;background:var(--bg);margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--amber)}
+  .bar i.bad{background:var(--bad)}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  th{font-size:10px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:10px 12px;border-bottom:1px solid #1f2329;color:var(--txt)}
+  tr:hover td{background:rgba(232,163,61,.04)}
+  .gold{color:var(--amber)} .okc{color:var(--ok)} .badc{color:var(--bad)} .dimc{color:var(--dim)}
+  .chip{display:inline-block;font-size:10px;padding:2px 8px;border:1px solid var(--line);letter-spacing:1px}
+  .chip.T1{color:var(--ok);border-color:#2c4a38} .chip.T2{color:var(--warn);border-color:#4a4322}
+  .use{display:inline-flex;gap:2px}
+  .use i{width:16px;height:5px;background:var(--amber);display:block}
+  .use i.off{background:var(--line)}
+
+  /* channels */
+  .chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .chcard{background:var(--panel);border:1px solid var(--line);padding:14px}
+  .chcard.shield{border-style:dashed;opacity:.75}
+  .chcard .nm{font-weight:600;color:#fff;margin-bottom:2px}
+  .chcard .rg{font-family:var(--mono);font-size:11px;color:var(--amber);margin-bottom:10px;letter-spacing:1px}
+  .chcard .bind{font-family:var(--mono);font-size:11px;color:var(--dim);border-top:1px dashed var(--line);padding-top:10px;line-height:1.7}
+  .chcard .bind b{color:var(--txt);font-weight:400}
+  .pill{float:right;font-size:10px;font-family:var(--mono);padding:2px 8px;letter-spacing:1px}
+  .pill.live{color:var(--ok);border:1px solid #2c4a38}
+  .pill.wait{color:var(--warn);border:1px solid #4a4322}
+  .pill.swap{color:var(--bad);border:1px solid #4a2222}
+  .pill.shield{color:var(--dim);border:1px dashed var(--line)}
+  .rpick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  .rpick .lbl{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px}
+  .rbtn{font-family:var(--mono);font-size:10.5px;padding:4px 10px;background:var(--bg);border:1px solid var(--line);color:var(--txt);cursor:pointer;letter-spacing:1px}
+  .rbtn:hover{border-color:var(--amber);color:var(--amber)}
+
+  /* run flow */
+  .flow{display:grid;grid-template-columns:1fr 40px 1.2fr 40px 1.2fr;align-items:stretch;gap:0}
+  .fstep{background:var(--panel);border:1px solid var(--line);padding:16px}
+  .fstep .n{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:2px;margin-bottom:6px}
+  .fstep .t{color:#fff;font-weight:600;margin-bottom:8px}
+  .fstep .d{font-size:12px;color:var(--dim);line-height:1.6}
+  .fstep input{width:100%;background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px;margin-top:8px}
+  .fstep select{width:100%;background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px;margin-top:8px}
+  .farrow{color:var(--amber);text-align:center;font-size:20px;font-family:var(--mono);display:flex;align-items:center;justify-content:center}
+  .acctstrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .acct{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:5px 10px;color:var(--txt)}
+  .acct.sel{border-color:var(--amber);color:var(--amber)}
+  .acct small{color:var(--dim)}
+  .lawbar{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px dashed var(--line);padding:10px 14px;margin-top:14px;line-height:1.8}
+  .lawbar b{color:var(--amber);font-weight:400}
+  .runform{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .runform .frow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .runform label{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:1px}
+  .runform input[type=text]{flex:1;min-width:260px;background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px}
+  .runform input[type=number]{width:90px;background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px}
+  .runform select{background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px}
+  .runform .cbx{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--txt)}
+  .runstatus{font-family:var(--mono);font-size:12px;border:1px solid var(--line);background:#0a0c0e;padding:12px 14px;margin-top:12px;line-height:1.8;white-space:pre-wrap;min-height:20px}
+
+  .log{font-family:var(--mono);font-size:11.5px;background:#0a0c0e;border:1px solid var(--line);padding:14px;line-height:1.9;max-height:300px;overflow:auto}
+  .log .t{color:var(--dim)} .log .ok{color:var(--ok)} .log .wr{color:var(--warn)} .log .ip{color:var(--amber)} .log .bd{color:var(--bad)}
+  .hidden{display:none}
+
+  /* empty / loading states */
+  .empty{font-family:var(--mono);font-size:12px;color:var(--dim);border:1px dashed var(--line);padding:22px;text-align:center;line-height:1.8}
+  .empty b{color:var(--amber);font-weight:400}
+  .shimmer{font-family:var(--mono);font-size:12px;color:var(--dim);padding:22px;text-align:center;animation:sh 1.4s ease-in-out infinite}
+  @keyframes sh{0%,100%{opacity:.35}50%{opacity:.8}}
+
+  /* toast feedback system */
+  #toasts{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:999;max-width:440px}
+  .toast{font-family:var(--mono);font-size:12px;padding:11px 14px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);line-height:1.6;box-shadow:0 4px 18px rgba(0,0,0,.5);animation:tin .18s ease-out}
+  .toast.ok{border-color:#2c4a38;color:var(--ok)}
+  .toast.err{border-color:var(--bad);color:#ff8f8f}
+  .toast.warn{border-color:#4a4322;color:var(--warn)}
+  .toast .t-title{font-weight:700;letter-spacing:1px;margin-bottom:3px}
+  .toast .t-body{color:var(--txt);word-break:break-word}
+  @keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .toast.out{opacity:0;transition:opacity .4s}
+
+  /* server connection banner */
+  #connbar{display:none;background:#3a1414;border:1px solid var(--bad);color:#ffb0b0;font-family:var(--mono);font-size:12px;padding:10px 14px;margin-bottom:14px;letter-spacing:.5px;line-height:1.6}
+  #connbar b{color:#fff}
+
+  /* mass region lock bar (channels tab) */
+  .massbar{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--panel);padding:10px 14px;margin-bottom:12px;flex-wrap:wrap}
+  .massbar .lbl{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px}
+  .massbar select{background:var(--bg);border:1px solid var(--line);color:#fff;padding:6px 10px;font-family:var(--mono);font-size:12px}
+  .massbar .selinfo{font-family:var(--mono);font-size:11px;color:var(--amber)}
+  .massbar .hint{font-family:var(--mono);font-size:10.5px;color:var(--dim);width:100%}
+
+  /* channel cards v2 */
+  .chv2{background:var(--panel);border:1px solid var(--line);padding:13px 14px;position:relative}
+  .chv2 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .chv2 .nm{font-weight:600;color:#fff}
+  .chv2 .meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.7}
+  .chv2 .meta b{color:var(--txt);font-weight:400}
+  .chv2 .ops{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .chv2 .ops .rbtn{font-size:10px;padding:3px 8px}
+  .chv2 .cb{position:absolute;top:12px;right:12px}
+  .pill.personal{color:var(--dim);border:1px dashed var(--line)}
+  .pill.nobind{color:var(--warn);border:1px solid #4a4322}
+  .harvestbox{font-family:var(--mono);font-size:11.5px;background:#0a0c0e;border:1px solid var(--line);padding:12px 14px;margin-top:12px;line-height:1.7;max-height:220px;overflow:auto;white-space:pre-wrap}
+  .sel-count{font-family:var(--mono);color:var(--amber);font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="connbar">⚠ <b>DASHBOARD SERVER UNREACHABLE</b> — the page loaded earlier but http://127.0.0.1:8766 is not answering now. Buttons will NOT work. Restart it with:<br><b>cd yt-channel-automation &amp;&amp; venv/Scripts/python.exe -m ipshelf.server</b></div>
+
+  <header>
+    <div class="brand">
+      <h1>IP<span>·</span>SHELF</h1>
+      <div class="sub">GOLD IP STORAGE &amp; CHANNEL BINDING — THE IP WING OF<br>YT-CHANNEL-AUTOMATION · V1.0 // WAREHOUSE DARK</div>
+    </div>
+    <div class="hbtns">
+      <div class="chips">
+        <span class="schip" id="chip-sweep">SWEEP —</span>
+        <span class="schip" id="chip-harvest">HARVEST —</span>
+      </div>
+      <button class="btn" id="btn-sweep" title="Re-check every stored gold IP. Burn + delete the dead. Refill by harvest.">⚡ SWEEP &amp; BURN</button>
+      <button class="btn" id="btn-harvest">⛏ RUN HARVEST</button>
+      <button class="btn primary" id="btn-newrun">▶ NEW WATCH RUN</button>
+    </div>
+  </header>
+
+  <!-- HIERARCHY: main project -> this panel -> supply (static — describes laws, not data) -->
+  <div class="hier">
+    <div class="hbox main">
+      <div class="role">■ MAIN PROJECT</div>
+      <div class="nm">yt-channel-automation</div>
+      <div class="ds">Creates brand channels under my Gmail (cap ~100) and warms them up: watch, like, subscribe, comment — human-like, one user only.</div>
+    </div>
+    <div class="harrow">→</div>
+    <div class="hbox self">
+      <div class="role">◆ THIS PANEL — THE FIX</div>
+      <div class="nm">The IP Shelf</div>
+      <div class="ds">The bug it fixes: warm-up ran on my home IP → Google flagged it → my <u>personal</u> YouTube was in danger. Every channel session now leaves through its own sticky gold IP. My home IP never touches automation traffic again.</div>
+    </div>
+    <div class="harrow">←</div>
+    <div class="hbox supply">
+      <div class="role">● SUPPLY (SIDE BRANCH)</div>
+      <div class="nm">The Gold Hunt Machine</div>
+      <div class="ds">Harvest → TCP pre-filter → gold-gate rank → grading. Only graded survivors (playabilityStatus OK) are allowed onto the shelves.</div>
+    </div>
+  </div>
+
+  <div class="stamp" id="stamp-line">☑ <b>VERIFIED GOLD ONLY</b> — this dashboard counts only IPs that passed the FINAL grading stage. Discovery-stage numbers (e.g. "211 found") are working data, never shown as holdings. <span id="stamp-count">— graded gold alive right now.</span></div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Gold in vault</div><div class="value" id="st-gold">—</div><div class="meta">graded survivors only</div></div>
+    <div class="stat"><div class="label">Free / assignable</div><div class="value" id="st-free">— <small>IPs</small></div><div class="meta">under 5-channel cap</div></div>
+    <div class="stat"><div class="label">Channels bound</div><div class="value" id="st-bound">— <small>/ 100 cap</small></div><div class="meta">sticky IP, region locked</div></div>
+    <div class="stat"><div class="label">Cap per IP</div><div class="value" id="st-cap">— <small>ch</small></div><div class="meta">small footprint on purpose</div></div>
+    <div class="stat" id="st-low-box"><div class="label">Shelves low</div><div class="value" id="st-low">—</div><div class="meta">free slots &lt; 2 → harvest</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="show(0,this)">SHELVES</div>
+    <div class="tab" onclick="show(1,this)">GOLD LEDGER</div>
+    <div class="tab" onclick="show(2,this)">CHANNELS</div>
+    <div class="tab" onclick="show(3,this)">WATCH RUN</div>
+    <div class="tab" onclick="show(4,this)">HUNT LOG</div>
+    <div class="tab" onclick="show(5,this)">HARVEST LIVE</div>
+  </div>
+
+  <!-- TAB 0: SHELVES -->
+  <div class="panelbox" id="p0">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:16px">Every shelf is region-locked. A channel bound to a region only ever draws from that region's shelf. An IP never changes shelves — it lives where it was born. Live distribution of the graded gold pool <span id="shelf-updated" style="font-family:var(--mono);font-size:11px">(—)</span>:</div>
+    <div id="shelves">…</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:14px">SHELF LOW? &lt; 2 free slots → run a harvest session targeting that region. Tier-1 is the priority list: US → UK → DE → rest of T1.</div>
+  </div>
+
+  <!-- TAB 1: LEDGER -->
+  <div class="panelbox hidden" id="p1">
+    <div id="ledger">…</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px" id="ledger-note">GOLD = passed YouTube watch-page fetch + playabilityStatus:OK + bandwidth + GitHub gate at grading. Anything that only passed earlier stages never appears here.</div>
+  </div>
+
+  <!-- TAB 2: CHANNELS -->
+  <div class="panelbox hidden" id="p2">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:16px">Every channel in the arsenal (live from the shared DB). One channel = one sticky gold IP for life. IP dies or fails a gold re-check → burned, replacement from the SAME shelf. Region choice locks forever at assignment. <span style="color:var(--amber)">Shielded = your personal channel — never automated.</span></div>
+    <div class="massbar" id="massbar">
+      <span class="lbl">MASS REGION LOCK</span>
+      <label class="chv2 cb" style="position:static"><input type="checkbox" id="ch-selall"> all</label>
+      <select id="mass-region">
+        <option value="US">US</option><option value="GB">GB</option>
+        <option value="DE">DE</option><option value="T1">T1 (any tier-1)</option>
+      </select>
+      <button class="btn" id="btn-masslock" style="padding:6px 14px">🔒 LOCK REGION FOR SELECTED</button>
+      <span class="selinfo" id="sel-count">0 selected</span>
+      <span class="hint">Region lock is FOREVER (law 3) — already-locked channels keep their region; only unbound channels change. The lock assigns the shelf; the sticky IP is drawn at the next watch run.</span>
+    </div>
+    <div id="channels" class="chgrid">…</div>
+    <div class="lawbar"><b>THE LAW:</b> same channel tomorrow = same IP. Not per-session. Not per-run. Only death or a failed gold re-check breaks the bond — and then the replacement still comes from the same country shelf.</div>
+  </div>
+
+  <!-- TAB 3: WATCH RUN -->
+  <div class="panelbox hidden" id="p3">
+    <div class="flow">
+      <div class="fstep"><div class="n">STEP 1</div><div class="t">Paste YouTube link</div><div class="d">One video. The system pulls video ID + duration. This link is what the set of channels will watch.</div>
+        <input type="text" id="run-url" placeholder="https://youtube.com/watch?v=…">
+        <div class="runform">
+          <div class="frow">
+            <label for="run-count">SET SIZE</label>
+            <input type="number" id="run-count" value="10" min="1" max="50">
+          </div>
+          <div class="frow">
+            <label for="run-region">REGION FOR UNBOUND CHANNELS</label>
+            <select id="run-region">
+              <option value="US">US</option>
+              <option value="GB">GB</option>
+              <option value="DE">DE</option>
+              <option value="T1">T1 (any tier-1)</option>
+            </select>
+          </div>
+          <div class="frow">
+            <label for="run-handles">HANDLES (optional, comma-separated)</label>
+            <input type="text" id="run-handles" placeholder="@ChanA, @ChanB — empty = random set">
+          </div>
+          <div class="frow">
+            <span class="cbx"><input type="checkbox" id="run-autoharvest"> auto-harvest if shelf short (run waits)</span>
+          </div>
+          <div class="frow">
+            <button class="btn primary" id="btn-execute">▶ EXECUTE RUN</button>
+          </div>
+        </div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="n">STEP 2</div><div class="t">Pick the set</div><div class="d">One set = the given number of channels. Random by default, or hand-pick by @handle. Each keeps its locked region and sticky IP.</div>
+        <div class="acctstrip" id="run-accts">
+          <span class="acct">no channels bound yet —</span>
+        </div>
+        <div class="d" style="margin-top:10px">Channels without a region get the region selected at left — locked forever once chosen. Bind channels first in the CHANNELS tab.</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="n">STEP 3</div><div class="t">Shelf draw → gate → execute</div><div class="d">Per channel: own region shelf → sticky IP if alive, else best free gold IP (cap 5 ch/IP) → <b style="color:var(--amber)">quick gold gate</b> → bind → browser session: switch to channel handle → watch link at 55–95% depth → maybe like (30%) / subscribe (15%) / comment (10%). Shelf short → harvest fires, run waits.</div>
+      </div>
+    </div>
+    <div class="runstatus" id="run-status">— no run yet —</div>
+    <div class="lawbar">
+      <b>NEXT DAY:</b> same channels + new link → same sticky IPs (re-gated). IP still gold = same IP. IP dead = burned, replacement from same shelf. No rotation. No location drift. No home IP anywhere in the chain.<br>
+      <b>THE GATE:</b> every draw runs the quick gold gate (playabilityStatus OK) right before bind. Fail → next-best IP on the same shelf. Shelf exhausted → auto-harvest, run waits.
+    </div>
+  </div>
+
+  <!-- TAB 4: HUNT LOG -->
+  <div class="panelbox hidden" id="p4">
+    <div class="log" id="huntlog">…</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px">Free proxies churn this fast — that's WHY only graded survivors count, why every draw re-gates, and why the sweep button exists.</div>
+  </div>
+
+  <!-- TAB 5: HARVEST LIVE -->
+  <div class="panelbox hidden" id="p5">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:16px">Live output of the gold hunt machine (harvest → TCP pre-filter → gold-gate rank → grade). This is the same stream that goes to harvest.log; it updates every 5s while a harvest runs.</div>
+    <div class="harvestbox" id="harvestlog">— no harvest output yet —</div>
+
+    <div style="margin-top:22px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:10px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b>MEGAHARVEST</b>
+        <span id="mh-state">—</span>
+        <span style="flex:1"></span>
+        <button class="btn" id="btn-mh-start">START 200-GOLD RUN</button>
+        <button class="btn" id="btn-mh-stop">STOP</button>
+      </div>
+      <div id="mh-meta" style="font-size:12px;color:var(--dim);margin-top:8px">loops big harvest rounds → stops at 200 gold or 6h → final sweep burns ALL dead → delivers to shelf + GitHub. Survives dashboard restarts, not PC reboots.</div>
+      <div class="harvestbox" id="mh-log" style="margin-top:8px;height:150px">— no megaharvest log yet —</div>
+      <div style="font-size:12px;margin-top:8px">GitHub Actions daily supply: <a href="https://github.com/Zarifbenalam-2/ipshelf-supply/actions" target="_blank" rel="noopener" style="color:#8ab4f8">ipshelf-supply/actions ↗</a></div>
+    </div>
+  </div>
+
+</div>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------- helpers
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function escA(s){ // for attribute contexts (quotes already escaped)
+  return String(s ?? '').replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function el(id){ return document.getElementById(id); }
+
+// ---------------------------------------------------------------- toasts
+var TOAST_MS = 5200;
+function toast(kind, title, body){
+  var box = el('toasts');
+  if(!box) return;
+  var t = document.createElement('div');
+  t.className = 'toast ' + (kind || '');
+  t.innerHTML = '<div class="t-title">' + esc(title) + '</div>'
+    + (body ? '<div class="t-body">' + esc(body) + '</div>' : '');
+  box.appendChild(t);
+  while(box.children.length > 4) box.removeChild(box.firstChild);
+  setTimeout(function(){
+    t.classList.add('out');
+    setTimeout(function(){ try{ t.remove(); }catch(e){} }, 450);
+  }, TOAST_MS);
+}
+function toastOk(title, body){ toast('ok', title, body); }
+function toastErr(title, body){ toast('err', title, body); }
+function toastWarn(title, body){ toast('warn', title, body); }
+
+// ---------------------------------------------------------------- server liveness
+var SERVER_UP = null;   // null unknown, true up, false down
+function setServerUp(up){
+  if(SERVER_UP === up) return;
+  SERVER_UP = up;
+  el('connbar').style.display = up ? 'none' : 'block';
+  if(up === false){
+    toastErr('DASHBOARD SERVER DOWN',
+      'http://127.0.0.1:8766 is not answering. Buttons will not work. ' +
+      'Restart: cd yt-channel-automation && venv/Scripts/python.exe -m ipshelf.server');
+  }
+}
+
+function tabs_show(i, selfEl){
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  selfEl.classList.add('active');
+  for(var k=0;k<6;k++) el('p'+k).classList.toggle('hidden', k!==i);
+}
+function show(i, selfEl){ tabs_show(i, selfEl); }
+
+function fmtTs(ts){ return ts ? String(ts).replace('T',' ').replace('Z','') : '—'; }
+
+async function api(method, path, body){
+  var opts = {method: method, headers: {'Content-Type':'application/json'}};
+  if(body !== undefined) opts.body = JSON.stringify(body);
+  var r = await fetch(path, opts);
+  var data = null;
+  try{ data = await r.json(); }catch(e){}
+  return {status: r.status, ok: r.ok, data: data};
+}
+
+// ---------------------------------------------------------------- country flags
+var FLAGS = {US:'\ud83c\uddfa\ud83c\uddf8',GB:'\ud83c\uddec\ud83c\udde7',DE:'\ud83c\udde9\ud83c\uddea',CA:'\ud83c\udde8\ud83c\udde6',FR:'\ud83c\uddeb\ud83c\uddf7',NL:'\ud83c\uddf3\ud83c\uddf1',SE:'\ud83c\uddf8\ud83c\uddea',CH:'\ud83c\udde8\ud83c\udded',AT:'\ud83c\udde6\ud83c\uddf9',DK:'\ud83c\udde9\ud83c\uddf0',NO:'\ud83c\uddf3\ud83c\uddf4',FI:'\ud83c\uddeb\ud83c\uddee',IE:'\ud83c\uddee\ud83c\uddea',BE:'\ud83c\udde7\ud83c\uddea',LU:'\ud83c\uddf1\ud83c\uddf8',JP:'\ud83c\uddef\ud83c\uddf5',SG:'\ud83c\uddf8\ud83c\uddec',AU:'\ud83c\udde6\ud83c\uddfa',NZ:'\ud83c\uddf3\ud83c\uddff',KR:'\ud83c\uddf0\ud83c\uddf7',HK:'\ud83c\udded\ud83c\uddf0',TW:'\ud83c\uddf9\ud83c\uddf3',MX:'\ud83c\uddf2\ud83c\uddfd',PK:'\ud83c\uddf5\ud83c\uddf0',VN:'\ud83c\uddfb\ud83c\uddf3',ID:'\ud83c\uddee\ud83c\udde9',BD:'\ud83c\udde7\ud83c\udde9',IN:'\ud83c\uddee\ud83c\uddf3',BR:'\ud83c\udde7\ud83c\uddf7',RU:'\ud83c\uddf7\ud83c\uddfa',TH:'\ud83c\uddf9\ud83c\udded',PH:'\ud83c\uddf5\ud83c\udded',TR:'\ud83c\uddf9\ud83c\uddf7',UA:'\ud83c\uddfa\ud83c\udde6',PL:'\ud83c\uddf5\ud83c\uddf1',IT:'\ud83c\uddee\ud83c\uddf9',ES:'\ud83c\uddea\ud83c\uddf8',CZ:'\ud83c\udde8\ud83c\uddff',RO:'\ud83c\uddf7\ud83c\uddf4',AR:'\ud83c\udde6\ud83c\uddf7',CL:'\ud83c\udde8\ud83c\uddf1',CO:'\ud83c\udde8\ud83c\uddf4',ZA:'\ud83c\uddff\ud83c\udde6',EG:'\ud83c\uddea\ud83c\uddec',NG:'\ud83c\uddf3\ud83c\uddec',KE:'\ud83c\uddf0\ud83c\uddea'};
+function flag(cc){ return FLAGS[String(cc||'').toUpperCase()] || ''; }
+
+// ---------------------------------------------------------------- state
+var LAST = null;       // last /api/state payload
+var POLL_MS = 5000;
+var first = true;
+
+async function refresh(){
+  try{
+    var r = await api('GET', '/api/state');
+    if(!r.ok){
+      setServerUp(false);
+      if(r.data && r.data.error) console.warn('state error:', r.data.error);
+      return;
+    }
+    setServerUp(true);
+    LAST = r.data;
+    render();
+  }catch(e){
+    setServerUp(false);  // fetch itself failed: server down / port dead
+  }
+}
+
+// ---------------------------------------------------------------- render root
+function render(){
+  var s = LAST;
+  if(!s) return;
+
+  var pool = s.pool || {updated:null, exits:[]};
+  var exits = pool.exits || [];
+  var bindings = s.bindings || {};
+  var shelves = s.shelves || [];
+  var stats = s.stats || {total_gold:0, free_total:0, bound_channels:0, cap_per_ip:5, regions_low:[]};
+
+  // stamp
+  el('stamp-count').textContent = stats.total_gold + ' graded gold alive right now.';
+
+  // stats
+  el('st-gold').textContent = stats.total_gold;
+  el('st-free').innerHTML = esc(stats.free_total) + ' <small>IPs</small>';
+  el('st-bound').innerHTML = esc(stats.bound_channels) + ' <small>/ 100 cap</small>';
+  el('st-cap').innerHTML = esc(stats.cap_per_ip || 5) + ' <small>ch</small>';
+  var low = stats.regions_low || [];
+  el('st-low-box').className = 'stat' + (low.length ? ' crit' : '');
+  el('st-low').textContent = low.length ? String(low.length) : '0';
+  el('st-low').className = 'value' + (low.length ? ' bad' : '');
+  el('st-low-box').querySelector('.meta').textContent = low.length
+    ? ('low: ' + low.join(', ') + ' → harvest')
+    : 'free slots < 2 → harvest';
+  el('shelf-updated').textContent = '(' + (pool.updated ? 'pool updated ' + fmtTs(pool.updated) : '—') + ')';
+
+  renderHeaderChips(s);
+  renderShelves(shelves, exits, bindings, stats);
+  renderLedger(exits);
+  renderChannelsV2(s);
+  renderAcctStrip(bindings);
+  renderHuntLog(s.log_tail || []);
+  renderHarvestLive(s.harvest_tail || [], s.harvest || {});
+  renderMegaharvest(s.megaharvest || {}, s.megaharvest_tail || []);
+  renderRunStatus();
+  first = false;
+}
+
+// ---------------------------------------------------------------- header chips
+function renderHeaderChips(s){
+  // sweep chip
+  var sw = s.sweep || {};
+  var swc = el('chip-sweep');
+  if(sw.running){
+    swc.className = 'schip run';
+    swc.innerHTML = '<span class="spin"></span>SWEEP RUNNING';
+  }else if(sw.never){
+    swc.className = 'schip';
+    swc.textContent = 'SWEEP — never';
+  }else{
+    swc.className = 'schip' + (sw.error ? ' run' : ' done');
+    swc.textContent = 'SWEEP ' + (sw.finished_at ? fmtTs(sw.finished_at) : '—')
+      + (typeof sw.burned === 'number' ? ' · burned ' + sw.burned : '')
+      + (sw.error ? ' · ERR' : '');
+  }
+  el('btn-sweep').disabled = !!sw.running;
+
+  // harvest chip
+  var h = s.harvest || {};
+  var hc = el('chip-harvest');
+  if(h.running){
+    hc.className = 'schip run';
+    hc.innerHTML = '<span class="spin"></span>HARVEST RUNNING';
+  }else if(h.never){
+    hc.className = 'schip';
+    hc.textContent = 'HARVEST — never';
+  }else{
+    hc.className = 'schip' + (typeof h.added === 'number' && h.added > 0 ? ' done' : '');
+    hc.textContent = 'HARVEST ' + (h.finished_at ? fmtTs(h.finished_at) : '—')
+      + (typeof h.added === 'number' ? ' · +' + h.added + ' gold' : '')
+      + (h.stale ? ' · DIED (auto-reset)' : '')
+      + (h.running === false && h.rc ? ' · rc=' + h.rc : '');
+  }
+  el('btn-harvest').disabled = !!h.running;
+}
+
+// ---------------------------------------------------------------- TAB 0: shelves
+function renderShelves(shelves, exits, bindings, stats){
+  var box = el('shelves');
+  if(!shelves.length){
+    box.innerHTML = '<div class="empty">No gold yet — run harvest or seed from goldbank.<br><b>Seeding is CLI-only:</b> venv/Scripts/python.exe -m ipshelf.core.seed_pool</div>';
+    return;
+  }
+
+  // bound channels per cc for the side panel
+  var byRegion = {};
+  Object.keys(bindings).forEach(function(k){
+    var b = bindings[k] || {};
+    var r = b.region || '??';
+    byRegion[r] = (byRegion[r] || 0) + (b.sticky_ip ? 1 : 0);
+  });
+
+  var html = '';
+  shelves.forEach(function(row){
+    var region = row.region || '??';
+    var isT1 = region === 'T1';
+    // exits on this shelf (cc match or tier match for the T1 commons)
+    var onShelf = exits.filter(function(e){
+      if(e.status !== 'gold') return false;
+      return isT1 ? (e.tier === 'T1') : (e.cc === region);
+    }).sort(function(a,b){ return (b.score||0) - (a.score||0); });
+
+    var cnt = row.count || 0;
+    var freeSlots = (typeof row.free === 'number') ? row.free : 0;
+    var cap = row.capacity || cnt * (stats.cap_per_ip || 5);
+    var assigned = row.assigned || 0;
+    var crit = !!row.needs_attention;
+    var pct = cap > 0 ? Math.round(100 * assigned / cap) : 0;
+
+    // cc / cn line
+    var ccLine, cnLine;
+    if(isT1){
+      ccLine = 'T1';
+      cnLine = 'Tier-1 commons · ' + flag('US') + flag('GB') + flag('DE') + flag('JP') + '…';
+    }else{
+      ccLine = region + ' ' + flag(region);
+      cnLine = (onShelf.length ? onShelf[0].geo && onShelf[0].geo.country || region : region)
+        + (onShelf.length && onShelf[0].tier ? ' · ' + onShelf[0].tier : '');
+    }
+
+    var cntTxt = cnt + ' GOLD · ' + freeSlots + ' FREE SLOT' + (freeSlots === 1 ? '' : 'S');
+    if(crit) cntTxt += ' — LOW';
+
+    // slots: first 4 exits + "+N more"
+    var slots = '';
+    onShelf.slice(0, 4).forEach(function(e){
+      var nCh = (e.channels || []).length;
+      var capCh = stats.cap_per_ip || 5;
+      var geoCity = (e.geo && (e.geo.city || e.geo.region || e.geo.country)) || '—';
+      var bw = (typeof e.bandwidth_mbps === 'number') ? e.bandwidth_mbps.toFixed(1) + ' Mbps' : '—';
+      var lat = (typeof e.latency_ms === 'number') ? e.latency_ms + ' ms' : '—';
+      slots += '<div class="slot">'
+        + '<div class="addr">' + esc(e.addr || '?') + '</div>'
+        + '<div class="row"><span>' + esc(e.proto || 'HTTP') + '</span><span>score <b>' + esc((e.score != null ? e.score : '—')) + '</b></span></div>'
+        + '<div class="row"><span title="' + escA(geoCity) + '">' + esc(geoCity) + '</span><span>ch <b>' + nCh + '/' + capCh + '</b></span></div>'
+        + '<div class="row"><span>' + esc(bw) + '</span><span>' + esc(lat) + '</span></div>'
+        + '<div class="row"><span>' + esc(e.cc || '') + ' ' + esc(flag(e.cc)) + '</span><span><b>gold \u2713</b></span></div>'
+        + '</div>';
+    });
+    if(cnt > 4) slots += '<div class="slot load"><div>+ ' + (cnt - 4) + ' more\u2026</div></div>';
+    if(!onShelf.length) slots += '<div class="slot load"><div>EMPTY — NEEDS HARVEST</div></div>';
+
+    var alertTxt = '';
+    if(crit){
+      alertTxt = '<div class="alert">\u26a0 Free channel slots under 2. A watch run wanting ' + esc(isT1 ? 'tier-1' : region)
+        + ' may not fit — run a region-targeted harvest before growing channels here.</div>';
+    }
+
+    html += '<div class="shelf-rack' + (crit ? ' crit' : '') + '">'
+      + '<div class="shelf-head"><div class="cc">' + ccLine + '</div><div class="cn">' + esc(cnLine) + '</div><div class="cnt' + (crit ? ' bad' : '') + '">' + esc(cntTxt) + '</div></div>'
+      + '<div class="shelf-slots">' + slots + '</div>'
+      + '<div class="shelf-side">'
+      + '<div><span class="k">ASSIGNED&nbsp;</span><span class="v">' + assigned + ' ch</span></div>'
+      + '<div><span class="k">CAPACITY&nbsp;</span><span class="v">' + cap + ' ch (' + cnt + '\u00d7' + (stats.cap_per_ip || 5) + ')</span></div>'
+      + '<div class="bar"><i' + (crit ? ' class="bad"' : '') + ' style="width:' + Math.min(100, pct) + '%"></i></div>'
+      + alertTxt
+      + '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+// ---------------------------------------------------------------- TAB 1: ledger
+function renderLedger(exits){
+  var box = el('ledger');
+  var golds = (exits || []).filter(function(e){ return e.status === 'gold'; });
+  if(!golds.length){
+    box.innerHTML = '<div class="empty">No gold in the ledger — run harvest or seed from goldbank.</div>';
+    el('ledger-note').textContent = 'GOLD = passed YouTube watch-page fetch + playabilityStatus:OK + bandwidth + GitHub gate at grading. Anything that only passed earlier stages never appears here.';
+    return;
+  }
+
+  var rows = golds.slice(0, 25).map(function(e){
+    var nCh = (e.channels || []).length;
+    var useHtml = '<span class="use">';
+    for(var i = 0; i < 5; i++) useHtml += '<i' + (i < nCh ? '' : ' class="off"') + '></i>';
+    useHtml += '</span>';
+    var geo = e.geo || {};
+    var geoTxt = [geo.city, e.cc].filter(Boolean).join(', ') || '—';
+    var tier = e.tier || 'T2';
+    return '<tr>'
+      + '<td class="gold">' + esc(e.addr) + '</td>'
+      + '<td>' + esc(e.proto || 'HTTP') + '</td>'
+      + '<td>' + esc(geoTxt) + '</td>'
+      + '<td><span class="chip ' + esc(tier) + '">' + esc(tier) + '</span></td>'
+      + '<td>' + esc(e.score != null ? e.score : '—') + '</td>'
+      + '<td>' + esc(e.latency_ms != null ? e.latency_ms : '—') + '</td>'
+      + '<td>' + esc(e.bandwidth_mbps != null ? e.bandwidth_mbps : '—') + '</td>'
+      + '<td class="okc">' + esc(e.playability || 'OK') + ' \u2713</td>'
+      + '<td>' + useHtml + ' <span class="dimc">' + nCh + '/5</span></td>'
+      + '<td class="dimc">' + esc(fmtTs(e.last_gold_ok)) + '</td>'
+      + '</tr>';
+  }).join('');
+
+  box.innerHTML = '<table><thead><tr><th>EXIT ADDR</th><th>PROTO</th><th>GEO</th><th>TIER</th><th>SCORE</th><th>LAT</th><th>BW MBPS</th><th>PLAYABILITY</th><th>CHANNELS</th><th>LAST GOLD CHECK</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  el('ledger-note').textContent = golds.length + ' rows total (first ' + Math.min(25, golds.length) + ' shown). GOLD = passed YouTube watch-page fetch + playabilityStatus:OK + bandwidth + GitHub gate at grading. Anything that only passed earlier stages never appears here.';
+}
+
+// ---------------------------------------------------------------- TAB 2: channels V2 (full DB list)
+var SEL = {};   // handle -> true when checkbox ticked
+
+function selCount(){ return Object.keys(SEL).filter(function(k){ return SEL[k]; }).length; }
+function updateSelCount(){
+  var n = selCount();
+  el('sel-count').textContent = n + ' selected';
+  var sb = el('btn-masslock');
+  sb.disabled = n === 0;
+  if(!sb.disabled) sb.textContent = '\ud83d\udd12 LOCK ' + (el('mass-region').value) + ' FOR ' + n + ' CHANNEL' + (n===1?'':'S');
+  else sb.textContent = '\ud83d\udd12 LOCK REGION FOR SELECTED';
+}
+
+function renderChannelsV2(s){
+  var box = el('channels');
+  var bindings = s.bindings || {};
+  var exits = (s.pool && s.pool.exits) || [];
+  var chs = s.channels || [];
+  var extra = s.channels_extra || [];
+
+  if(s.db_error){
+    box.className = 'chgrid';
+    box.innerHTML = '<div class="empty">DB error: ' + esc(s.db_error) + '</div>';
+    return;
+  }
+  if(!chs.length && !extra.length){
+    box.className = 'chgrid';
+    box.innerHTML = '<div class="empty">No channels yet — create them with:<br><b>venv/Scripts/python.exe -m engine.create_channels --email ' + esc('zarifbenalamin2005@gmail.com') + ' --count N --prefix "Name"</b></div>';
+    return;
+  }
+
+  var byAddr = {};
+  exits.forEach(function(e){ byAddr[e.addr] = e; });
+
+  var html = '';
+  chs.forEach(function(c){
+    var h = c.handle || c.name;
+    var personal = !!c._personal;
+    var b = bindings[h] || {};
+    var region = b.region;
+    var sticky = b.sticky_ip;
+    var entry = sticky ? byAddr[sticky] : null;
+    var alive = !!(entry && entry.status === 'gold');
+
+    var pill, pillTxt;
+    if(personal){ pill = 'personal'; pillTxt = 'SHIELDED · PERSONAL'; }
+    else if(region && sticky && alive){ pill = 'live'; pillTxt = 'LIVE'; }
+    else if(region && sticky && !alive){ pill = 'swap'; pillTxt = 'IP GONE — REDRAWS NEXT RUN'; }
+    else if(region && !sticky){ pill = 'wait'; pillTxt = 'REGION LOCKED · NO IP YET'; }
+    else { pill = 'nobind'; pillTxt = 'NO REGION — LOCK ONE'; }
+
+    var meta = 'status <b>' + esc(c.status || '?') + '</b>'
+      + ' · warmup day <b>' + esc(c.warmupDay != null ? c.warmupDay : 0) + '</b>'
+      + ' · account <b>' + esc(c.accountId ? String(c.accountId).slice(0, 8) : 'default') + '</b><br>';
+    if(region){
+      meta += 'region <b>' + esc(region) + '</b> (locked forever)';
+      if(sticky) meta += ' · sticky IP <b>' + esc(sticky) + '</b> (load ' + ((entry && entry.channels || []).length) + '/5)';
+      else meta += ' · sticky IP <b>drawn at next watch run</b>';
+    }else{
+      meta += 'region <b>none</b> — pick one below or via mass lock';
+    }
+
+    var ops = '';
+    if(!personal){
+      ops = '<label class="cb" style="position:static;font-family:var(--mono);font-size:11px;cursor:pointer"><input type="checkbox" data-h="' + escA(h) + '"' + (SEL[h] ? ' checked' : '') + (region ? ' disabled title="region already locked"' : '') + '> select</label>';
+      if(!region){
+        ops += '<button class="rbtn" data-h="' + escA(h) + '" data-r="US">US</button>'
+          + '<button class="rbtn" data-h="' + escA(h) + '" data-r="GB">GB</button>'
+          + '<button class="rbtn" data-h="' + escA(h) + '" data-r="DE">DE</button>'
+          + '<button class="rbtn" data-h="' + escA(h) + '" data-r="T1">T1</button>';
+      }
+      ops += '<button class="rbtn" data-open="' + escA(h) + '" data-url="' + escA(c.url || ('https://www.youtube.com/' + h)) + '" title="Open this channel\'s YouTube page in a headed browser through its sticky gold IP — you browse, you close it">\u25b6 OPEN IN BROWSER</button>';
+    }
+
+    html += '<div class="chv2">'
+      + '<div class="top"><div><div class="nm">' + esc(h) + '</div>'
+      + '<div class="meta">' + meta + '</div></div>'
+      + '<span class="pill ' + pill + '">' + esc(pillTxt) + '</span></div>'
+      + '<div class="ops">' + ops + '</div>'
+      + '</div>';
+  });
+
+  // handles in bindings.json but not in the DB (e.g. test bindings)
+  extra.forEach(function(h){
+    var b = bindings[h] || {};
+    html += '<div class="chv2" style="opacity:.7"><div class="top"><div>'
+      + '<div class="nm">' + esc(h) + '</div>'
+      + '<div class="meta">shelf-only binding (not in DB) · region <b>' + esc(b.region || 'none') + '</b> · sticky <b>' + esc(b.sticky_ip || 'none') + '</b></div>'
+      + '</div><span class="pill wait">BINDING-ONLY</span></div>'
+      + '<div class="ops"><button class="rbtn" data-open="' + escA(h) + '" data-url="' + escA('https://www.youtube.com/' + h) + '">\u25b6 OPEN IN BROWSER</button></div></div>';
+  });
+
+  box.className = 'chgrid';
+  box.innerHTML = html;
+
+  // wire per-card buttons
+  box.querySelectorAll('.rbtn[data-r]').forEach(function(btn){
+    btn.addEventListener('click', onPickRegion);
+  });
+  box.querySelectorAll('.rbtn[data-open]').forEach(function(btn){
+    btn.addEventListener('click', onBrowseChannel);
+  });
+  box.querySelectorAll('input[type=checkbox][data-h]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      SEL[cb.getAttribute('data-h')] = cb.checked;
+      updateSelCount();
+    });
+  });
+  updateSelCount();
+}
+
+// ---------------------------------------------------------------- region pick (single)
+async function onPickRegion(ev){
+  var btn = ev.currentTarget;
+  var handle = btn.getAttribute('data-h');
+  var region = btn.getAttribute('data-r');
+  if(!confirm('Lock region ' + region + ' for ' + handle + '?\n\nThis choice is FOREVER (law 3). The channel will only ever draw from this shelf.')) return;
+  btn.disabled = true;
+  toastWarn('LOCKING…', handle + ' → ' + region);
+  var r = await api('POST', '/api/assign', {handle: handle, region: region, gate: false});
+  btn.disabled = false;
+  if(r.ok && r.data && r.data.ok){
+    var drew = (r.data.result && r.data.result.addr) || '(no IP drawn — drawn at next run)';
+    toastOk('REGION LOCKED', handle + ' → ' + region + ' forever · sticky: ' + drew);
+  }else{
+    var msg = (r.data && r.data.result && r.data.result.error) || (r.data && r.data.error) || ('HTTP ' + r.status);
+    toastErr('REGION LOCK FAILED', handle + ': ' + msg);
+  }
+  refresh();
+}
+
+// ---------------------------------------------------------------- mass region lock
+async function onMassLock(){
+  var handles = Object.keys(SEL).filter(function(k){ return SEL[k]; });
+  if(!handles.length){ toastWarn('NOTHING SELECTED', 'tick channel checkboxes first'); return; }
+  var region = el('mass-region').value;
+  if(!confirm('Lock ' + handles.length + ' channel(s) to region ' + region + '?\n\nFOREVER (law 3). Already-locked channels keep their region.')) return;
+  var btn = el('btn-masslock');
+  btn.disabled = true;
+  toastWarn('MASS LOCKING…', handles.length + ' channels → ' + region);
+  var r = await api('POST', '/api/regions', {handles: handles, region: region});
+  var d = r.data || {};
+  if(r.ok && d.ok){
+    toastOk('MASS LOCK DONE', d.locked + '/' + d.total + ' locked to ' + region + (d.locked < d.total ? ' (' + (d.total - d.locked) + ' refused — already locked or bad)' : ''));
+    SEL = {};
+  }else{
+    toastErr('MASS LOCK FAILED', d.error || ('HTTP ' + r.status));
+    btn.disabled = false;
+  }
+  refresh();
+}
+
+// ---------------------------------------------------------------- headed browse
+async function onBrowseChannel(ev){
+  var btn = ev.currentTarget;
+  var handle = btn.getAttribute('data-open');
+  var url = btn.getAttribute('data-url');
+  btn.disabled = true;
+  toastWarn('OPENING BROWSER…', handle + ' — drawing sticky gold IP + gating (can take ~20s)');
+  var r = await api('POST', '/api/browse', {handle: handle, url: url});
+  btn.disabled = false;
+  if(r.status === 409){
+    toastWarn('BROWSER ALREADY OPEN', 'Close the open one first — one browse window at a time.');
+  }else if(r.ok && r.data && r.data.ok){
+    toastOk('BROWSER OPENING', 'Headed window through ' + handle + "'s sticky gold IP → " + url + '\nClose the window yourself when done.');
+  }else{
+    toastErr('BROWSE FAILED', (r.data && r.data.error) || ('HTTP ' + r.status));
+  }
+}
+
+// ---------------------------------------------------------------- TAB 5: harvest live log
+function renderHarvestLive(tail, h){
+  var box = el('harvestlog');
+  if(!tail || !tail.length){
+    box.textContent = h && h.running ? '(harvest running — waiting for first output lines…)' : '— no harvest output yet —';
+    return;
+  }
+  var wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+  box.textContent = tail.join('\n');
+  if(wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+
+// ---------------------------------------------------------------- TAB 5: megaharvest panel
+function renderMegaharvest(mh, tail){
+  var st = el('mh-state');
+  var meta = el('mh-meta');
+  mh = mh || {};
+  var map = {running:'▶ RUNNING', sweeping:'🔥 SWEEPING (final burn)', done:'■ DONE',
+             stopped_by_user:'■ STOPPED BY USER', dead:'✖ DEAD (reboot/crash)', idle:'— idle —'};
+  st.textContent = map[mh.state] || (mh.state || '— idle —');
+  var bits = [];
+  if(mh.gold !== undefined) bits.push('gold: ' + mh.gold + (mh.t1 !== undefined ? ' (T1: ' + mh.t1 + ')' : ''));
+  if(mh.exits !== undefined) bits.push('exits: ' + mh.exits);
+  if(mh.round) bits.push('round: ' + mh.round);
+  if(mh.target) bits.push('target: ' + mh.target);
+  if(mh.ts) bits.push('updated: ' + fmtTs(mh.ts));
+  if(mh.note) bits.push(mh.note);
+  if(mh.sweep && mh.sweep.checked !== undefined){
+    bits.push('sweep: ' + mh.sweep.checked + ' checked / ' + mh.sweep.burned + ' burned');
+  }
+  if(bits.length){
+    meta.textContent = bits.join('   ·   ');
+    meta.style.color = mh.state === 'dead' ? '#f28b82' : '';
+  }
+  var box = el('mh-log');
+  if(tail && tail.length){
+    var wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+    box.textContent = tail.join('\n');
+    if(wasAtBottom) box.scrollTop = box.scrollHeight;
+  }
+}
+
+// ---------------------------------------------------------------- TAB 3: acct strip + run status
+function renderAcctStrip(bindings){
+  var box = el('run-accts');
+  var keys = Object.keys(bindings || {});
+  if(!keys.length){
+    box.innerHTML = '<span class="acct">no channels bound yet — seed / assign first</span>';
+    return;
+  }
+  var html = '';
+  keys.slice(0, 12).forEach(function(k){
+    var b = bindings[k] || {};
+    var r = b.region || 'US?';
+    html += '<span class="acct' + (b.sticky_ip ? ' sel' : '') + '">' + esc(k) + ' <small>' + esc(r) + '</small></span>';
+  });
+  if(keys.length > 12) html += '<span class="acct">+ ' + (keys.length - 12) + ' more channels\u2026</span>';
+  box.innerHTML = html;
+}
+
+var RUN_POLL = null;
+
+async function renderRunStatus(){
+  var r = await api('GET', '/api/run');
+  var box = el('run-status');
+  if(r.ok && r.data && !r.data.never){
+    var d = r.data;
+    var lines = [];
+    if(d.running){
+      lines.push('\u25b6 RUN IN PROGRESS' + (d.started_at ? ' (since ' + fmtTs(d.started_at) + ')' : ''));
+    }else{
+      lines.push((d.finished_at ? '\u25a0 FINISHED ' + fmtTs(d.finished_at) : '\u25a0 LAST RUN ' + fmtTs(d.at || d.started_at || '')));
+    }
+    ['url','phase','channels','done','failed','count','region','auto_harvest'].forEach(function(k){
+      if(d[k] !== undefined && d[k] !== null) lines.push('  ' + k + ': ' + d[k]);
+    });
+    if(d.error) lines.push('  error: ' + d.error);
+    if(d.log && d.log.length) lines.push('  ' + d.log.slice(-5).join('\n  '));
+    box.textContent = lines.join('\n') || JSON.stringify(d, null, 1);
+    if(d.running && !RUN_POLL){ RUN_POLL = setInterval(renderRunStatus, 3000); }
+    if(!d.running && RUN_POLL){ clearInterval(RUN_POLL); RUN_POLL = null; }
+  }else{
+    box.textContent = '\u2014 no run yet \u2014';
+    if(RUN_POLL){ clearInterval(RUN_POLL); RUN_POLL = null; }
+  }
+}
+
+async function onExecuteRun(){
+  var url = el('run-url').value.trim();
+  if(!url){
+    toastWarn('NO LINK', 'paste a YouTube link first (step 1)');
+    el('run-url').focus();
+    return;
+  }
+  var handlesRaw = el('run-handles').value.trim();
+  var handles = handlesRaw ? handlesRaw.split(',').map(function(h){ return h.trim(); }).filter(Boolean) : undefined;
+  var count = parseInt(el('run-count').value, 10) || 10;
+  var region = el('run-region').value;
+  var auto = el('run-autoharvest').checked;
+
+  var body = {url: url, count: count, region: region, auto_harvest: auto};
+  if(handles && handles.length) body.handles = handles;
+
+  if(!confirm('Execute watch run?\n\nURL: ' + url + '\nChannels: ' + (handles ? handles.join(', ') : 'random ' + count) + '\nRegion for unbound: ' + region + '\nAuto-harvest: ' + (auto ? 'YES' : 'no') + '\n\nEach channel draws its own sticky gold IP and watches through it.')) return;
+
+  var btn = el('btn-execute');
+  btn.disabled = true;
+  toastWarn('RUN LAUNCHING…', 'spawning watch run process');
+  var r = await api('POST', '/api/run', body);
+  btn.disabled = false;
+  if(r.status === 409){
+    toastWarn('RUN ALREADY ACTIVE', 'a watch run process is still running — wait for it (status below)');
+  }else if(r.ok && r.data && r.data.ok){
+    el('run-status').textContent = '\u25b6 RUN LAUNCHED (pid ' + (r.data.pid || '?') + ') \u2014 status below updates\u2026';
+    toastOk('WATCH RUN STARTED', 'pid ' + (r.data.pid || '?') + ' — each channel draws its sticky gold IP and watches through it.');
+    if(RUN_POLL) clearInterval(RUN_POLL);
+    RUN_POLL = setInterval(renderRunStatus, 3000);
+  }else{
+    var msg = (r.data && r.data.error) || ('HTTP ' + r.status);
+    el('run-status').textContent = 'RUN FAILED: ' + msg;
+    toastErr('RUN FAILED TO START', msg);
+  }
+}
+
+// ---------------------------------------------------------------- TAB 4: hunt log
+function renderHuntLog(tail){
+  var box = el('huntlog');
+  if(!tail.length){
+    box.innerHTML = '<span class="t">no log entries yet — ipshelf.log is empty until gates / binds / sweeps run</span>';
+    return;
+  }
+  var html = tail.map(function(e){
+    var ts = String(e.ts || '').slice(11, 19);
+    var evt = String(e.evt || '?').toUpperCase();
+    var evtCls = 'ok';
+    if(evt.indexOf('BURN') >= 0 || evt.indexOf('ERROR') >= 0 || evt.indexOf('DRAW_ERROR') >= 0) evtCls = 'bd';
+    else if(evt === 'SWEEP' || evt === 'SKIP' || evt === 'ASSIGN_REGION') evtCls = 'wr';
+    else if(evt === 'BIND') evtCls = 'ok';
+    else if(evt === 'GATE') evtCls = e.ok ? 'ip' : 'bd';
+
+    var parts = [];
+    Object.keys(e).forEach(function(k){
+      if(k === 'ts' || k === 'evt') return;
+      var v = e[k];
+      if(v === null || v === undefined) v = '';
+      var s;
+      if(Array.isArray(v)) s = '[' + v.join(', ') + ']';
+      else if(typeof v === 'object') s = JSON.stringify(v);
+      else s = String(v);
+      parts.push(k + '=' + s);
+    });
+    var line = '<span class="t">' + esc(ts) + '</span> <span class="' + evtCls + '">[' + esc(evt) + ']</span> ' + esc(parts.join(' '));
+    return line;
+  }).join('<br>');
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+
+// ---------------------------------------------------------------- header buttons
+async function onSweep(){
+  if(!confirm('SWEEP & BURN?\n\nThis re-checks EVERY stored gold IP with the quick gate (real network checks, can take minutes). Any IP that fails playability=OK is BURNED + DELETED and its channels released (regions survive). ?? IPs get their geo resolved and land on their proper shelf. Continue?')) return;
+  var btn = el('btn-sweep');
+  btn.disabled = true;
+  toastWarn('SWEEP STARTING…', 're-gating every gold IP — watch the chip in the header');
+  var r = await api('POST', '/api/sweep', {});
+  if(r.status === 409){
+    toastWarn('SWEEP ALREADY RUNNING', 'let it finish — the header chip shows progress');
+  }else if(r.ok && r.data && r.data.ok){
+    el('chip-sweep').innerHTML = '<span class="spin"></span>SWEEP RUNNING';
+    toastOk('SWEEP STARTED', 'burning dead IPs in the background — results land in HUNT LOG');
+  }else{
+    toastErr('SWEEP FAILED TO START', (r.data && r.data.error) || ('HTTP ' + r.status));
+  }
+  btn.disabled = !!((LAST && LAST.sweep && LAST.sweep.running));
+  refresh();
+}
+
+async function onHarvest(){
+  if(!confirm('RUN HARVEST?\n\nSpawns the gold hunt machine (harvest → TCP pre-filter → rank → grade). Fresh graded survivors land on the shelves. This is a long background job (5-30 min) — live output in the HARVEST LIVE tab, status in the header. Continue?')) return;
+  var btn = el('btn-harvest');
+  btn.disabled = true;
+  toastWarn('HARVEST STARTING…', 'hunt machine spawning — live output in the HARVEST LIVE tab');
+  var r = await api('POST', '/api/harvest', {});
+  if(r.status === 409){
+    toastWarn('HARVEST ALREADY RUNNING', 'pid ' + ((r.data && r.data.pid) || '?') + ' — let it finish (HARVEST LIVE tab)');
+  }else if(r.ok && r.data && r.data.ok){
+    el('chip-harvest').innerHTML = '<span class="spin"></span>HARVEST RUNNING';
+    toastOk('HARVEST STARTED', 'pid ' + (r.data.pid || '?') + ' — 5-30 min. Follow it live: HARVEST LIVE tab. Button re-enables when done.');
+  }else{
+    toastErr('HARVEST FAILED TO START', (r.data && r.data.error) || ('HTTP ' + r.status));
+    btn.disabled = false;
+  }
+  refresh();
+}
+
+function onNewRun(){
+  show(3, document.querySelectorAll('.tab')[3]);
+  el('run-url').focus();
+}
+
+// ---------------------------------------------------------------- boot
+el('btn-sweep').addEventListener('click', onSweep);
+el('btn-harvest').addEventListener('click', onHarvest);
+
+// ---------------------------------------------------------------- megaharvest handlers
+async function onMhStart(){
+  if(!confirm('START MEGAHARVEST?\n\nLoops big harvest rounds (~24k candidates each, 50-80 min/round) until the shelf holds 300 gold or 6 hours pass — the final sweep re-gates EVERY exit, burns all dead ones (typically 30-50%), so ~200 WORKING gold remain for delivery. Heavy network load for hours. Continue?')) return;
+  toastWarn('MEGAHARVEST STARTING…', 'round 1 spawning — progress + live log in the HARVEST LIVE tab');
+  var r = await api('POST', '/api/megaharvest/start', {target: 300, deadline: 6});
+  if(r.status === 409){
+    toastWarn('MEGAHARVEST ALREADY RUNNING', 'pid ' + ((r.data && r.data.pid) || '?') + ' — watch it in the HARVEST LIVE tab');
+  }else if(!r.ok){
+    toastErr('MEGAHARVEST FAILED', (r.data && r.data.error) || ('HTTP ' + r.status));
+  }else{
+    toastOk('MEGAHARVEST STARTED', 'pid ' + (r.data.pid || '?') + ' — target ' + r.data.target + ' gold, ' + r.data.deadline_h + 'h deadline. Live log: HARVEST LIVE tab.');
+  }
+}
+async function onMhStop(){
+  if(!confirm('STOP MEGAHARVEST?\n\nKills the orchestrator + its harvest subprocess tree. Gold already merged into the shelf STAYS. The final sweep/delivery will NOT run.')) return;
+  var r = await api('POST', '/api/megaharvest/stop', {});
+  if(r.ok){
+    toastOk('MEGAHARVEST STOPPED', 'process tree killed — gold merged so far stays on the shelf');
+  }else{
+    toastErr('STOP FAILED', (r.data && r.data.error) || ('HTTP ' + r.status));
+  }
+}
+el('btn-mh-start').addEventListener('click', onMhStart);
+el('btn-mh-stop').addEventListener('click', onMhStop);
+el('btn-newrun').addEventListener('click', onNewRun);
+el('btn-execute').addEventListener('click', onExecuteRun);
+el('btn-masslock').addEventListener('click', onMassLock);
+el('ch-selall').addEventListener('change', function(){
+  var on = el('ch-selall').checked;
+  document.querySelectorAll('#channels input[type=checkbox][data-h]').forEach(function(cb){
+    if(!cb.disabled){ cb.checked = on; SEL[cb.getAttribute('data-h')] = on; }
+  });
+  updateSelCount();
+});
+
+refresh();
+setInterval(refresh, POLL_MS);
+renderRunStatus();
+setInterval(function(){ if(LAST) renderHarvestLive(LAST.harvest_tail || [], LAST.harvest || {}); if(LAST) renderMegaharvest(LAST.megaharvest || {}, LAST.megaharvest_tail || []); }, POLL_MS);
+</script>
+</body>
+</html>

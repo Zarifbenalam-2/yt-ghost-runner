@@ -1,0 +1,59 @@
+name: Cloud Ghost Watcher Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: 'YouTube Video URL'
+        required: true
+        default: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      tabs_per_runner:
+        description: 'Number of tabs per runner VM'
+        required: true
+        default: '5'
+      stream_target:
+        description: 'Dashboard Webhook/Relay URL for live screen frames (Optional)'
+        required: false
+        default: ''
+
+jobs:
+  cloud-watch:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runner_id: [1, 2, 3, 4]  # Scales across 4 runners (e.g. 4 runners x 5 tabs = 20 concurrent streams)
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Linux Xvfb & Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libasound2
+
+      - name: Install Python Dependencies & Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          playwright install chromium
+
+      - name: Run Ghost Watcher in Virtual 1080p Display
+        env:
+          CI: "true"
+          STREAM_TARGET_URL: ${{ github.event.inputs.stream_target }}
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+            python ghost_watch.py \
+              --url "${{ github.event.inputs.video_url }}" \
+              --tabs ${{ github.event.inputs.tabs_per_runner }} \
+              --depth-lo 60 \
+              --depth-hi 95

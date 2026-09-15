@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Gold Shelf — Vault</title>
+<style>
+  :root{
+    --bg:#08070b; --panel:#100e15; --panel2:#16131d; --line:#2a2434;
+    --gold:#d4af37; --gold-hi:#f3d47a; --gold-dim:#4a3d1a;
+    --txt:#d8d2c4; --dim:#8a8272; --ok:#7dba64; --bad:#c25e5e; --info:#8ea4c9;
+    --mono:'Consolas','SF Mono',monospace; --serif:'Georgia','Times New Roman',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% -10%,rgba(212,175,55,.06),transparent 60%)}
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 26px 80px;position:relative}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px}
+  h1{font-family:var(--serif);font-size:34px;font-weight:400;color:var(--gold-hi);letter-spacing:1px}
+  h1 em{font-style:italic;color:var(--txt)}
+  .motto{font-size:11px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-top:6px}
+  .seal{width:84px;height:84px;border:2px solid var(--gold-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:var(--mono);color:var(--gold);transform:rotate(-8deg)}
+  .seal b{font-size:22px}
+  .seal span{font-size:8px;letter-spacing:2px}
+  .rule{height:1px;background:linear-gradient(90deg,var(--gold),transparent 70%);margin:16px 0 22px}
+
+  .topbtns{display:flex;gap:10px;margin-bottom:22px}
+  .btn{font-size:12.5px;padding:11px 20px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;letter-spacing:.5px}
+  .btn:hover{border-color:var(--gold-dim)}
+  .btn.gold{background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:#1a1405;border-color:var(--gold);font-weight:700}
+  .btn.gold:hover{filter:brightness(1.08)}
+
+  /* certified strip */
+  .cert{display:flex;align-items:center;gap:16px;border:1px solid var(--gold-dim);background:linear-gradient(90deg,rgba(212,175,55,.07),transparent);padding:14px 20px;margin-bottom:24px}
+  .cert .m{font-family:var(--mono);font-size:26px;color:var(--gold)}
+  .cert p{font-size:12.5px;line-height:1.6;color:var(--txt)}
+  .cert b{color:var(--gold-hi)}
+
+  /* vault stats — coin style */
+  .coins{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+  .coin{border:1px solid var(--line);background:var(--panel);padding:18px;text-align:center;position:relative}
+  .coin::before,.coin::after{content:'';position:absolute;top:8px;bottom:8px;width:1px;background:var(--gold-dim)}
+  .coin::before{left:8px}.coin::after{right:8px}
+  .coin .v{font-family:var(--serif);font-size:36px;color:var(--gold-hi)}
+  .coin .v small{font-size:16px;color:var(--dim)}
+  .coin .l{font-size:10px;letter-spacing:2.5px;color:var(--dim);text-transform:uppercase;margin-top:8px}
+
+  /* the rack */
+  h2{font-family:var(--serif);font-size:21px;font-weight:400;color:var(--txt);margin:30px 0 6px}
+  h2 span{color:var(--gold)}
+  .sub{font-size:12px;color:var(--dim);margin-bottom:16px;line-height:1.6}
+  .rack{border:1px solid var(--line);background:var(--panel)}
+  .rrow{display:grid;grid-template-columns:200px 1fr 190px;border-bottom:1px solid var(--line)}
+  .rrow:last-child{border-bottom:none}
+  .rcell{padding:16px 18px}
+  .rcell + .rcell{border-left:1px solid var(--line)}
+  .region .fl{font-size:26px}
+  .region .rn{font-family:var(--serif);font-size:16px;color:#fff;margin-top:4px}
+  .region .rt{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:3px}
+  .ingots{display:flex;gap:10px;flex-wrap:wrap;align-content:center}
+  .ingot{width:128px;border:1px solid var(--gold-dim);background:linear-gradient(180deg,rgba(212,175,55,.09),rgba(212,175,55,.02));padding:9px 11px;font-family:var(--mono);font-size:10px;cursor:default}
+  .ingot:hover{border-color:var(--gold)}
+  .ingot .ip{color:var(--gold-hi);font-size:11px;margin-bottom:5px}
+  .ingot .r{display:flex;justify-content:space-between;color:var(--dim)}
+  .ingot .r b{color:var(--ok);font-weight:400}
+  .ingot.free{border-style:dashed;border-color:var(--line);background:transparent;color:var(--dim);text-align:center;display:flex;align-items:center;justify-content:center}
+  .vaultmeta{display:flex;flex-direction:column;justify-content:center;gap:3px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .vaultmeta b{color:var(--txt);font-weight:400}
+  .goldbar2{height:4px;background:#08070b;border:1px solid var(--line);margin-top:8px}
+  .goldbar2 i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+
+  /* watch order — like a bank slip */
+  .slip{border:1px solid var(--gold-dim);background:var(--panel);padding:24px;max-width:900px;margin-bottom:28px;position:relative}
+  .slip::before{content:'WATCH ORDER';position:absolute;top:-9px;left:20px;background:var(--bg);padding:0 10px;font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--gold)}
+  .slip .fld{margin-bottom:16px}
+  .slip label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:7px}
+  .slip input{width:100%;background:#08070b;border:1px solid var(--line);color:var(--gold-hi);padding:11px 14px;font-family:var(--mono);font-size:13px}
+  .setline{display:flex;flex-wrap:wrap;gap:8px}
+  .acctn{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:6px 11px;color:var(--txt)}
+  .acctn.sel{border-color:var(--gold);color:var(--gold-hi)}
+  .acctn small{color:var(--dim)}
+  .slip .terms{font-size:11.5px;color:var(--dim);border-top:1px dashed var(--line);padding-top:14px;line-height:1.8;margin-top:18px}
+  .slip .terms b{color:var(--txt);font-weight:500}
+  .signrow{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+  .signrow .stamp2{font-family:var(--serif);color:var(--gold);font-style:italic;font-size:14px;transform:rotate(-3deg);border:1px solid var(--gold-dim);padding:6px 14px}
+
+  /* ledger table */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+  th{font-size:9.5px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;text-align:left;padding:11px 12px;border-bottom:1px solid var(--gold-dim)}
+  td{padding:11px 12px;border-bottom:1px solid #1c1826}
+  tr:hover td{background:rgba(212,175,55,.04)}
+  .gld{color:var(--gold-hi)} .okc{color:var(--ok)} .dimc{color:var(--dim)} .badc{color:var(--bad)}
+  .seal2{font-size:9px;border:1px solid var(--gold-dim);color:var(--gold);padding:2px 7px;letter-spacing:1px}
+
+  /* bindings */
+  .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .bcard{border:1px solid var(--line);background:var(--panel);padding:16px;position:relative}
+  .bcard::before{content:'';position:absolute;top:0;left:0;width:34px;height:3px;background:var(--gold)}
+  .bcard h4{font-size:13.5px;color:#fff;margin:6px 0 2px}
+  .bcard .rg{font-family:var(--mono);font-size:10.5px;color:var(--gold);letter-spacing:1.5px;margin-bottom:12px}
+  .bcard .bl{font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.9}
+  .bcard .bl b{color:var(--txt);font-weight:400}
+  .state{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;padding:3px 8px;border:1px solid var(--line)}
+  .state.live{color:var(--ok);border-color:#2e4a2e}
+  .state.wait{color:var(--gold);border-color:var(--gold-dim)}
+  .state.swap{color:var(--bad);border-color:#4a2e2e}
+
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px;display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>The <em>Gold Shelf</em></h1>
+      <div class="motto">Certified exit vault · region shelves · lifetime sticky bindings</div>
+    </div>
+    <div class="seal"><b>✦</b><span>ASSAYED<br>PLAYABILITY OK</span></div>
+  </header>
+  <div class="rule"></div>
+
+  <div class="topbtns">
+    <button class="btn">✦ Assay Sweep (re-certify all)</button>
+    <button class="btn">⛏ Commission Harvest</button>
+    <button class="btn gold">Place Watch Order</button>
+  </div>
+
+  <div class="cert">
+    <div class="m">⚜</div>
+    <p><b>Assay certificate.</b> Every ingot on these shelves passed the full mint: YouTube watch-page fetch, <b>playabilityStatus: OK</b>, bandwidth grade, GitHub gate. Only final-stage survivors are counted — discovery-stage finds (raw / pre-filter) are never reported as holdings. 211 found ≠ 211 held; the vault holds 42.</p>
+  </div>
+
+  <div class="coins">
+    <div class="coin"><div class="v">42</div><div class="l">Gold ingots</div></div>
+    <div class="coin"><div class="v">17</div><div class="l">Free stock</div></div>
+    <div class="coin"><div class="v">25</div><div class="l">Bound channels</div></div>
+    <div class="coin"><div class="v">5<small>/ip</small></div><div class="l">Channel cap</div></div>
+    <div class="coin"><div class="v">183</div><div class="l">Headroom</div></div>
+  </div>
+
+  <!-- WATCH ORDER SLIP -->
+  <div class="slip">
+    <div class="fld">
+      <label>YouTube link — one video, one set of ten accounts</label>
+      <input value="https://youtube.com/watch?v=dQw4w9WgXcQ" readonly>
+    </div>
+    <div class="fld">
+      <label>The set (10) — drawn randomly by default, or hand-picked</label>
+      <div class="setline">
+        <span class="acctn sel">01 <small>US</small></span><span class="acctn sel">02 <small>US</small></span>
+        <span class="acctn sel">05 <small>US</small></span><span class="acctn sel">07 <small>UK</small></span>
+        <span class="acctn sel">08 <small>UK</small></span><span class="acctn sel">11 <small>DE</small></span>
+        <span class="acctn sel">13 <small>US</small></span><span class="acctn sel">21 <small>T1</small></span>
+        <span class="acctn sel">23 <small>T1</small></span><span class="acctn sel">27 <small>DE</small></span>
+      </div>
+    </div>
+    <div class="terms">
+      <b>Terms of the draw:</b> each account presents its region seal → the matching shelf opens → best free ingot is drawn (cap 5 channels per ingot) → quick assay (gold gate) → bound sticky for life. Unsealed accounts pick a region at first order — the seal is permanent. If the shelf is short, a harvest is commissioned first and the order waits.
+    </div>
+    <div class="signrow">
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">TOMORROW, SAME LINK, SAME SET → SAME INGOTS. NO ROTATION. NO DRIFT.</span>
+      <span class="stamp2">Vault Keeper ✓</span>
+    </div>
+  </div>
+
+  <h2>The <span>Shelves</span></h2>
+  <div class="sub">An ingot never changes shelves — it lives where it was minted. A channel bound to a region only ever draws from that region's shelf.</div>
+
+  <div class="rack">
+    <div class="rrow">
+      <div class="rcell region"><div class="fl">🇺🇸</div><div class="rn">United States</div><div class="rt">TIER 1 · SEALED</div></div>
+      <div class="rcell">
+        <div class="ingots">
+          <div class="ingot"><div class="ip">107.167.18.122:443</div><div class="r"><span>SOCKS</span><span>2/5 ch</span></div><div class="r"><span>LA, CA</span><span><b>88.2</b></span></div></div>
+          <div class="ingot"><div class="ip">23.105.140.10:8080</div><div class="r"><span>HTTP</span><span>0/5 ch</span></div><div class="r"><span>NV</span><span><b>91.0</b></span></div></div>
+          <div class="ingot"><div class="ip">154.12.89.4:1080</div><div class="r"><span>SOCKS</span><span>1/5 ch</span></div><div class="r"><span>NY</span><span><b>84.4</b></span></div></div>
+          <div class="ingot free">+ 11 more ingots</div>
+        </div>
+      </div>
+      <div class="rcell vaultmeta"><span>STOCK <b>14</b> · FREE <b>9</b></span><span>CHANNELS <b>12/70</b></span><div class="goldbar2"><i style="width:17%"></i></div></div>
+    </div>
+    <div class="rrow">
+      <div class="rcell region"><div class="fl">🇬🇧</div><div class="rn">United Kingdom</div><div class="rt">TIER 1 · SEALED</div></div>
+      <div class="rcell">
+        <div class="ingots">
+          <div class="ingot"><div class="ip">185.234.72.11:1080</div><div class="r"><span>SOCKS</span><span>1/5 ch</span></div><div class="r"><span>London</span><span><b>86.9</b></span></div></div>
+          <div class="ingot"><div class="ip">51.89.14.201:80</div><div class="r"><span>HTTP</span><span>0/5 ch</span></div><div class="r"><span>Leeds</span><span><b>89.3</b></span></div></div>
+          <div class="ingot free">+ 4 more ingots</div>
+        </div>
+      </div>
+      <div class="rcell vaultmeta"><span>STOCK <b>6</b> · FREE <b>5</b></span><span>CHANNELS <b>4/30</b></span><div class="goldbar2"><i style="width:13%"></i></div></div>
+    </div>
+    <div class="rrow">
+      <div class="rcell region"><div class="fl">🇩🇪</div><div class="rn">Germany</div><div class="rt">TIER 1 · SEALED</div></div>
+      <div class="rcell">
+        <div class="ingots">
+          <div class="ingot"><div class="ip">159.69.12.44:8080</div><div class="r"><span>HTTP</span><span>2/5 ch</span></div><div class="r"><span>Frankfurt</span><span><b>87.2</b></span></div></div>
+          <div class="ingot"><div class="ip">5.9.101.208:1080</div><div class="r"><span>SOCKS</span><span>0/5 ch</span></div><div class="r"><span>Nuremberg</span><span><b>85.6</b></span></div></div>
+          <div class="ingot free">+ 3 more ingots</div>
+        </div>
+      </div>
+      <div class="rcell vaultmeta"><span>STOCK <b>5</b> · FREE <b>3</b></span><span>CHANNELS <b>5/25</b></span><div class="goldbar2"><i style="width:20%"></i></div></div>
+    </div>
+    <div class="rrow">
+      <div class="rcell region"><div class="fl">🌍</div><div class="rn">Tier-One Commons</div><div class="rt">FR · CA · AU · NL · KR</div></div>
+      <div class="rcell">
+        <div class="ingots">
+          <div class="ingot"><div class="ip">101.79.26.53:80</div><div class="r"><span>HTTP</span><span>0/5 ch</span></div><div class="r"><span>KR</span><span><b>87.9</b></span></div></div>
+          <div class="ingot"><div class="ip">163.172.31.9:3128</div><div class="r"><span>HTTP</span><span>0/5 ch</span></div><div class="r"><span>FR</span><span><b>86.1</b></span></div></div>
+          <div class="ingot free">+ 15 more ingots</div>
+        </div>
+      </div>
+      <div class="rcell vaultmeta"><span>STOCK <b>17</b> · FREE <b>12</b></span><span>CHANNELS <b>4/58</b></span><div class="goldbar2"><i style="width:7%"></i></div></div>
+    </div>
+  </div>
+
+  <h2>Assay <span>Ledger</span></h2>
+  <div class="sub">Full provenance of every ingot in the vault. Graded survivors only.</div>
+  <table>
+    <thead><tr><th>Ingot</th><th>Proto</th><th>Minted</th><th>Origin</th><th>Score</th><th>Bandwidth</th><th>Playability</th><th>Holders</th><th>Last assay</th></tr></thead>
+    <tbody>
+      <tr><td class="gld">107.167.18.122:443</td><td>SOCKS</td><td class="dimc">09-08</td><td>Los Angeles, US</td><td>88.2</td><td>8.7 Mbps</td><td class="okc">OK</td><td>2 / 5</td><td class="dimc">06:12Z</td></tr>
+      <tr><td class="gld">23.105.140.10:8080</td><td>HTTP</td><td class="dimc">today</td><td>NV, US</td><td>91.0</td><td>28.1 Mbps</td><td class="okc">OK</td><td>1 / 5</td><td class="dimc">06:52Z</td></tr>
+      <tr><td class="gld">101.79.26.53:80</td><td>HTTP</td><td class="dimc">09-08</td><td>Seongnam, KR</td><td>87.9</td><td>33.0 Mbps</td><td class="okc">OK</td><td>0 / 5</td><td class="dimc">06:12Z</td></tr>
+      <tr><td class="gld">116.204.182.120:80</td><td>HTTP</td><td class="dimc">09-08</td><td>Nonthaburi, TH</td><td>92.7</td><td>35.8 Mbps</td><td class="okc">OK</td><td>1 / 5</td><td class="dimc">06:12Z</td></tr>
+      <tr><td class="gld">185.234.72.11:1080</td><td>SOCKS</td><td class="dimc">09-08</td><td>London, UK</td><td>86.9</td><td>12.4 Mbps</td><td class="okc">OK</td><td>1 / 5</td><td class="dimc">06:12Z</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Lifetime <span>Bindings</span></h2>
+  <div class="sub">One channel, one ingot, until death. A dead ingot is melted down and the channel draws a fresh one from the same shelf — its region seal never changes.</div>
+  <div class="bgrid">
+    <div class="bcard"><span class="state live">STICKY</span><h4>Brand Account 01</h4><div class="rg">SEAL: UNITED STATES</div><div class="bl">ingot <b>107.167.18.122:443</b><br>since <b>09-08</b> · assay <b>OK ✓ 2h ago</b><br>last order <b>dQw4w9WgXcQ · delivered</b></div></div>
+    <div class="bcard"><span class="state live">STICKY</span><h4>Brand Account 07</h4><div class="rg">SEAL: UNITED KINGDOM</div><div class="bl">ingot <b>185.234.72.11:1080</b><br>since <b>09-09</b> · assay <b>OK ✓ 45m ago</b></div></div>
+    <div class="bcard"><span class="state swap">REDRAWN</span><h4>Brand Account 13</h4><div class="rg">SEAL: UNITED STATES</div><div class="bl">previous <b>64.44.101.2:8080</b> <span class="badc">failed assay ✗</span><br>new ingot <b>23.105.140.10:8080</b> · <span class="okc">assay OK ✓</span></div></div>
+    <div class="bcard"><span class="state wait">UNSEALED</span><h4>Brand Account 18</h4><div class="rg">SEAL: none yet</div><div class="bl">picks region at first order<br><b>[US] [UK] [DE] [T1]</b> — permanent once chosen</div></div>
+  </div>
+
+  <div class="foot">
+    <span>THE GOLD SHELF · IP HARVESTING MACHINE — PHASE I</span>
+    <span>SWEEP 06:12Z · 3 MELTED · 42 CERTIFIED · NEXT SWEEP 12:00Z</span>
+  </div>
+
+</div>
+</body>
+</html>

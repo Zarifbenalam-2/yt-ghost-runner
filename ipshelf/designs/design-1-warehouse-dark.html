@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP SHELF — IP wing of YT Channel Automation</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1a1e24; --line:#262b33;
+    --txt:#c9cdd4; --dim:#7a828e; --amber:#e8a33d; --amber-dim:#5c4418;
+    --ok:#4caf6d; --bad:#c94f4f; --warn:#c9a227;
+    --mono:'Consolas','SF Mono','Cascadia Code',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px 60px}
+
+  /* header */
+  header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand h1{font-family:var(--mono);font-size:20px;letter-spacing:3px;color:#fff}
+  .brand h1 span{color:var(--amber)}
+  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px}
+  .hbtns{display:flex;gap:10px}
+  .btn{font-family:var(--mono);font-size:12px;padding:9px 18px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;letter-spacing:1px}
+  .btn:hover{border-color:var(--amber)}
+  .btn.primary{background:var(--amber);color:#181104;border-color:var(--amber);font-weight:700}
+  .btn.primary:hover{background:#f5b64e}
+
+  /* hierarchy strip: main project -> this panel -> supply */
+  .hier{display:grid;grid-template-columns:1fr 26px 1.15fr 26px 1fr;align-items:stretch;gap:0;margin-bottom:16px}
+  .hbox{border:1px solid var(--line);background:var(--panel);padding:11px 14px}
+  .hbox.main{border-left:3px solid var(--ok)}
+  .hbox.self{border-left:3px solid var(--amber)}
+  .hbox.supply{border-left:3px solid var(--dim)}
+  .hbox .role{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--dim);margin-bottom:4px}
+  .hbox.main .role{color:var(--ok)} .hbox.self .role{color:var(--amber)}
+  .hbox .nm{font-size:13px;color:#fff;font-weight:600}
+  .hbox .ds{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5}
+  .harrow{display:flex;align-items:center;justify-content:center;color:var(--amber);font-family:var(--mono);font-size:15px}
+
+  /* verified-only banner */
+  .stamp{font-family:var(--mono);font-size:11px;border:1px dashed var(--amber-dim);color:var(--amber);padding:8px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px;letter-spacing:.5px}
+  .stamp b{letter-spacing:2px}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--amber-dim);padding:14px 16px}
+  .stat.crit{border-top-color:var(--bad)}
+  .stat .label{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+  .stat .value{font-family:var(--mono);font-size:26px;color:#fff}
+  .stat .value small{font-size:13px;color:var(--dim)}
+  .stat .value.bad{color:var(--bad)}
+  .stat .meta{font-size:11px;color:var(--dim);margin-top:6px}
+
+  /* tabs */
+  .tabs{display:flex;gap:2px;margin-bottom:0}
+  .tab{font-family:var(--mono);font-size:12px;letter-spacing:2px;padding:10px 22px;background:var(--panel);border:1px solid var(--line);border-bottom:none;color:var(--dim);cursor:pointer;text-transform:uppercase}
+  .tab.active{color:var(--amber);background:var(--panel2);border-top:2px solid var(--amber)}
+  .panelbox{background:var(--panel2);border:1px solid var(--line);padding:20px}
+
+  /* shelves */
+  .shelf-rack{border-left:3px solid var(--amber-dim);background:var(--panel);margin-bottom:14px;display:grid;grid-template-columns:180px 1fr 210px;align-items:stretch}
+  .shelf-rack.crit{border-left-color:var(--bad)}
+  .shelf-head{padding:16px;border-right:1px solid var(--line)}
+  .shelf-head .cc{font-family:var(--mono);font-size:22px;color:#fff;letter-spacing:2px}
+  .shelf-head .cn{font-size:12px;color:var(--dim)}
+  .shelf-head .cnt{font-family:var(--mono);color:var(--amber);font-size:13px;margin-top:8px}
+  .shelf-head .cnt.bad{color:var(--bad)}
+  .shelf-slots{display:flex;gap:8px;padding:14px;flex-wrap:wrap;align-content:center}
+  .slot{width:150px;background:var(--bg);border:1px solid var(--line);padding:9px 10px;font-family:var(--mono);font-size:10px}
+  .slot .addr{color:#fff;font-size:11px;margin-bottom:4px}
+  .slot .row{color:var(--dim);display:flex;justify-content:space-between;margin-bottom:2px}
+  .slot .row b{color:var(--ok);font-weight:400}
+  .slot.load{border-color:var(--amber-dim);background:transparent;border-style:dashed}
+  .slot.load div{color:var(--dim);text-align:center;padding:14px 0;letter-spacing:1px}
+  .shelf-side{padding:14px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:4px;font-family:var(--mono);font-size:11px}
+  .shelf-side .k{color:var(--dim)} .shelf-side .v{color:var(--txt)}
+  .shelf-side .alert{color:var(--bad);font-size:10.5px;line-height:1.6;margin-top:4px}
+  .bar{height:5px;background:var(--bg);margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--amber)}
+  .bar i.bad{background:var(--bad)}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  th{font-size:10px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:10px 12px;border-bottom:1px solid #1f2329;color:var(--txt)}
+  tr:hover td{background:rgba(232,163,61,.04)}
+  .gold{color:var(--amber)} .okc{color:var(--ok)} .badc{color:var(--bad)} .dimc{color:var(--dim)}
+  .chip{display:inline-block;font-size:10px;padding:2px 8px;border:1px solid var(--line);letter-spacing:1px}
+  .chip.T1{color:var(--ok);border-color:#2c4a38} .chip.T2{color:var(--warn);border-color:#4a4322}
+  .use{display:inline-flex;gap:2px}
+  .use i{width:16px;height:5px;background:var(--amber);display:block}
+  .use i.off{background:var(--line)}
+
+  /* channels */
+  .chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .chcard{background:var(--panel);border:1px solid var(--line);padding:14px}
+  .chcard.shield{border-style:dashed;opacity:.75}
+  .chcard .nm{font-weight:600;color:#fff;margin-bottom:2px}
+  .chcard .rg{font-family:var(--mono);font-size:11px;color:var(--amber);margin-bottom:10px;letter-spacing:1px}
+  .chcard .bind{font-family:var(--mono);font-size:11px;color:var(--dim);border-top:1px dashed var(--line);padding-top:10px;line-height:1.7}
+  .chcard .bind b{color:var(--txt);font-weight:400}
+  .pill{float:right;font-size:10px;font-family:var(--mono);padding:2px 8px;letter-spacing:1px}
+  .pill.live{color:var(--ok);border:1px solid #2c4a38}
+  .pill.wait{color:var(--warn);border:1px solid #4a4322}
+  .pill.swap{color:var(--bad);border:1px solid #4a2222}
+  .pill.shield{color:var(--dim);border:1px dashed var(--line)}
+
+  /* run flow */
+  .flow{display:grid;grid-template-columns:1fr 40px 1.2fr 40px 1.2fr;align-items:stretch;gap:0}
+  .fstep{background:var(--panel);border:1px solid var(--line);padding:16px}
+  .fstep .n{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:2px;margin-bottom:6px}
+  .fstep .t{color:#fff;font-weight:600;margin-bottom:8px}
+  .fstep .d{font-size:12px;color:var(--dim);line-height:1.6}
+  .fstep input{width:100%;background:var(--bg);border:1px solid var(--line);color:#fff;padding:8px 10px;font-family:var(--mono);font-size:12px;margin-top:8px}
+  .farrow{color:var(--amber);text-align:center;font-size:20px;font-family:var(--mono);display:flex;align-items:center;justify-content:center}
+  .acctstrip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .acct{font-family:var(--mono);font-size:11px;border:1px solid var(--line);padding:5px 10px;color:var(--txt)}
+  .acct.sel{border-color:var(--amber);color:var(--amber)}
+  .acct small{color:var(--dim)}
+  .lawbar{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px dashed var(--line);padding:10px 14px;margin-top:14px;line-height:1.8}
+  .lawbar b{color:var(--amber);font-weight:400}
+
+  .log{font-family:var(--mono);font-size:11.5px;background:#0a0c0e;border:1px solid var(--line);padding:14px;line-height:1.9;max-height:300px;overflow:auto}
+  .log .t{color:var(--dim)} .log .ok{color:var(--ok)} .log .wr{color:var(--warn)} .log .ip{color:var(--amber)} .log .bd{color:var(--bad)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>IP<span>·</span>SHELF</h1>
+      <div class="sub">GOLD IP STORAGE &amp; CHANNEL BINDING — THE IP WING OF<br>YT-CHANNEL-AUTOMATION · V1.0 // WAREHOUSE DARK</div>
+    </div>
+    <div class="hbtns">
+      <button class="btn" title="Re-check every stored gold IP. Burn + delete the dead. Refill by harvest.">⚡ SWEEP &amp; BURN</button>
+      <button class="btn">⛏ RUN HARVEST</button>
+      <button class="btn primary">▶ NEW WATCH RUN</button>
+    </div>
+  </header>
+
+  <!-- HIERARCHY: main project -> this panel -> supply -->
+  <div class="hier">
+    <div class="hbox main">
+      <div class="role">■ MAIN PROJECT</div>
+      <div class="nm">yt-channel-automation</div>
+      <div class="ds">Creates brand channels under my Gmail (cap ~100) and warms them up: watch, like, subscribe, comment — human-like, one user only.</div>
+    </div>
+    <div class="harrow">→</div>
+    <div class="hbox self">
+      <div class="role">◆ THIS PANEL — THE FIX</div>
+      <div class="nm">The IP Shelf</div>
+      <div class="ds">The bug it fixes: warm-up ran on my home IP → Google flagged it → my <u>personal</u> YouTube was in danger. Every channel session now leaves through its own sticky gold IP. My home IP never touches automation traffic again.</div>
+    </div>
+    <div class="harrow">←</div>
+    <div class="hbox supply">
+      <div class="role">● SUPPLY (SIDE BRANCH)</div>
+      <div class="nm">The Gold Hunt Machine</div>
+      <div class="ds">Harvest → TCP pre-filter → gold-gate rank → grading. Only graded survivors (playabilityStatus OK) are allowed onto the shelves.</div>
+    </div>
+  </div>
+
+  <div class="stamp">☑ <b>VERIFIED GOLD ONLY</b> — this dashboard counts only IPs that passed the FINAL grading stage. Discovery-stage numbers (e.g. "211 found") are working data, never shown as holdings. 42 graded gold alive right now.</div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Gold in vault</div><div class="value">42</div><div class="meta">graded survivors only</div></div>
+    <div class="stat"><div class="label">Free / assignable</div><div class="value">39 <small>IPs</small></div><div class="meta">under 5-channel cap</div></div>
+    <div class="stat"><div class="label">Channels bound</div><div class="value">3 <small>/ 100 cap</small></div><div class="meta">+1 personal, shielded</div></div>
+    <div class="stat"><div class="label">Cap per IP</div><div class="value">5 <small>ch</small></div><div class="meta">small footprint on purpose</div></div>
+    <div class="stat crit"><div class="label">US shelf — critical</div><div class="value bad">2</div><div class="meta">10 ch max at cap → harvest needed</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="show(0,this)">SHELVES</div>
+    <div class="tab" onclick="show(1,this)">GOLD LEDGER</div>
+    <div class="tab" onclick="show(2,this)">CHANNELS</div>
+    <div class="tab" onclick="show(3,this)">WATCH RUN</div>
+    <div class="tab" onclick="show(4,this)">HUNT LOG</div>
+  </div>
+
+  <!-- TAB 0: SHELVES -->
+  <div class="panelbox" id="p0">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:16px">Every shelf is region-locked. A channel bound to a region only ever draws from that region's shelf. An IP never changes shelves — it lives where it was born. Real distribution of today's 42 graded gold:</div>
+
+    <div class="shelf-rack crit">
+      <div class="shelf-head"><div class="cc">US 🇺🇸</div><div class="cn">United States · Tier 1</div><div class="cnt bad">2 GOLD · 2 FREE — LOW</div></div>
+      <div class="shelf-slots">
+        <div class="slot"><div class="addr">107.167.18.122:443</div><div class="row"><span>SOCKS</span><span>score <b>88.2</b></span></div><div class="row"><span>Los Angeles, CA</span><span>ch <b>0/5</b></span></div><div class="row"><span>8.7 Mbps</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot"><div class="addr">107.181.252.58:1081</div><div class="row"><span>SOCKS</span><span>score <b>79.2</b></span></div><div class="row"><span>Ogden, UT</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot load"><div>EMPTY — NEEDS HARVEST</div></div>
+      </div>
+      <div class="shelf-side">
+        <div><span class="k">ASSIGNED&nbsp;</span><span class="v">0 ch</span></div>
+        <div><span class="k">CAPACITY&nbsp;</span><span class="v">10 ch (2×5)</span></div>
+        <div class="bar"><i class="bad" style="width:100%"></i></div>
+        <div class="alert">⚠ A 10-channel watch run wanting US needs 2 IPs at max cap. Any US growth beyond 10 channels is IMPOSSIBLE until a US-targeted harvest lands. Auto-harvest armed.</div>
+      </div>
+    </div>
+
+    <div class="shelf-rack">
+      <div class="shelf-head"><div class="cc">KR · FI · FR</div><div class="cn">Other Tier 1 · 🇰🇷🇫🇮🇫🇷</div><div class="cnt">3 GOLD · 3 FREE</div></div>
+      <div class="shelf-slots">
+        <div class="slot"><div class="addr">101.79.26.53:80</div><div class="row"><span>HTTP</span><span>score <b>87.9</b></span></div><div class="row"><span>Seongnam, KR</span><span>ch <b>0/5</b></span></div><div class="row"><span>33.0 Mbps</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot"><div class="addr">83.147.216.208:1080</div><div class="row"><span>SOCKS</span><span>score <b>84.4</b></span></div><div class="row"><span>Helsinki, FI</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot"><div class="addr">107.191.47.162:1081</div><div class="row"><span>SOCKS</span><span>score <b>72.0</b></span></div><div class="row"><span>Aubervilliers, FR</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+      </div>
+      <div class="shelf-side">
+        <div><span class="k">ASSIGNED&nbsp;</span><span class="v">0 ch</span></div>
+        <div><span class="k">CAPACITY&nbsp;</span><span class="v">15 ch</span></div>
+        <div class="bar"><i style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="shelf-rack">
+      <div class="shelf-head"><div class="cc">WORLD</div><div class="cn">MX PK VN ID BD HK +34</div><div class="cnt">37 GOLD · 37 FREE</div></div>
+      <div class="shelf-slots">
+        <div class="slot"><div class="addr">108.174.152.80:1080</div><div class="row"><span>SOCKS</span><span>score <b>79.0</b></span></div><div class="row"><span>El Pozole, MX</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot"><div class="addr">58.187.162.191:1083</div><div class="row"><span>SOCKS</span><span>score <b>78.3</b></span></div><div class="row"><span>Hanoi, VN</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot"><div class="addr">103.211.103.170:3128</div><div class="row"><span>HTTP</span><span>score <b>74.1</b></span></div><div class="row"><span>Kwun Tong, HK</span><span>ch <b>0/5</b></span></div><div class="row"><span>—</span><span><b>gold ✓</b></span></div></div>
+        <div class="slot load"><div>+ 34 more…</div></div>
+      </div>
+      <div class="shelf-side">
+        <div><span class="k">ASSIGNED&nbsp;</span><span class="v">0 ch</span></div>
+        <div><span class="k">CAPACITY&nbsp;</span><span class="v">185 ch</span></div>
+        <div class="bar"><i style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:14px">SHELF LOW? &lt; 2 free gold → auto-trigger harvest session targeting that region. Tier-1 is the priority list: US → UK → DE → rest of T1.</div>
+  </div>
+
+  <!-- TAB 1: LEDGER -->
+  <div class="panelbox hidden" id="p1">
+    <table>
+      <thead><tr><th>EXIT ADDR</th><th>PROTO</th><th>GEO</th><th>TIER</th><th>SCORE</th><th>LAT</th><th>BW MBPS</th><th>PLAYABILITY</th><th>CHANNELS</th><th>LAST GOLD CHECK</th></tr></thead>
+      <tbody>
+        <tr><td class="gold">107.167.18.122:443</td><td>SOCKS</td><td>Los Angeles, US</td><td><span class="chip T1">T1</span></td><td>88.2</td><td>808</td><td>8.73</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">107.181.252.58:1081</td><td>SOCKS</td><td>Ogden, US</td><td><span class="chip T1">T1</span></td><td>79.2</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">101.79.26.53:80</td><td>HTTP</td><td>Seongnam, KR</td><td><span class="chip T1">T1</span></td><td>87.9</td><td>857</td><td>33.0</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">83.147.216.208:1080</td><td>SOCKS</td><td>Helsinki, FI</td><td><span class="chip T1">T1</span></td><td>84.4</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">108.174.152.80:1080</td><td>SOCKS</td><td>El Pozole, MX</td><td><span class="chip T2">T2</span></td><td>79.0</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">58.187.162.191:1083</td><td>SOCKS</td><td>Hanoi, VN</td><td><span class="chip T2">T2</span></td><td>78.3</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">103.211.103.170:3128</td><td>HTTP</td><td>Kwun Tong, HK</td><td><span class="chip T2">T2</span></td><td>74.1</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+        <tr><td class="gold">107.191.47.162:1081</td><td>SOCKS</td><td>Aubervilliers, FR</td><td><span class="chip T1">T1</span></td><td>72.0</td><td>—</td><td>—</td><td class="okc">OK ✓</td><td><span class="use"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></span></td><td class="dimc">09-08 21:03Z</td></tr>
+      </tbody>
+    </table>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px">42 rows total (first 8 shown). GOLD = passed YouTube watch-page fetch + playabilityStatus:OK + bandwidth + GitHub gate at grading. Anything that only passed earlier stages never appears here.</div>
+  </div>
+
+  <!-- TAB 2: CHANNELS — real channels from the DB -->
+  <div class="panelbox hidden" id="p2">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:16px">One channel (brand account) = one sticky gold IP for life. IP dies or fails a gold re-check → burned, replacement drawn from the SAME shelf. Region choice is locked forever at first task. Real channels from the account (zarifbenalamin2005@gmail.com):</div>
+    <div class="chgrid">
+      <div class="chcard shield"><div class="pill shield">SHIELDED</div><div class="nm">Zarif Ben Alam</div><div class="rg">@ZarifBenAlam · PERSONAL</div><div class="bind">This is <b>my own personal YouTube</b> — the one the home-IP bug put in danger.<br>Never automated. Never on a proxy. Home IP + normal browsing only.</div></div>
+      <div class="chcard"><div class="pill live">LIVE</div><div class="nm">Zarif Test Channel 01</div><div class="rg">@ZarifTestChannel01 · REGION: US · LOCKED</div><div class="bind">sticky IP&nbsp; <b>107.167.18.122:443</b><br>since&nbsp; <b>2026-09-08</b> · gold re-check <b>2h ago ✓</b><br>niche&nbsp; <b>default</b> · warmup day 0 · watch-only</div></div>
+      <div class="chcard"><div class="pill live">LIVE</div><div class="nm">Zarif Test Channel 01</div><div class="rg">@ZarifTestChannel01-b7t · REGION: US · LOCKED</div><div class="bind">sticky IP&nbsp; <b>107.181.252.58:1081</b><br>since&nbsp; <b>2026-09-08</b> · gold re-check <b>2h ago ✓</b><br>niche&nbsp; <b>default</b> · warmup day 0 · watch-only</div></div>
+      <div class="chcard"><div class="pill wait">NO REGION</div><div class="nm">Fresh Channel 01</div><div class="rg">@FreshChannel01 · unassigned</div><div class="bind">pick region at first task&nbsp; <b>[US] [UK] [DE] [T1]</b><br>choice saved forever → shelf locked<br>US shelf full? harvest fires first, run waits.</div></div>
+    </div>
+    <div class="lawbar"><b>THE LAW:</b> same channel tomorrow = same IP. Not per-session. Not per-run. Only death or a failed gold re-check breaks the bond — and then the replacement still comes from the same country shelf.</div>
+  </div>
+
+  <!-- TAB 3: WATCH RUN -->
+  <div class="panelbox hidden" id="p3">
+    <div class="flow">
+      <div class="fstep"><div class="n">STEP 1</div><div class="t">Paste YouTube link</div><div class="d">One video. The system pulls video ID + duration. This link is what all 10 channels will watch.</div><input value="https://youtube.com/watch?v=dQw4w9WgXcQ" readonly></div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="n">STEP 2</div><div class="t">Pick the set — 10 channels</div><div class="d">10 channels = one set. Random 10 by default, or hand-pick. Each keeps its locked region and sticky IP.</div>
+        <div class="acctstrip">
+          <span class="acct sel">@ZarifTestChannel01 <small>US</small></span>
+          <span class="acct sel">@ZarifTestChannel01-b7t <small>US</small></span>
+          <span class="acct sel">@FreshChannel01 <small>US?</small></span>
+          <span class="acct">+ 7 more channels…</span>
+        </div>
+        <div class="d" style="margin-top:10px">Channels without a region get a region picker right here — locked forever once chosen.</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstep"><div class="n">STEP 3</div><div class="t">Shelf draw → gate → execute</div><div class="d">Per channel: own region shelf → sticky IP if alive, else best free gold IP (cap 5 ch/IP) → <b style="color:var(--amber)">quick gold gate</b> → bind → browser session: switch to channel handle → watch link at 55–95% depth → maybe like (30%) / subscribe (15%) / comment (10%). Shelf short → harvest fires, run waits.</div></div>
+    </div>
+    <div class="lawbar">
+      <b>NEXT DAY:</b> same 10 channels + new link → same sticky IPs (re-gated). IP still gold = same IP. IP dead = burned, replacement from same shelf. No rotation. No location drift. No home IP anywhere in the chain.<br>
+      <b>PRE-CHECK BEFORE LAUNCH:</b> US shelf has 2 free gold — a 10-channel US set fits at exactly max cap (2×5). One more US channel and the harvest must land first.
+    </div>
+  </div>
+
+  <!-- TAB 4: HUNT LOG -->
+  <div class="panelbox hidden" id="p4">
+    <div class="log">
+<span class="t">06:12:01</span> <span class="wr">[SWEEP]</span> burn pass started — 42 graded gold queued for re-check<br>
+<span class="t">06:12:04</span> <span class="t">[SWEEP]</span> <span class="ip">64.44.101.2:8080</span> playability=LOGIN_REQUIRED → <span class="bd">BURNED + DELETED</span> (was free — no channel hurt)<br>
+<span class="t">06:12:07</span> <span class="t">[SWEEP]</span> <span class="ip">97.77.34.9:1080</span> connect timeout 3× → <span class="bd">BURNED + DELETED</span><br>
+<span class="t">06:12:31</span> <span class="t">[SWEEP]</span> complete. 42 gold still alive · US shelf = 2 → <span class="wr">CRITICAL</span><br>
+<span class="t">06:13:00</span> <span class="t">[HUNT]</span> auto harvest armed: target=US · sources=31 · par=120<br>
+<span class="t">06:31:22</span> <span class="t">[HUNT]</span> harvest 4,120 raw → 1,933 TCP-alive → 12 rank candidates<br>
+<span class="t">06:52:47</span> <span class="t">[HUNT]</span> grading done → <span class="ok">7 NEW GOLD</span> → US shelf now 9<br>
+<span class="t">06:52:48</span> <span class="t">[ASSIGN]</span> @FreshChannel01 region=US locked → drew <span class="ip">23.105.140.10:8080</span> · quick gold gate <span class="ok">PASS</span> · sticky<br>
+<span class="t">06:53:00</span> <span class="t">[RUN]</span> watch run launched — 10 channels, 10 sticky IPs, 0 on home IP
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px">Free proxies churn this fast — that's WHY only graded survivors count, why every draw re-gates, and why the sweep button exists.</div>
+  </div>
+
+</div>
+
+<script>
+function show(i,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  for(let k=0;k<5;k++) document.getElementById('p'+k).classList.toggle('hidden',k!==i);
+}
+</script>
+</body>
+</html>

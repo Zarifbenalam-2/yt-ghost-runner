@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOLDSHELF://OPS</title>
+<style>
+  :root{
+    --bg:#050807; --panel:#0b100e; --line:#1c2b24; --grn:#3ddc84; --grn-dim:#1a5c3a;
+    --txt:#b8d4c2; --dim:#5a7a68; --amb:#e8c44a; --red:#e05252;
+    --mono:'Consolas','Cascadia Code','Courier New',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13px}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.14) 2px 4px);z-index:99}
+  .wrap{max-width:1240px;margin:0 auto;padding:18px 22px 70px}
+
+  /* top bar */
+  .top{display:flex;justify-content:space-between;border:1px solid var(--line);background:var(--panel);padding:12px 18px;margin-bottom:14px}
+  .top .t1{color:var(--grn);font-weight:700;letter-spacing:2px;font-size:15px}
+  .top .t1 span{color:var(--amb)}
+  .top .t2{color:var(--dim);font-size:10.5px;letter-spacing:1px}
+  .top .t3{font-size:10.5px;letter-spacing:1px;text-align:right;color:var(--dim)}
+  .top .t3 b{color:var(--grn)}
+
+  .bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .cmd{border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:8px 16px;font-family:var(--mono);font-size:11.5px;cursor:pointer;letter-spacing:1px}
+  .cmd:hover{border-color:var(--grn);color:var(--grn)}
+  .cmd.exe{background:var(--grn);color:#03130a;border-color:var(--grn);font-weight:700}
+
+  /* ASCII frame headline */
+  .frame{border:1px solid var(--line);border-left:3px solid var(--amb);background:var(--panel);padding:13px 18px;margin-bottom:16px;font-size:12px;line-height:1.8}
+  .frame b{color:var(--amb);letter-spacing:2px}
+
+  /* readout grid */
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+  .ro{border:1px solid var(--line);background:var(--panel);padding:12px 14px}
+  .ro .l{font-size:9.5px;color:var(--dim);letter-spacing:2px;margin-bottom:7px}
+  .ro .v{font-size:24px;color:var(--grn)}
+  .ro .v small{font-size:11px;color:var(--dim)}
+  .ro.warnv .v{color:var(--amb)}
+
+  /* shelf blocks */
+  .h2{color:var(--dim);letter-spacing:3px;font-size:11px;margin:20px 0 10px}
+  .h2::before{content:'┌─ '}
+  .h2::after{content:' ─┐'}
+  .shelfb{border:1px solid var(--line);margin-bottom:12px}
+  .shead{display:grid;grid-template-columns:150px 1fr 170px;background:#0e1512;border-bottom:1px solid var(--line)}
+  .shead .c{padding:11px 16px;border-right:1px solid var(--line)}
+  .shead .c .cc{color:#fff;font-size:16px;letter-spacing:3px}
+  .shead .c .cn{color:var(--dim);font-size:10px}
+  .slots{display:flex;gap:0;flex-wrap:wrap}
+  .sl{border-right:1px solid var(--line);padding:9px 13px;font-size:10.5px;min-width:150px}
+  .sl .ip{color:var(--amb);font-size:11.5px}
+  .sl .d{color:var(--dim)}
+  .sl .d b{color:var(--grn);font-weight:400}
+  .sl.more{color:var(--dim);display:flex;align-items:center;padding:9px 16px}
+  .smeta{padding:11px 14px;font-size:10.5px;color:var(--dim);line-height:1.9}
+  .smeta b{color:var(--txt);font-weight:400}
+  .meter{height:4px;background:#050807;margin-top:5px;border:1px solid var(--line)}
+  .meter i{display:block;height:100%;background:var(--grn)}
+
+  /* tables */
+  .tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+  .tbl th{color:var(--dim);text-align:left;font-weight:400;letter-spacing:2px;font-size:9.5px;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:9px 12px;border-bottom:1px solid #101915}
+  .tbl tr:hover td{background:rgba(61,220,132,.05)}
+  .g{color:var(--amb)} .k{color:var(--grn)} .r{color:var(--red)} .d{color:var(--dim)}
+  .pips{display:inline-flex;gap:3px;vertical-align:middle}
+  .pips i{width:14px;height:5px;background:var(--grn)}
+  .pips i.o{background:#1c2b24}
+
+  /* run console */
+  .runwrap{border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin-bottom:18px}
+  .rt{color:#fff;letter-spacing:2px;font-size:12px;margin-bottom:12px}
+  .rt::before{content:'▶ '}
+  .in{width:100%;background:#050807;border:1px solid var(--line);color:var(--grn);padding:10px 12px;font-family:var(--mono);font-size:12px}
+  .in:focus{outline:none;border-color:var(--grn)}
+  .runrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:12px 0}
+  .rc{border:1px dashed var(--line);padding:11px 13px;font-size:11px;line-height:1.8}
+  .rc b{color:var(--amb);font-weight:400;letter-spacing:1px}
+  .rc .st{color:var(--grn)}
+  .exe-btn{margin-top:12px;width:100%;background:var(--grn);border:none;color:#03130a;padding:12px;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer}
+  .exe-btn:hover{background:#52e895}
+
+  .hidden{display:none}
+  .tabs2{display:flex;gap:0;margin-bottom:0}
+  .tb2{padding:9px 20px;border:1px solid var(--line);border-bottom:none;background:var(--panel);color:var(--dim);font-size:11px;letter-spacing:2px;cursor:pointer}
+  .tb2.on{color:var(--amb);background:#0e1512}
+  .tabc{border:1px solid var(--line);background:var(--panel);padding:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <div class="t1">GOLD<span>SHELF</span>://ops</div>
+      <div class="t2">STICKY-IP VAULT · REGION SHELVES · CHANNEL BINDINGS</div>
+    </div>
+    <div class="t3">
+      POOL <b>42 GOLD</b> · CH BOUND <b>25/40</b><br>
+      SWEEP 06:12Z · 3 BURNED · <b>NOMINAL</b>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="cmd">[sweep] SWEEP &amp; BURN</button>
+    <button class="cmd">[hunt] RUN HARVEST</button>
+    <button class="cmd">[ledger] GOLD LEDGER</button>
+    <button class="cmd">[bind] CHANNELS</button>
+    <button class="cmd exe">[run] NEW WATCH RUN</button>
+  </div>
+
+  <div class="frame">
+    <b>&gt;&gt; VERIFIED-ONLY POLICY:</b> counters show IPs that survived the FULL pipeline (gold gate + grading). Discovery-stage counts (raw harvest, pre-filter) are working data, never reported as holdings. 211-discovered ≠ 211-held; only graded survivors count.
+  </div>
+
+  <div class="grid">
+    <div class="ro"><div class="l">GOLD ALIVE</div><div class="v">42</div></div>
+    <div class="ro"><div class="l">FREE</div><div class="v">17</div></div>
+    <div class="ro"><div class="l">BOUND</div><div class="v">25</div></div>
+    <div class="ro"><div class="l">CAP 5/IP</div><div class="v">183<small> head</small></div></div>
+    <div class="ro warnv"><div class="l">BURNED 24H</div><div class="v">3</div></div>
+    <div class="ro"><div class="l">HUNTS 24H</div><div class="v">2</div></div>
+  </div>
+
+  <!-- RUN CONSOLE -->
+  <div class="runwrap">
+    <div class="rt">WATCH RUN :: LINK → 10 ACCOUNTS → SHELF DRAW → STICKY BIND</div>
+    <input class="in" value="https://youtube.com/watch?v=dQw4w9WgXcQ" readonly>
+    <div class="runrow">
+      <div class="rc"><b>ACCOUNTS</b><br>01 US <span class="st">✓shelf</span> · 02 US <span class="st">✓</span> · 05 US <span class="st">✓</span> · 07 UK <span class="st">✓</span><br>08 UK <span class="st">✓</span> · 11 DE <span class="st">✓</span> · 13 US <span class="st">✓</span> · 21 T1 <span class="st">✓</span><br>23 T1 <span class="st">✓</span> · 27 DE <span class="st">✓</span></div>
+      <div class="rc"><b>SHELF DRAW</b><br>US shelf: 3 have sticky, 2 draw new (gate ✓)<br>UK shelf: 2 draw new (gate ✓)<br>DE shelf: 2 draw new (gate ✓)<br>T1 shelf: 2 draw new (gate ✓)</div>
+      <div class="rc"><b>PRE-CHECKS</b><br>all shelves ≥ 2 free gold <span class="st">→ no harvest needed</span><br>quick gold gate per new IP <span class="st">→ pass</span><br>sticky IPs re-gated <span class="st">→ pass</span></div>
+    </div>
+    <button class="exe-btn">EXECUTE RUN</button>
+  </div>
+
+  <div class="h2">REGION SHELVES</div>
+
+  <div class="shelfb">
+    <div class="shead">
+      <div class="c"><div class="cc">US</div><div class="cn">TIER 1</div></div>
+      <div class="slots">
+        <div class="sl"><div class="ip">107.167.18.122:443</div><div class="d">S·88.2 · ch <b>2/5</b></div></div>
+        <div class="sl"><div class="ip">23.105.140.10:8080</div><div class="d">H·91.0 · ch <b>0/5</b></div></div>
+        <div class="sl"><div class="ip">154.12.89.4:1080</div><div class="d">S·84.4 · ch <b>1/5</b></div></div>
+        <div class="sl"><div class="ip">104.28.211.7:80</div><div class="d">H·90.1 · ch <b>0/5</b></div></div>
+        <div class="sl more">+10 …</div>
+      </div>
+      <div class="smeta">GOLD <b>14</b> · FREE <b>9</b><br>CAP <b>70ch</b> · FILL <b>17%</b><div class="meter"><i style="width:17%"></i></div></div>
+    </div>
+  </div>
+
+  <div class="shelfb">
+    <div class="shead">
+      <div class="c"><div class="cc">UK</div><div class="cn">TIER 1</div></div>
+      <div class="slots">
+        <div class="sl"><div class="ip">185.234.72.11:1080</div><div class="d">S·86.9 · ch <b>1/5</b></div></div>
+        <div class="sl"><div class="ip">51.89.14.201:80</div><div class="d">H·89.3 · ch <b>0/5</b></div></div>
+        <div class="sl more">+4 …</div>
+      </div>
+      <div class="smeta">GOLD <b>6</b> · FREE <b>5</b><br>CAP <b>30ch</b> · FILL <b>13%</b><div class="meter"><i style="width:13%"></i></div></div>
+    </div>
+  </div>
+
+  <div class="shelfb">
+    <div class="shead">
+      <div class="c"><div class="cc">DE</div><div class="cn">TIER 1</div></div>
+      <div class="slots">
+        <div class="sl"><div class="ip">159.69.12.44:8080</div><div class="d">H·87.2 · ch <b>2/5</b></div></div>
+        <div class="sl"><div class="ip">5.9.101.208:1080</div><div class="d">S·85.6 · ch <b>0/5</b></div></div>
+        <div class="sl more">+3 …</div>
+      </div>
+      <div class="smeta">GOLD <b>5</b> · FREE <b>3</b><br>CAP <b>25ch</b> · FILL <b>20%</b><div class="meter"><i style="width:20%"></i></div></div>
+    </div>
+  </div>
+
+  <div class="shelfb">
+    <div class="shead">
+      <div class="c"><div class="cc">T1·*</div><div class="cn">FR CA AU NL KR</div></div>
+      <div class="slots">
+        <div class="sl"><div class="ip">101.79.26.53:80</div><div class="d">H·87.9 · ch <b>0/5</b></div></div>
+        <div class="sl"><div class="ip">163.172.31.9:3128</div><div class="d">H·86.1 · ch <b>0/5</b></div></div>
+        <div class="sl more">+15 …</div>
+      </div>
+      <div class="smeta">GOLD <b>17</b> · FREE <b>12</b><br>CAP <b>58ch</b> · FILL <b>7%</b><div class="meter"><i style="width:7%"></i></div></div>
+    </div>
+  </div>
+
+  <div class="h2">GOLD LEDGER (GRADED ONLY)</div>
+  <table class="tbl">
+    <thead><tr><th>ADDR</th><th>PROTO</th><th>GEO</th><th>TIER</th><th>SCORE</th><th>LAT</th><th>BW MBPS</th><th>PLAYABILITY</th><th>CH SLOTS</th><th>LAST CHECK</th></tr></thead>
+    <tbody>
+      <tr><td class="g">107.167.18.122:443</td><td>SOCKS</td><td class="d">Los Angeles, US</td><td class="k">T1</td><td>88.2</td><td>808</td><td>8.7</td><td class="k">OK</td><td><span class="pips"><i></i><i></i><i class="o"></i><i class="o"></i><i class="o"></i></span></td><td class="d">06:12Z</td></tr>
+      <tr><td class="g">101.79.26.53:80</td><td>HTTP</td><td class="d">Seongnam, KR</td><td class="k">T1</td><td>87.9</td><td>857</td><td>33.0</td><td class="k">OK</td><td><span class="pips"><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i></span></td><td class="d">06:12Z</td></tr>
+      <tr><td class="g">116.204.182.120:80</td><td>HTTP</td><td class="d">Nonthaburi, TH</td><td class="d">T2</td><td>92.7</td><td>337</td><td>35.8</td><td class="k">OK</td><td><span class="pips"><i></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i></span></td><td class="d">06:12Z</td></tr>
+      <tr><td class="g">185.234.72.11:1080</td><td>SOCKS</td><td class="d">London, UK</td><td class="k">T1</td><td>86.9</td><td>640</td><td>12.4</td><td class="k">OK</td><td><span class="pips"><i></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i></span></td><td class="d">06:12Z</td></tr>
+      <tr><td class="g">23.105.140.10:8080</td><td>HTTP</td><td class="d">NV, US</td><td class="k">T1</td><td>91.0</td><td>520</td><td>28.1</td><td class="k">OK</td><td><span class="pips"><i></i><i class="o"></i><i class="o"></i><i class="o"></i><i class="o"></i></span></td><td class="d">06:52Z</td></tr>
+    </tbody>
+  </table>
+
+  <div class="h2">BINDINGS :: ONE CHANNEL = ONE STICKY GOLD IP</div>
+  <table class="tbl">
+    <thead><tr><th>CHANNEL</th><th>REGION</th><th>STICKY IP</th><th>SINCE</th><th>GOLD RE-CHECK</th><th>STATE</th></tr></thead>
+    <tbody>
+      <tr><td>acct_01</td><td class="k">US</td><td class="g">107.167.18.122:443</td><td class="d">09-08</td><td class="k">PASS 06:12Z</td><td class="k">STICKY</td></tr>
+      <tr><td>acct_02</td><td class="k">US</td><td class="g">154.12.89.4:1080</td><td class="d">09-08</td><td class="k">PASS 06:12Z</td><td class="k">STICKY</td></tr>
+      <tr><td>acct_07</td><td class="k">UK</td><td class="g">185.234.72.11:1080</td><td class="d">09-09</td><td class="k">PASS 06:12Z</td><td class="k">STICKY</td></tr>
+      <tr><td>acct_13</td><td class="k">US</td><td class="g">23.105.140.10:8080</td><td class="d">today</td><td class="k">PASS 06:52Z</td><td class="k">REBOUND</td></tr>
+      <tr><td>acct_14</td><td class="d">—</td><td class="d">awaiting first task / region pick</td><td class="d">—</td><td class="d">—</td><td class="d">UNBOUND</td></tr>
+    </tbody>
+  </table>
+
+  <div class="h2">SWEEP LOG</div>
+  <div style="border:1px solid var(--line);background:#070c0a;padding:14px;font-size:11px;line-height:2">
+    <span class="d">06:12:01</span> sweep::start 42 queued<br>
+    <span class="d">06:12:04</span> <span class="g">64.44.101.2:8080</span> playability=LOGIN_REQUIRED → <span class="r">BURN</span> (sticky acct_13)<br>
+    <span class="d">06:12:07</span> <span class="g">97.77.34.9:1080</span> timeout×3 → <span class="r">BURN</span> (free)<br>
+    <span class="d">06:12:31</span> sweep::done 39/42 gold · US free=2 &lt; threshold → hunt::auto<br>
+    <span class="d">06:52:47</span> hunt::done <span class="k">+7 GOLD</span> → US shelf<br>
+    <span class="d">06:52:48</span> assign acct_13 ← <span class="g">23.105.140.10:8080</span> sticky · gate <span class="k">PASS</span>
+  </div>
+
+</div>
+</body>
+</html>
