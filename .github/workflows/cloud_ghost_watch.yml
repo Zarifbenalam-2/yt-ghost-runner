@@ -37,20 +37,13 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install Linux Xvfb & Dependencies
+      - name: Install Xvfb & Playwright System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libnss3 libatk1.0-0 libatk-bridge2.0-0 \
-            libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
-            libxrandr2 libgbm1 libpango-1.0-0 libasound2 \
-            libgtk-3-0 libxcb1 libxss1 2>/dev/null || true
-          sudo apt-get install -y xvfb 2>/dev/null || true
-
-      - name: Install Python Dependencies & Playwright
-        run: |
+          sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
           pip install playwright
-          playwright install chromium
+          playwright install --with-deps chromium
 
       - name: Run Ghost Watcher in Virtual 1080p Display
         env:
