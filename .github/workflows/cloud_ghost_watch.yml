@@ -40,7 +40,11 @@ jobs:
       - name: Install Linux Xvfb & Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libasound2
+          sudo apt-get install -y xvfb libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+            libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 \
+            libxrandr2 libgbm1 libpango-1.0-0 libasound2 \
+            libgtk-3-0 libxcb1 libxss1 2>/dev/null || true
+          sudo apt-get install -y xvfb 2>/dev/null || true
 
       - name: Install Python Dependencies & Playwright
         run: |
