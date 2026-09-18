@@ -123,6 +123,64 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 })
             except Exception as e:
                 self._send_json({"error": f"GitHub API failed: {e}"}, 500)
+        elif self.path.startswith("/api/ci_live"):
+            # Live tunnel URLs, grepped from streaming job logs (no extra infra).
+            # Query: ?repo=owner/name (needs GITHUB_TOKEN env)
+            import re
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            repo = qs.get("repo", [os.environ.get("GITHUB_REPOSITORY", "")])[0]
+            token = os.environ.get("GITHUB_TOKEN", "")
+            if not repo or not token:
+                self._send_json({"error": "Set GITHUB_REPOSITORY and GITHUB_TOKEN env vars"}, 400)
+                return
+            try:
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "Ghost-Dashboard",
+                }
+
+                def _get(url, timeout=15):
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        return resp.read().decode("utf-8", "replace")
+
+                runs = json.loads(_get(
+                    f"https://api.github.com/repos/{repo}/actions/workflows/cloud_ghost_watch.yml/runs?per_page=1"))
+                if not runs.get("workflow_runs"):
+                    self._send_json({"error": "No runs found"}, 404)
+                    return
+                run = runs["workflow_runs"][0]
+                jobs = json.loads(_get(
+                    f"https://api.github.com/repos/{repo}/actions/runs/{run['id']}/jobs"))
+                out = []
+                for job in jobs.get("jobs", []):
+                    tunnel = ""
+                    try:
+                        logs = _get(
+                            f"https://api.github.com/repos/{repo}/actions/jobs/{job['id']}/logs",
+                            timeout=20)
+                        m = re.search(r"TUNNEL_URL=(https://[a-zA-Z0-9\-.]+\.trycloudflare\.com)", logs)
+                        if m:
+                            tunnel = m.group(1)
+                    except Exception:
+                        pass
+                    out.append({
+                        "name": job.get("name"),
+                        "status": job.get("status"),
+                        "conclusion": job.get("conclusion"),
+                        "tunnel_url": tunnel,
+                    })
+                self._send_json({
+                    "run_id": run["id"],
+                    "run_number": run.get("run_number"),
+                    "status": run.get("status"),
+                    "conclusion": run.get("conclusion"),
+                    "jobs": out,
+                })
+            except Exception as e:
+                self._send_json({"error": f"GitHub API failed: {e}"}, 500)
         else:
             self._send_json({"error": "Not Found"}, 404)
 
