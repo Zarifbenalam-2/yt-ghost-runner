@@ -59,7 +59,7 @@ jobs:
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
               --url "${{ github.event.inputs.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }}" \
-              --tabs ${{ github.event.inputs.tabs_per_runner || '8' }} \
+              --tabs ${{ github.event.inputs.tabs_per_runner || '10' }} \
               --depth-lo 60 \
               --depth-hi 95
 
