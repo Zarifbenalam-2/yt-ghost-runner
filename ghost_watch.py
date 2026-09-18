@@ -6,6 +6,7 @@ live visual frames and playback progress directly to the dashboard.
 import argparse
 import concurrent.futures
 import json
+import os
 import random
 import re
 import shutil
@@ -170,6 +171,51 @@ def main():
 
     ok_count = sum(1 for r in results if r.get("ok"))
     print(f"[+] Ghost Run Completed: {ok_count}/{args.tabs} tabs reached watch target.")
+
+    # Write run report for CI artifact upload (hands-off info back to dashboard)
+    try:
+        report = {
+            "runner_id": os.environ.get("RUNNER_ID", os.environ.get("MATRIX_RUNNER_ID", "local")),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "url": args.url,
+            "tabs_requested": args.tabs,
+            "tabs_ok": ok_count,
+            "results": results,
+            "resources": snapshot_resources(),
+        }
+        DATA.mkdir(parents=True, exist_ok=True)
+        rid = report["runner_id"]
+        report_path = DATA / f"run_report_{rid}.json"
+        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"[*] Report written: {report_path}")
+    except Exception as e:
+        print(f"[!] Report write failed: {e}")
+
+
+def snapshot_resources():
+    """Capture RAM/CPU snapshot (Linux /proc, fallback gracefully)."""
+    info = {"platform": sys.platform}
+    try:
+        import os as _os
+        info["cpu_count"] = _os.cpu_count()
+        # Load average (Linux/macOS)
+        try:
+            info["loadavg_1m"] = round(_os.getloadavg()[0], 2)
+        except Exception:
+            pass
+        # Memory from /proc/meminfo (Linux)
+        try:
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    if line.startswith("MemTotal:"):
+                        info["mem_total_mb"] = int(line.split()[1]) // 1024
+                    elif line.startswith("MemAvailable:"):
+                        info["mem_avail_mb"] = int(line.split()[1]) // 1024
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return info
 
 
 if __name__ == "__main__":

@@ -53,6 +53,7 @@ jobs:
       - name: Run Ghost Watcher in Virtual 1080p Display
         env:
           CI: "true"
+          RUNNER_ID: ${{ matrix.runner_id }}
           STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
@@ -61,3 +62,13 @@ jobs:
               --tabs ${{ github.event.inputs.tabs_per_runner || '5' }} \
               --depth-lo 60 \
               --depth-hi 95
+
+      - name: Upload Run Report & Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghost-report-runner-${{ matrix.runner_id }}
+          path: |
+            data/run_report_${{ matrix.runner_id }}.json
+            data/live_feed.json
+          if-no-files-found: warn

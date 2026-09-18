@@ -80,6 +80,49 @@ class DashboardHandler(BaseHTTPRequestHandler):
             })
         elif self.path == "/api/feed":
             self._send_json({"tabs": list(_LIVE_TABS.values())})
+        elif self.path.startswith("/api/ci_reports"):
+            # Pull run reports + screenshots from GitHub Actions artifacts.
+            # Query: ?repo=owner/name&run_id=latest (needs GITHUB_TOKEN env)
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            repo = qs.get("repo", [os.environ.get("GITHUB_REPOSITORY", "")])[0]
+            token = os.environ.get("GITHUB_TOKEN", "")
+            if not repo or not token:
+                self._send_json({"error": "Set GITHUB_REPOSITORY and GITHUB_TOKEN env vars"}, 400)
+                return
+            try:
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "Ghost-Dashboard",
+                }
+                # Latest run for the workflow
+                runs_url = f"https://api.github.com/repos/{repo}/actions/workflows/cloud_ghost_watch.yml/runs?per_page=1"
+                req = urllib.request.Request(runs_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    runs = json.loads(resp.read().decode("utf-8"))
+                if not runs.get("workflow_runs"):
+                    self._send_json({"error": "No runs found"}, 404)
+                    return
+                run = runs["workflow_runs"][0]
+                run_id = run["id"]
+                # List artifacts
+                art_url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts"
+                req = urllib.request.Request(art_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    arts = json.loads(resp.read().decode("utf-8"))
+                self._send_json({
+                    "run_id": run_id,
+                    "run_number": run.get("run_number"),
+                    "status": run.get("status"),
+                    "conclusion": run.get("conclusion"),
+                    "artifacts": [
+                        {"id": a["id"], "name": a["name"], "size": a["size_in_bytes"]}
+                        for a in arts.get("artifacts", [])
+                    ],
+                })
+            except Exception as e:
+                self._send_json({"error": f"GitHub API failed: {e}"}, 500)
         else:
             self._send_json({"error": "Not Found"}, 404)
 
