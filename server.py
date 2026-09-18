@@ -25,6 +25,62 @@ FEED_DATA = DATA_DIR / "live_feed.json"
 _LIVE_TABS = {}
 
 
+def load_accounts():
+    """Configured GitHub accounts for multi-account dispatch.
+
+    Sources (merged, PAT never logged):
+    1. accounts.json entries: {name, repo, pat_env} (pat read from env)
+    2. Env fallback: GITHUB_TOKEN + GITHUB_REPOSITORY as account 'env'
+    """
+    accounts = []
+    try:
+        cfg = json.loads((ROOT / "accounts.json").read_text(encoding="utf-8"))
+        for entry in cfg.get("accounts", []):
+            pat = os.environ.get(entry.get("pat_env", ""), "")
+            if entry.get("repo") and pat:
+                accounts.append({
+                    "name": entry.get("name", entry["repo"]),
+                    "repo": entry["repo"],
+                    "pat": pat,
+                })
+    except Exception:
+        pass
+    if not accounts:
+        token = os.environ.get("GITHUB_TOKEN", "")
+        repo = os.environ.get("GITHUB_REPOSITORY", "")
+        if token and repo:
+            accounts.append({"name": "env", "repo": repo, "pat": token})
+    return accounts
+
+
+def dispatch_workflow(repo, token, url, tabs, stream_target=""):
+    """POST workflow_dispatch to one repo. Returns (ok, message)."""
+    dispatch_url = (
+        f"https://api.github.com/repos/{repo}/actions/workflows/"
+        f"cloud_ghost_watch.yml/dispatches"
+    )
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "Ghost-Dashboard",
+        "Content-Type": "application/json",
+    }
+    body = json.dumps({
+        "ref": "main",
+        "inputs": {
+            "video_url": url,
+            "tabs_per_runner": str(tabs),
+            "stream_target": stream_target,
+        },
+    }).encode("utf-8")
+    try:
+        req = urllib.request.Request(dispatch_url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10):
+            return True, f"{repo}: dispatched"
+    except Exception as e:
+        return False, f"{repo}: {e}"
+
+
 def load_ip_shelf_stats():
     """Load count of gold, silver, and dead IPs from IP shelf."""
     try:
@@ -80,6 +136,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             })
         elif self.path == "/api/feed":
             self._send_json({"tabs": list(_LIVE_TABS.values())})
+        elif self.path == "/api/accounts":
+            # Safe list: names + repos only, never tokens
+            self._send_json({
+                "accounts": [
+                    {"name": a["name"], "repo": a["repo"]}
+                    for a in load_accounts()
+                ],
+            })
         elif self.path.startswith("/api/ci_reports"):
             # Pull run reports + screenshots from GitHub Actions artifacts.
             # Query: ?repo=owner/name&run_id=latest (needs GITHUB_TOKEN env)
@@ -218,46 +282,46 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json({"ok": True, "message": f"Spawned {tabs} local test tabs"})
 
         elif self.path == "/api/spawn_cloud":
-            gh_token = payload.get("ghToken") or os.environ.get("GITHUB_TOKEN")
-            repo = payload.get("repo") or os.environ.get("GITHUB_REPOSITORY")  # e.g. "owner/repo"
             url = payload.get("url")
-            total_tabs = int(payload.get("tabs", 10))
-
+            tabs = int(payload.get("tabs", 10))
+            stream_target = payload.get("streamTarget", "")
             if not url:
                 self._send_json({"error": "Missing video URL"}, 400)
                 return
 
-            if not gh_token or not repo:
+            # Explicit single target (prompt flow) or fan-out to all accounts
+            targets = []
+            if payload.get("ghToken") and payload.get("repo"):
+                targets.append({
+                    "name": "manual",
+                    "repo": payload["repo"],
+                    "pat": payload["ghToken"],
+                })
+            elif payload.get("account"):
+                for a in load_accounts():
+                    if a["name"] == payload["account"]:
+                        targets.append(a)
+                if not targets:
+                    self._send_json({"error": "Unknown account"}, 400)
+                    return
+            else:
+                targets = load_accounts()
+
+            if not targets:
                 self._send_json({
-                    "error": "GitHub Token or Repository not configured in settings. Provide 'ghToken' and 'repo' (owner/name)."
+                    "error": "No accounts configured. Set GITHUB_TOKEN + GITHUB_REPOSITORY env or create accounts.json (see accounts.example.json)."
                 }, 400)
                 return
 
-            # Trigger GitHub Actions workflow dispatch via REST API
-            workflow_id = "cloud_ghost_watch.yml"
-            dispatch_url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/dispatches"
-            
-            headers = {
-                "Authorization": f"Bearer {gh_token}",
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Ghost-Dashboard",
-                "Content-Type": "application/json",
-            }
-            body = json.dumps({
-                "ref": "main",
-                "inputs": {
-                    "video_url": url,
-                    "tabs_per_runner": "5",
-                    "stream_target": payload.get("streamTarget", ""),
-                }
-            }).encode("utf-8")
-
-            try:
-                req = urllib.request.Request(dispatch_url, data=body, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    self._send_json({"ok": True, "message": "GitHub Actions workflow dispatched successfully!"})
-            except Exception as e:
-                self._send_json({"error": f"Failed to dispatch: {str(e)}"}, 500)
+            results = [dispatch_workflow(t["repo"], t["pat"], url, tabs, stream_target)
+                       for t in targets]
+            ok_all = all(r[0] for r in results)
+            self._send_json({
+                "ok": ok_all,
+                "dispatched": sum(1 for r in results if r[0]),
+                "total": len(results),
+                "details": [r[1] for r in results],
+            })
 
         elif self.path == "/api/harvest":
             # Trigger manual IP harvest in background thread

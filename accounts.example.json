@@ -1,0 +1,15 @@
+{
+  "_note": "Copy to accounts.json and fill in. NEVER commit accounts.json (gitignored). PAT needs Actions:write on each repo.",
+  "accounts": [
+    {
+      "name": "main",
+      "repo": "OWNER/REPO",
+      "pat_env": "GITHUB_TOKEN"
+    },
+    {
+      "name": "second",
+      "repo": "OWNER2/REPO2",
+      "pat_env": "GITHUB_TOKEN_ACCT2"
+    }
+  ]
+}
