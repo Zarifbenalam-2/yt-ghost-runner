@@ -51,18 +51,39 @@ jobs:
           pip install playwright
           playwright install-deps chromium
 
+      - name: Install cloudflared (quick tunnel, no account)
+        run: |
+          curl -fsSL -o /tmp/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x /tmp/cloudflared
+          /tmp/cloudflared --version
+
       - name: Run Ghost Watcher in Virtual 1080p Display
         env:
           CI: "true"
           RUNNER_ID: ${{ matrix.runner_id }}
           STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
         run: |
+          mkdir -p data
+          # Live frame relay + ephemeral public URL (runner-initiated, dies with job)
+          nohup python relay.py --port 8899 > relay.log 2>&1 &
+          echo $! > relay.pid
+          nohup /tmp/cloudflared tunnel --url http://127.0.0.1:8899 > cloudflared.log 2>&1 &
+          echo $! > cloudflared.pid
+          TUNNEL_URL=""
+          for i in $(seq 1 30); do
+            TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' cloudflared.log | head -n 1)
+            if [ -n "$TUNNEL_URL" ]; then break; fi
+            sleep 2
+          done
+          echo "TUNNEL_URL=${TUNNEL_URL}"
+          echo "${TUNNEL_URL}" > data/tunnel_url_${{ matrix.runner_id }}.txt
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
               --url "${{ github.event.inputs.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }}" \
-              --tabs ${{ github.event.inputs.tabs_per_runner || '10' }} \
+              --tabs ${{ github.event.inputs.tabs_per_runner || '12' }} \
               --depth-lo 60 \
               --depth-hi 95
+          kill $(cat relay.pid) $(cat cloudflared.pid) 2>/dev/null || true
 
       - name: Upload Run Report & Screenshots
         if: always()
@@ -72,4 +93,5 @@ jobs:
           path: |
             data/run_report_${{ matrix.runner_id }}.json
             data/live_feed.json
+            data/tunnel_url_${{ matrix.runner_id }}.txt
           if-no-files-found: warn
