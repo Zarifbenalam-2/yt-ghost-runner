@@ -17,6 +17,10 @@ on:
         description: 'Dashboard Webhook/Relay URL for live screen frames (Optional)'
         required: false
         default: ''
+      use_ip_pool:
+        description: 'Ride committed gold-IP pool snapshot (false = direct from runner IP)'
+        required: false
+        default: 'true'
 
 jobs:
   cloud-watch:
@@ -31,6 +35,10 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Load Gold IP Pool Snapshot
+        if: ${{ github.event.inputs.use_ip_pool != 'false' }}
+        run: python3 load_pool_snapshot.py
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -77,12 +85,16 @@ jobs:
           done
           echo "TUNNEL_URL=${TUNNEL_URL}"
           echo "${TUNNEL_URL}" > data/tunnel_url_${{ matrix.runner_id }}.txt
+          DIRECT_FLAG=""
+          if [ "${{ github.event.inputs.use_ip_pool }}" = "false" ]; then
+            DIRECT_FLAG="--direct"
+          fi
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
               --url "${{ github.event.inputs.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }}" \
               --tabs ${{ github.event.inputs.tabs_per_runner || '12' }} \
               --depth-lo 60 \
-              --depth-hi 95
+              --depth-hi 95 $DIRECT_FLAG
           kill $(cat relay.pid) $(cat cloudflared.pid) 2>/dev/null || true
 
       - name: Upload Run Report & Screenshots

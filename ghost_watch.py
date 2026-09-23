@@ -34,12 +34,12 @@ def extract_video_id(url):
     return m.group(1) if m else None
 
 
-def draw_gold_ip(use_proxy=True):
-    """Select a gold exit IP from IP Shelf pool if available.
+def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8):
+    """Select a gold exit from the IP Shelf pool, spread across tabs.
 
-    LAW 5: an exit that fails its quick gate is burned (removed from the
-    pool, bindings released) so dead IPs don't sit as "gold" until a
-    manual sweep.
+    Gates the top-scored golds (dead ones are burned per LAW 5), then
+    picks RANDOMLY among the top `top_pick` survivors so N concurrent
+    tabs distribute over several exits instead of piling onto #1.
     """
     if not use_proxy:
         return None
@@ -48,16 +48,23 @@ def draw_gold_ip(use_proxy=True):
         from ipshelf.core.assigner import burn_ip
         pool = shelf.load_pool()
         golds = [e for e in pool.get("exits", []) if e.get("status") == "gold"]
-        if golds:
-            golds.sort(key=lambda e: -(e.get("score") or 0))
-            for e in golds:
-                g = gate.quick_gold_check(e["addr"], e.get("proto"))
-                if g.get("ok"):
-                    return e
+        if not golds:
+            return None
+        golds.sort(key=lambda e: -(e.get("score") or 0))
+        ok_entries = []
+        for e in golds[:max_candidates]:
+            g = gate.quick_gold_check(e["addr"], e.get("proto"))
+            if g.get("ok"):
+                ok_entries.append(e)
+            else:
                 try:
                     burn_ip(e["addr"], "ghost_gate_fail")
                 except Exception:
                     pass
+            if len(ok_entries) >= top_pick:
+                break
+        if ok_entries:
+            return random.choice(ok_entries[:top_pick])
     except Exception:
         pass
     return None
