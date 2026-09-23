@@ -198,6 +198,62 @@
       border-radius: 12px;
       color: var(--muted);
     }
+
+    /* ── CI monitor ── */
+    .ci-panel { display: flex; flex-direction: column; gap: 14px; }
+    .ci-job {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .ci-job-head {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .ci-job-name { font-weight: 700; font-size: 14px; }
+    .ci-job-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .ci-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+      background: #0d1322; border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ci-badge.ok { color: var(--green); border-color: rgba(16,185,129,.4); }
+    .ci-badge.fail { color: var(--red); border-color: rgba(239,68,68,.4); }
+    .ci-badge.run { color: var(--gold); border-color: rgba(245,158,11,.4); }
+    .ci-badge a { color: var(--accent); text-decoration: none; }
+    .ci-steps { display: grid; gap: 4px; margin-top: 8px; }
+    .ci-step {
+      display: flex; gap: 8px; align-items: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted);
+    }
+    .ci-step .s-ico { width: 16px; text-align: center; }
+    .ci-step.done { color: var(--green); }
+    .ci-step.fail { color: var(--red); }
+    .ci-step.run { color: var(--gold); }
+    .btn-log {
+      background: #0d1322; color: var(--accent); border: 1px solid var(--border);
+      font-size: 12px; padding: 5px 10px;
+    }
+    .btn-log:hover { border-color: var(--accent); }
+    .log-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 9998;
+      display: none; align-items: center; justify-content: center; padding: 32px;
+    }
+    .log-modal.open { display: flex; }
+    .log-box {
+      background: #0d1322; border: 1px solid var(--border); border-radius: 12px;
+      width: min(1100px, 100%); max-height: 85vh; display: flex; flex-direction: column;
+    }
+    .log-box-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
+    .log-box pre {
+      margin: 0; padding: 16px; overflow: auto; flex: 1;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5;
+      color: #cbd5e1; white-space: pre-wrap; word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -267,7 +323,29 @@
     </div>
   </div>
 
+  <div class="grid-header" style="margin-top: 28px;">
+    <h2>GitHub Actions CI Monitor (<span id="ci-label">no runs</span>)</h2>
+  </div>
+  <div class="ci-panel" id="ci-panel">
+    <div class="empty-state" style="grid-column: 1 / -1; padding: 24px;">
+      <p>Waiting for CI data… (server needs <strong>GITHUB_TOKEN</strong> + <strong>GITHUB_REPOSITORY</strong> env vars)</p>
+    </div>
+  </div>
+
   <div id="toast" style="position:fixed; bottom:20px; right:20px; background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; padding:12px 20px; border-radius:8px; font-size:14px; display:none; z-index:9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+
+  <div class="log-modal" id="log-modal">
+    <div class="log-box">
+      <div class="log-box-head">
+        <strong id="log-title" style="font-size:14px;">Job log</strong>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-log" id="btn-log-refresh">↻ Refresh</button>
+          <button class="btn-log" id="btn-log-close">✕ Close</button>
+        </div>
+      </div>
+      <pre id="log-pre">Loading…</pre>
+    </div>
+  </div>
 
   <script>
     const grid = document.getElementById('screens-grid');
@@ -409,8 +487,101 @@
       }
     });
 
+    // ── CI monitor: run status, per-job steps, raw logs ──
+    const ciPanel = document.getElementById('ci-panel');
+    const ciLabel = document.getElementById('ci-label');
+    const logModal = document.getElementById('log-modal');
+    const logPre = document.getElementById('log-pre');
+    const logTitle = document.getElementById('log-title');
+    let currentLogJob = null;
+
+    function stepIcon(s) {
+      if (s.conclusion === 'success') return ['✓', 'done'];
+      if (s.conclusion === 'failure' || s.conclusion === 'cancelled' || s.conclusion === 'timed_out') return ['✗', 'fail'];
+      if (s.status === 'in_progress') return ['▶', 'run'];
+      if (s.status === 'queued') return ['…', ''];
+      return ['·', ''];
+    }
+
+    function renderCi(d) {
+      if (d.error) {
+        ciPanel.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:24px;"><p>${escapeHtml(d.error)}</p></div>`;
+        ciLabel.textContent = 'no data';
+        return;
+      }
+      const runTxt = `run #${d.run_number} · ${d.status || '?'}${d.conclusion ? ' · ' + d.conclusion : ''}`;
+      ciLabel.textContent = runTxt;
+      if (!d.jobs || d.jobs.length === 0) {
+        ciPanel.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:24px;"><p>No jobs in the latest run.</p></div>';
+        return;
+      }
+      ciPanel.innerHTML = d.jobs.map((j, i) => {
+        const badge = j.conclusion === 'success' ? ['ok', '✓ ' + j.conclusion]
+          : (j.conclusion && j.conclusion !== 'success' ? ['fail', '✗ ' + j.conclusion]
+          : (j.status === 'in_progress' ? ['run', '▶ ' + j.status] : ['', j.status || 'queued']));
+        const tunnel = j.tunnel_url
+          ? `<span class="ci-badge ok"><a href="${escapeHtml(j.tunnel_url)}" target="_blank">🔗 live feed</a></span>` : '';
+        const steps = (j.steps || []).map(s => {
+          const [ico, cls] = stepIcon(s);
+          return `<div class="ci-step ${cls}"><span class="s-ico">${ico}</span><span>${escapeHtml(s.name)}</span></div>`;
+        }).join('');
+        return `
+          <div class="ci-job">
+            <div class="ci-job-head">
+              <span class="ci-job-name">${escapeHtml(j.name || 'job')}</span>
+              <span class="ci-job-meta">
+                ${tunnel}
+                <span class="ci-badge ${badge[0]}">${escapeHtml(badge[1])}</span>
+                <button class="btn-log" data-job-index="${i}">▤ Logs</button>
+              </span>
+            </div>
+            <div class="ci-steps">${steps || '<div class="ci-step"><span class="s-ico">·</span><span>no step data yet</span></div>'}</div>
+          </div>`;
+      }).join('');
+      ciPanel.querySelectorAll('.btn-log').forEach(b =>
+        b.addEventListener('click', () => openLog(d.jobs[parseInt(b.dataset.jobIndex)])));
+    }
+
+    async function pollCi() {
+      try {
+        const res = await fetch('/api/ci_live');
+        renderCi(await res.json());
+      } catch (err) { /* CI panel is best-effort */ }
+    }
+
+    async function openLog(job) {
+      currentLogJob = job;
+      logTitle.textContent = `Log — ${job.name || 'job'}`;
+      logPre.textContent = 'Loading…';
+      logModal.classList.add('open');
+      await refreshLog();
+    }
+
+    async function refreshLog() {
+      if (!currentLogJob) return;
+      try {
+        const res = await fetch(`/api/ci_logs?job_id=${currentLogJob.id || ''}&tail=12000`);
+        const d = await res.json();
+        logPre.textContent = d.log_tail || d.error || '(empty log)';
+        logPre.scrollTop = logPre.scrollHeight;
+      } catch (err) {
+        logPre.textContent = 'Failed to fetch log: ' + err.message;
+      }
+    }
+
+    document.getElementById('btn-log-close').addEventListener('click', () => {
+      logModal.classList.remove('open');
+      currentLogJob = null;
+    });
+    document.getElementById('btn-log-refresh').addEventListener('click', refreshLog);
+    logModal.addEventListener('click', e => {
+      if (e.target === logModal) { logModal.classList.remove('open'); currentLogJob = null; }
+    });
+
     setInterval(pollState, 1500);
     pollState();
+    setInterval(pollCi, 5000);
+    pollCi();
   </script>
 </body>
 </html>

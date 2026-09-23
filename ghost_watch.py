@@ -35,11 +35,17 @@ def extract_video_id(url):
 
 
 def draw_gold_ip(use_proxy=True):
-    """Select a gold exit IP from IP Shelf pool if available."""
+    """Select a gold exit IP from IP Shelf pool if available.
+
+    LAW 5: an exit that fails its quick gate is burned (removed from the
+    pool, bindings released) so dead IPs don't sit as "gold" until a
+    manual sweep.
+    """
     if not use_proxy:
         return None
     try:
         from ipshelf.core import gate, shelf
+        from ipshelf.core.assigner import burn_ip
         pool = shelf.load_pool()
         golds = [e for e in pool.get("exits", []) if e.get("status") == "gold"]
         if golds:
@@ -48,6 +54,10 @@ def draw_gold_ip(use_proxy=True):
                 g = gate.quick_gold_check(e["addr"], e.get("proto"))
                 if g.get("ok"):
                     return e
+                try:
+                    burn_ip(e["addr"], "ghost_gate_fail")
+                except Exception:
+                    pass
     except Exception:
         pass
     return None
@@ -75,6 +85,7 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
     }
 
     with sync_playwright() as p:
+        ctx = None
         try:
             ctx, page = open_ghost_context(
                 p,

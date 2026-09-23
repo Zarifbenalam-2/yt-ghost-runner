@@ -23,6 +23,7 @@ FEED_DATA = DATA_DIR / "live_feed.json"
 
 # In-memory live tab frame store
 _LIVE_TABS = {}
+_LIVE_LOCK = threading.Lock()
 
 
 def load_accounts():
@@ -128,14 +129,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             ip_stats = load_ip_shelf_stats()
             # Clean up tabs that haven't updated in 45s
             now = time.time()
-            active_tabs = {k: v for k, v in _LIVE_TABS.items() if (now - v.get("_last_seen", 0)) < 45}
+            with _LIVE_LOCK:
+                active_tabs = {k: v for k, v in _LIVE_TABS.items()
+                               if (now - v.get("_last_seen", 0)) < 45}
             self._send_json({
                 "ipStats": ip_stats,
                 "tabs": list(active_tabs.values()),
                 "tabCount": len(active_tabs),
             })
         elif self.path == "/api/feed":
-            self._send_json({"tabs": list(_LIVE_TABS.values())})
+            with _LIVE_LOCK:
+                tabs = list(_LIVE_TABS.values())
+            self._send_json({"tabs": tabs})
         elif self.path == "/api/accounts":
             # Safe list: names + repos only, never tokens
             self._send_json({
@@ -231,10 +236,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
                     out.append({
+                        "id": job.get("id"),
                         "name": job.get("name"),
                         "status": job.get("status"),
                         "conclusion": job.get("conclusion"),
                         "tunnel_url": tunnel,
+                        "started_at": job.get("started_at"),
+                        "completed_at": job.get("completed_at"),
+                        "steps": [
+                            {"name": s.get("name"), "status": s.get("status"),
+                             "conclusion": s.get("conclusion")}
+                            for s in (job.get("steps") or [])
+                        ],
                     })
                 self._send_json({
                     "run_id": run["id"],
@@ -242,6 +255,59 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "status": run.get("status"),
                     "conclusion": run.get("conclusion"),
                     "jobs": out,
+                })
+            except Exception as e:
+                self._send_json({"error": f"GitHub API failed: {e}"}, 500)
+        elif self.path.startswith("/api/ci_logs"):
+            # Raw CI log tail for one job of the latest run (log viewer).
+            # Query: ?repo=owner/name&job_id=<id>&tail=6000 (needs GITHUB_TOKEN env).
+            # job_id omitted -> first job of the latest run.
+            import re
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            repo = qs.get("repo", [os.environ.get("GITHUB_REPOSITORY", "")])[0]
+            token = os.environ.get("GITHUB_TOKEN", "")
+            if not repo or not token:
+                self._send_json({"error": "Set GITHUB_REPOSITORY and GITHUB_TOKEN env vars"}, 400)
+                return
+            try:
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "Ghost-Dashboard",
+                }
+
+                def _get(url, timeout=15):
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        return resp.read().decode("utf-8", "replace")
+
+                runs = json.loads(_get(
+                    f"https://api.github.com/repos/{repo}/actions/workflows/cloud_ghost_watch.yml/runs?per_page=1"))
+                if not runs.get("workflow_runs"):
+                    self._send_json({"error": "No runs found"}, 404)
+                    return
+                run = runs["workflow_runs"][0]
+                jobs = json.loads(_get(
+                    f"https://api.github.com/repos/{repo}/actions/runs/{run['id']}/jobs"))
+                job_list = jobs.get("jobs", [])
+                if not job_list:
+                    self._send_json({"error": "No jobs in latest run"}, 404)
+                    return
+                job_id = qs.get("job_id", [""])[0]
+                job = next((j for j in job_list if str(j["id"]) == job_id), job_list[0])
+                logs = _get(
+                    f"https://api.github.com/repos/{repo}/actions/jobs/{job['id']}/logs",
+                    timeout=30)
+                tail = int(qs.get("tail", ["6000"])[0])
+                self._send_json({
+                    "run_id": run["id"],
+                    "run_number": run.get("run_number"),
+                    "job_id": job["id"],
+                    "job_name": job.get("name"),
+                    "status": job.get("status"),
+                    "conclusion": job.get("conclusion"),
+                    "log_tail": logs[-tail:],
                 })
             except Exception as e:
                 self._send_json({"error": f"GitHub API failed: {e}"}, 500)
@@ -259,7 +325,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         if self.path == "/api/feed/update":
             tab_id = str(payload.get("tabId", "1"))
             payload["_last_seen"] = time.time()
-            _LIVE_TABS[tab_id] = payload
+            with _LIVE_LOCK:
+                _LIVE_TABS[tab_id] = payload
             self._send_json({"ok": True})
 
         elif self.path == "/api/run_local":
@@ -324,10 +391,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             })
 
         elif self.path == "/api/harvest":
-            # Trigger manual IP harvest in background thread
+            # Trigger manual IP harvest in background thread.
+            # The pipeline's own --timecap (default 1800s) governs the hunt;
+            # this outer timeout must exceed it or we kill the harvest before
+            # it can merge anything (a real run takes ~50 min).
             def _harvest():
                 try:
-                    subprocess.run([sys.executable, "-m", "ipshelf.hunt.harvest"], cwd=str(ROOT), timeout=300)
+                    subprocess.run([sys.executable, "-m", "ipshelf.hunt.harvest"],
+                                   cwd=str(ROOT),
+                                   timeout=int(os.environ.get("HARVEST_TIMEOUT", "2000")))
                 except Exception:
                     pass
             threading.Thread(target=_harvest, daemon=True).start()
@@ -339,9 +411,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 def run_server(port=8766):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    server = ThreadingHTTPServer(("0.0.0.0", port), DashboardHandler)
+    # Default to loopback: every endpoint is unauthenticated, so exposing
+    # 0.0.0.0 lets any LAN peer (or any webpage via CORS *) dispatch runs,
+    # burn Actions minutes and read telemetry. Set DASHBOARD_HOST=0.0.0.0
+    # only if you deliberately want other devices to reach the dashboard.
+    host = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
+    server = ThreadingHTTPServer((host, port), DashboardHandler)
     print(f"============================================================")
-    print(f"[*] GHOST RUNNER DASHBOARD LIVE: http://127.0.0.1:{port}")
+    print(f"[*] GHOST RUNNER DASHBOARD LIVE: http://{host}:{port}")
+    if host == "0.0.0.0":
+        print("[!] WARNING: dashboard is exposed to the network with NO auth.")
     print(f"============================================================")
     server.serve_forever()
 

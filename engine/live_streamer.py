@@ -65,7 +65,10 @@ class LiveStreamer:
                 "image": payload["image"],
                 "telemetry": payload["telemetry"],
             }
-            tmp = FEED_DATA.with_name("live_feed.tmp.json")
+            # Unique tmp per write: several tab threads share this file, a
+            # fixed tmp name lets two writers interleave (lost/crossed frames)
+            tmp = FEED_DATA.with_name(
+                f"live_feed.{os.getpid()}.{threading.get_ident()}.tmp.json")
             tmp.write_text(json.dumps(existing), encoding="utf-8")
             tmp.replace(FEED_DATA)
         except Exception:
