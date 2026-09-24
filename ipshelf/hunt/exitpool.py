@@ -103,8 +103,12 @@ def curl(url, proxy=None, socks=False, max_time=15, extra=None):
 
 
 def curl_body(url, proxy=None, socks=False, max_time=20):
-    """Fetch body text through a proxy."""
-    cmd = [CURL, "-s", "--max-time", str(max_time)]
+    """Fetch body text through a proxy.
+
+    --compressed: the watch page is ~1.3MB raw / ~250KB gzipped — slow
+    proxies need the gzip or they blow the time cap and look dead.
+    """
+    cmd = [CURL, "-s", "--compressed", "--max-time", str(max_time)]
     if proxy:
         if socks:
             cmd += ["--socks5-hostname", proxy]
@@ -180,7 +184,7 @@ def grade_exit(entry):
     res["gstatic_code"] = code
 
     # 3) YouTube watch page + playability
-    html = curl_body(WATCH_URL, addr, socks, 18)
+    html = curl_body(WATCH_URL, addr, socks, 35)
     if html:
         m = re.search(r'"playabilityStatus":\s*\{"status":\s*"([A-Z_]+)"', html)
         res["playability"] = m.group(1) if m else "NO_STATUS"
@@ -282,7 +286,7 @@ def cmd_grade():
 
 def retest_exit(e):
     addr, socks = e["addr"], e["proto"] == "SOCKS"
-    html = curl_body(WATCH_URL, addr, socks, 15)
+    html = curl_body(WATCH_URL, addr, socks, 35)
     m = re.search(r'"playabilityStatus":\s*\{"status":\s*"([A-Z_]+)"', html or "")
     e2 = dict(e)
     e2["retest_playability"] = m.group(1) if m else ("DEAD" if not html else "NO_STATUS")

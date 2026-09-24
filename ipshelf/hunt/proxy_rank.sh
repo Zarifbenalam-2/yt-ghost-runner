@@ -18,15 +18,15 @@ cd "$DIR"
 
 TEST_URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 PAR="${PAR:-120}"          # raised from 40: rank is network-bound, not CPU-bound
-TIMEOUT=14
+TIMEOUT=40
 
 rank_one() {
   local kind="$1" p="$2"
   local html status
   if [ "$kind" = "HTTP" ]; then
-    html=$(curl -s -x "http://$p" --max-time $TIMEOUT "$TEST_URL" 2>/dev/null)
+    html=$(curl -s --compressed -x "http://$p" --max-time $TIMEOUT "$TEST_URL" 2>/dev/null)
   else
-    html=$(curl -s --socks5-hostname "$p" --max-time $TIMEOUT "$TEST_URL" 2>/dev/null)
+    html=$(curl -s --compressed --socks5-hostname "$p" --max-time $TIMEOUT "$TEST_URL" 2>/dev/null)
   fi
   if [ -z "$html" ]; then echo "DEAD|$kind|$p"; return; fi
   status=$(printf '%s' "$html" | grep -o '"playabilityStatus":{"status":"[A-Z_]*' | head -1 | sed 's/.*status":"//')

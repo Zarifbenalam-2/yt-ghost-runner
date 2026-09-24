@@ -106,10 +106,15 @@ def _curl_stats(url, proxy=None, socks=False, max_time=15):
 
 
 def _curl_body(url, proxy=None, socks=False, max_time=20) -> str:
-    """Fetch body text through a proxy (empty string on failure)."""
+    """Fetch body text through a proxy (empty string on failure).
+
+    --compressed matters: the YouTube watch page is ~1.3MB raw but ~250KB
+    gzipped — without it, slow-but-alive proxies blow the time cap and get
+    falsely marked DEAD.
+    """
     if not CURL:
         return ""
-    cmd = [CURL, "-s", "--max-time", str(max_time)]
+    cmd = [CURL, "-s", "--compressed", "--max-time", str(max_time)]
     if proxy:
         if socks:
             cmd += ["--socks5-hostname", proxy]
@@ -125,7 +130,7 @@ def _curl_body(url, proxy=None, socks=False, max_time=20) -> str:
 
 # --------------------------------------------------------------------- gate
 
-def quick_gold_check(addr: str, proto: str, timeout: int = 18) -> dict:
+def quick_gold_check(addr: str, proto: str, timeout: int = 35) -> dict:
     """Quick gold gate for one proxy address.
 
     Steps (each bounded by ~timeout seconds):
@@ -134,6 +139,8 @@ def quick_gold_check(addr: str, proto: str, timeout: int = 18) -> dict:
       3. YouTube watch page    -> regex "playabilityStatus": {"status": "X"
 
     ok=True ONLY when playability == "OK" (LAW 4).
+    timeout raised 18 -> 35: a slow-but-working proxy needs ~15-30s for the
+    watch page even gzipped; the old cap false-killed live gold.
 
     Returns {"ok", "playability", "latency_ms", "egress_ip", "checked_at"}.
     Also appends one JSON line to ipshelf/data/ipshelf.log.

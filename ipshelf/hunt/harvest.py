@@ -181,11 +181,12 @@ def main(argv=None):
     env = dict(os.environ)
     env["PYBIN"] = sys.executable            # venv python for refresh_pool.sh
     env["PAR"] = str(args.par)
-    # caps the pipeline already honors (hunt_cycle defaults mirrored here)
-    env.setdefault("HTTP_CAP", "3000")
-    env.setdefault("SOCKS_CAP", "1200")
-    env.setdefault("SOCKS4_CAP", "800")
-    env.setdefault("TIMEOUT", "8")
+    # caps the pipeline already honors (raised: only ~7% of scraped proxies
+    # were being tested — gold was hiding in the untested 93%)
+    env.setdefault("HTTP_CAP", "12000")
+    env.setdefault("SOCKS_CAP", "5000")
+    env.setdefault("SOCKS4_CAP", "2000")
+    env.setdefault("TIMEOUT", "20")
 
     rc = stream_pipeline(env, args.timecap)
 

@@ -128,7 +128,7 @@ def main():
     env.setdefault("SOCKS_CAP", "1200")
     env.setdefault("SOCKS4_CAP", "800")
     env.setdefault("PAR", "200")
-    env.setdefault("TIMEOUT", "8")
+    env.setdefault("TIMEOUT", "20")
     rc = run_refresh(env)
     alive = merge_and_prune()
     print("[hunt_cycle] === cycle end — standing %s ===" % alive)

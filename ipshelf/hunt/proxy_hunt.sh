@@ -19,7 +19,7 @@ mkdir -p "$DIR"; cd "$DIR"
 
 TEST_URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 PAR="${PAR:-120}"               # parallelism (override: PAR=200 bash proxy_hunt.sh)
-TIMEOUT="${TIMEOUT:-8}"         # per-test seconds
+TIMEOUT="${TIMEOUT:-20}"         # per-test seconds (was 8: a 1.3MB watch page needs more on slow-but-alive proxies)
 HTTP_CAP="${HTTP_CAP:-4000}"    # max HTTP candidates (raise for go-all-out)
 SOCKS_CAP="${SOCKS_CAP:-2200}"  # max SOCKS5 candidates
 SOCKS4_CAP="${SOCKS4_CAP:-1500}"
@@ -172,17 +172,17 @@ echo "[*] testing queue (google-passed first): HTTP $(wc -l < http_test.txt) + S
 
 check_http() {
   local p="$1"; local code
-  code=$(curl -s -x "http://$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
+  code=$(curl -s --compressed -x "http://$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
   if [ "$code" = "200" ]; then echo "HTTP_WIN $p code=200"; fi
 }
 check_socks() {
   local p="$1"; local code
-  code=$(curl -s --socks5-hostname "$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
+  code=$(curl -s --compressed --socks5-hostname "$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
   if [ "$code" = "200" ]; then echo "SOCKS_WIN $p code=200"; fi
 }
 check_socks4() {
   local p="$1"; local code
-  code=$(curl -s --socks4a "$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
+  code=$(curl -s --compressed --socks4a "$p" --max-time $TIMEOUT -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
   if [ "$code" = "200" ]; then echo "SOCKS4_WIN $p code=200"; fi
 }
 export -f check_http check_socks check_socks4
