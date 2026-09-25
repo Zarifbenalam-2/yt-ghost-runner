@@ -1,0 +1,62 @@
+name: Gold Factory Fleet
+
+# Factory #2 — sharded gold-IP harvesting on GitHub's own runners.
+# N VMs scrape + test DIFFERENT slices of the proxy universe in parallel,
+# each uploads its certified gold as an artifact. Merge locally with
+# factory_collect.py (needs a token with Actions:read on this repo).
+#
+# Free plan = 20 concurrent jobs per account -> shards up to 20.
+# On a public repo these minutes are free.
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: 'How many shards (VMs) to actually run (max 20)'
+        required: false
+        default: '10'
+      par:
+        description: 'Parallel gold checks per VM'
+        required: false
+        default: '400'
+      max_test:
+        description: 'Max candidates tested per VM'
+        required: false
+        default: '9000'
+
+jobs:
+  harvest:
+    if: "!contains(github.event.head_commit.message, '[skip-ci]')"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Harvest shard
+        env:
+          CI: "true"
+        run: |
+          SHARDS="${{ github.event.inputs.shards || '10' }}"
+          SHARD=${{ matrix.shard }}
+          if [ "$SHARD" -ge "$SHARDS" ]; then
+            echo "shard $SHARD idle (only $SHARDS requested)"
+            exit 0
+          fi
+          python3 gold_factory.py --once \
+            --shard "$SHARD" --shards "$SHARDS" \
+            --par ${{ github.event.inputs.par || '400' }} \
+            --max-test ${{ github.event.inputs.max_test || '9000' }} \
+            --no-ship
+
+      - name: Upload shard gold
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-gold-shard-${{ matrix.shard }}
+          path: data/factory_gold_shard_${{ matrix.shard }}.json
+          if-no-files-found: ignore
