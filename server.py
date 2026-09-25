@@ -25,6 +25,86 @@ FEED_DATA = DATA_DIR / "live_feed.json"
 _LIVE_TABS = {}
 _LIVE_LOCK = threading.Lock()
 
+# ── Factory manager: harvester auto-runs ONLY while a watcher run is live ──
+_FACTORY = {"proc": None, "started_at": None, "manual_stop": False,
+            "watcher_active": None, "last_check": None}
+_FACTORY_LOCK = threading.Lock()
+_FACTORY_LOG = DATA_DIR / "factory_manager.log"
+
+
+def _factory_log(msg):
+    try:
+        with open(_FACTORY_LOG, "a", encoding="utf-8") as f:
+            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+    except OSError:
+        pass
+
+
+def _gold_certified_count():
+    try:
+        with open(DATA_DIR / "factory_gold_log.jsonl", encoding="utf-8") as f:
+            return sum(1 for _ in f)
+    except OSError:
+        return 0
+
+
+def _factory_running():
+    with _FACTORY_LOCK:
+        p = _FACTORY["proc"]
+        return bool(p and p.poll() is None)
+
+
+def _spawn_factory(reason):
+    """Start the gold factory subprocess (no-op if already running/manual-stopped)."""
+    with _FACTORY_LOCK:
+        p = _FACTORY["proc"]
+        if p and p.poll() is None:
+            return False
+        if _FACTORY["manual_stop"]:
+            return False
+        logf = open(_FACTORY_LOG, "a", encoding="utf-8")
+        proc = subprocess.Popen(
+            [sys.executable, str(ROOT / "gold_factory.py"), "--ship", "--require-watch"],
+            cwd=str(ROOT), stdout=logf, stderr=subprocess.STDOUT)
+        _FACTORY["proc"] = proc
+        _FACTORY["started_at"] = time.time()
+        _FACTORY["manual_stop"] = False
+    _factory_log(f"STARTED ({reason}) pid={proc.pid}")
+    return True
+
+
+def _terminate_factory(reason):
+    """Kill the factory subprocess without latching manual-stop."""
+    with _FACTORY_LOCK:
+        p = _FACTORY["proc"]
+        _FACTORY["proc"] = None
+    if p and p.poll() is None:
+        try:
+            p.terminate()
+        except Exception:
+            pass
+        _factory_log(f"STOPPED ({reason}) pid={p.pid}")
+
+
+def factory_manager_loop():
+    """Every 60s: watcher live -> factory runs; watcher gone -> factory stops."""
+    from gold_factory import watcher_active
+    while True:
+        try:
+            active = watcher_active()
+            with _FACTORY_LOCK:
+                _FACTORY["watcher_active"] = active
+                _FACTORY["last_check"] = time.time()
+                running = bool(_FACTORY["proc"] and _FACTORY["proc"].poll() is None)
+                manual = _FACTORY["manual_stop"]
+            if active and not running and not manual:
+                _spawn_factory("watcher active")
+            elif not active and running:
+                _terminate_factory("watch ended")
+        except Exception as e:
+            _factory_log(f"manager error: {type(e).__name__}: {e}")
+        time.sleep(60)
+
 
 def load_accounts():
     """Configured GitHub accounts for multi-account dispatch.
@@ -141,6 +221,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             with _LIVE_LOCK:
                 tabs = list(_LIVE_TABS.values())
             self._send_json({"tabs": tabs})
+        elif self.path == "/api/factory":
+            with _FACTORY_LOCK:
+                p = _FACTORY["proc"]
+                self._send_json({
+                    "running": bool(p and p.poll() is None),
+                    "pid": p.pid if (p and p.poll() is None) else None,
+                    "started_at": _FACTORY["started_at"],
+                    "watcher_active": _FACTORY["watcher_active"],
+                    "manual_stop": _FACTORY["manual_stop"],
+                    "last_check": _FACTORY["last_check"],
+                    "gold_certified": _gold_certified_count(),
+                })
         elif self.path == "/api/accounts":
             # Safe list: names + repos only, never tokens
             self._send_json({
@@ -383,12 +475,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
             results = [dispatch_workflow(t["repo"], t["pat"], url, tabs, stream_target)
                        for t in targets]
             ok_all = all(r[0] for r in results)
+            if ok_all or any(r[0] for r in results):
+                # watch is going -> wake the harvester immediately (user rule:
+                # the factory runs while a watcher run is live)
+                threading.Thread(target=_spawn_factory, args=("spawn_cloud",),
+                                 daemon=True).start()
             self._send_json({
                 "ok": ok_all,
                 "dispatched": sum(1 for r in results if r[0]),
                 "total": len(results),
                 "details": [r[1] for r in results],
             })
+
+        elif self.path == "/api/factory/start":
+            with _FACTORY_LOCK:
+                _FACTORY["manual_stop"] = False
+            ok = _spawn_factory("manual start")
+            self._send_json({"ok": ok, "message":
+                             "Factory started" if ok else "Factory already running"})
+
+        elif self.path == "/api/factory/stop":
+            with _FACTORY_LOCK:
+                _FACTORY["manual_stop"] = True
+            _terminate_factory("manual stop")
+            self._send_json({"ok": True, "message": "Factory stopped (won't auto-restart until Start)"})
 
         elif self.path == "/api/harvest":
             # Trigger manual IP harvest in background thread.
@@ -417,8 +527,12 @@ def run_server(port=8766):
     # only if you deliberately want other devices to reach the dashboard.
     host = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
     server = ThreadingHTTPServer((host, port), DashboardHandler)
+    # Factory manager: harvester auto-runs only while a watcher run is live
+    threading.Thread(target=factory_manager_loop, daemon=True).start()
+    _factory_log("dashboard up — factory manager watching for live watcher runs")
     print(f"============================================================")
     print(f"[*] GHOST RUNNER DASHBOARD LIVE: http://{host}:{port}")
+    print(f"[*] FACTORY MANAGER: harvester auto-starts while a watch is live")
     if host == "0.0.0.0":
         print("[!] WARNING: dashboard is exposed to the network with NO auth.")
     print(f"============================================================")

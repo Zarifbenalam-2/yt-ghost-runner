@@ -267,6 +267,11 @@
     </div>
     <div class="hud-stats">
       <div class="stat-pill">
+        <span class="dot dot-gold" id="factory-dot"></span>
+        <span id="factory-label">Factory: …</span>
+      </div>
+      <button class="btn-log" id="btn-factory-toggle">⏸ Stop Factory</button>
+      <div class="stat-pill">
         <span class="dot dot-gold"></span>
         <span id="gold-count">0</span> Gold IPs
       </div>
@@ -578,10 +583,52 @@
       if (e.target === logModal) { logModal.classList.remove('open'); currentLogJob = null; }
     });
 
+    // ── Factory status + control ──
+    const factoryDot = document.getElementById('factory-dot');
+    const factoryLabel = document.getElementById('factory-label');
+    const factoryBtn = document.getElementById('btn-factory-toggle');
+    let factoryRunning = null;
+
+    async function pollFactory() {
+      try {
+        const d = await (await fetch('/api/factory')).json();
+        factoryRunning = d.running;
+        if (d.running) {
+          factoryDot.className = 'dot dot-green';
+          factoryLabel.textContent = `Factory: HARVESTING (${d.gold_certified} gold)`;
+          factoryBtn.textContent = '⏸ Stop Factory';
+        } else if (d.manual_stop) {
+          factoryDot.className = 'dot';
+          factoryDot.style.background = '#ef4444';
+          factoryLabel.textContent = 'Factory: STOPPED';
+          factoryBtn.textContent = '▶ Start Factory';
+        } else {
+          factoryDot.className = 'dot dot-gold';
+          factoryLabel.textContent = d.watcher_active
+            ? 'Factory: waking…'
+            : 'Factory: idle (no watch)';
+          factoryBtn.textContent = '▶ Start Factory';
+        }
+      } catch (err) { /* factory panel is best-effort */ }
+    }
+
+    factoryBtn.addEventListener('click', async () => {
+      const action = factoryRunning ? 'stop' : 'start';
+      try {
+        const d = await (await fetch(`/api/factory/${action}`, { method: 'POST' })).json();
+        showToast(d.message || `Factory ${action} ok`);
+        pollFactory();
+      } catch (err) {
+        showToast('Factory control failed: ' + err.message, true);
+      }
+    });
+
     setInterval(pollState, 1500);
     pollState();
     setInterval(pollCi, 5000);
     pollCi();
+    setInterval(pollFactory, 5000);
+    pollFactory();
   </script>
 </body>
 </html>
