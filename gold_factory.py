@@ -271,9 +271,40 @@ def append_gold_log(golds):
             f.write(json.dumps({**g, "certified_at": shelf.now_ts()}) + "\n")
 
 
+def watcher_active(repo=None):
+    """True when a cloud_ghost_watch run is queued or in_progress.
+
+    Used by --require-watch: the factory only burns CPU while a watch is
+    actually consuming gold (fresh gold dies in minutes — harvesting with
+    no watcher running is waste). Fails OPEN: if the API check errors we
+    assume a watch is live rather than stall the factory mid-watch.
+    """
+    repo = repo or os.environ.get("GITHUB_REPOSITORY", "Zarifbenalam-2/yt-ghost-runner")
+    url = (f"https://api.github.com/repos/{repo}/actions/workflows/"
+           f"cloud_ghost_watch.yml/runs?per_page=5")
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json", "User-Agent": "gold-factory"})
+    tok = os.environ.get("GITHUB_TOKEN", "")
+    if tok:
+        req.add_header("Authorization", f"Bearer {tok}")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        for run in data.get("workflow_runs", []):
+            if run.get("status") in ("in_progress", "queued"):
+                return True
+        return False
+    except Exception as e:
+        log(f"[watch-check] API check failed ({e}) — assuming ACTIVE")
+        return True
+
+
 # ------------------------------------------------------------------- cycle
 
 def run_cycle(args, seen):
+    if args.require_watch and not watcher_active():
+        log("no active watcher run — factory idle (--require-watch)")
+        return -1
     log("== CYCLE: scrape ==")
     found = scrape_sources()
     log(f"scraped {len(found)} unique (addr,proto) from {len(SOURCES)} sources")
@@ -344,6 +375,8 @@ def main():
     ap.add_argument("--ship", action="store_true", help="auto commit+push snapshot on new gold")
     ap.add_argument("--dispatch", type=int, default=0, help="auto-fire watcher with N tabs/runner after ship")
     ap.add_argument("--once", action="store_true", help="single cycle then exit")
+    ap.add_argument("--require-watch", action="store_true",
+                    help="only harvest while a cloud_ghost_watch run is queued/in_progress")
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--shards", type=int, default=1)
     ap.add_argument("--no-ship", dest="ship", action="store_false")
@@ -351,17 +384,20 @@ def main():
 
     seen = load_seen()
     log(f"GOLD FACTORY start: cycle={args.cycle}s par={args.par} max_test={args.max_test} "
-        f"ship={args.ship} shard={args.shard}/{args.shards} seen={len(seen)}")
+        f"ship={args.ship} require_watch={args.require_watch} "
+        f"shard={args.shard}/{args.shards} seen={len(seen)}")
 
     while True:
         try:
-            run_cycle(args, seen)
+            r = run_cycle(args, seen)
         except Exception as e:
             log(f"cycle error: {type(e).__name__}: {e}")
+            r = 0
         save_seen(seen)
         if args.once:
             break
-        time.sleep(args.cycle)
+        # idle gate: poll every 60s instead of the full cycle sleep
+        time.sleep(60 if r == -1 else args.cycle)
 
 
 if __name__ == "__main__":
