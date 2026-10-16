@@ -48,6 +48,42 @@ def api(url, token, timeout=40):
         return json.loads(r.read().decode("utf-8"))
 
 
+def download_artifact_zip(repo, token, artifact_id, timeout=120):
+    """Download an artifact zip WITH auth.
+
+    GitHub redirects artifact downloads to a signed blob URL; urllib follows
+    the redirect but drops the Authorization header on the cross-host hop,
+    which the blob store answers with HTTP 401. Passing the token only to
+    api.github.com and letting urllib follow is not enough, so we fetch the
+    redirect target and re-request it WITHOUT the header (the signed URL does
+    not want it).
+    """
+    api_url = (f"https://api.github.com/repos/{repo}/actions/artifacts/"
+               f"{artifact_id}/zip")
+    req = urllib.request.Request(api_url, headers={
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "ghost-collector"})
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
+
+    opener = urllib.request.build_opener(_NoRedirect)
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            return r.read()          # no redirect: direct body (rare)
+    except urllib.error.HTTPError as e:
+        if e.code not in (301, 302, 303, 307, 308):
+            raise
+        signed = e.headers.get("Location")
+        if not signed:
+            raise
+    log.info("following signed artifact URL (no auth header)")
+    with urllib.request.urlopen(signed, timeout=timeout) as r:
+        return r.read()
+
+
 def fetch_run_artifacts(repo, token, run_id=None):
     """Download all shard gold + burn artifacts. Returns (golds, burns)."""
     if not run_id:
@@ -62,9 +98,7 @@ def fetch_run_artifacts(repo, token, run_id=None):
         if not a["name"].startswith(wanted):
             continue
         log.info("downloading %s (%d bytes)", a["name"], a["size_in_bytes"])
-        raw = urllib.request.urlopen(urllib.request.Request(
-            f"https://api.github.com/repos/{repo}/actions/artifacts/{a['id']}/zip",
-            headers={"Authorization": f"Bearer {token}"}), timeout=90).read()
+        raw = download_artifact_zip(repo, token, a["id"])
         z = zipfile.ZipFile(io.BytesIO(raw))
         for name in z.namelist():
             try:
