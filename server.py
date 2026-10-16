@@ -242,6 +242,59 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "tabs": list(active_tabs.values()),
                 "tabCount": len(active_tabs),
             })
+        elif self.path == "/api/run_control":
+            # Live state of the current watch + ability to stop it.
+            # GET  /api/run_control            -> current run + per-runner state
+            # POST /api/run_control ({"action":"cancel"}) -> cancel in flight
+            repo = os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
+            token = os.environ.get("GITHUB_TOKEN", "")
+            try:
+                from hub import gh, db
+                db.init()
+                run = gh.latest_run(repo, _cfg.WORKFLOW_WATCH, token)
+                out = {"repo": repo, "run": None, "jobs": []}
+                if run:
+                    out["run"] = {k: run.get(k) for k in
+                                  ("id", "run_number", "status", "conclusion",
+                                   "created_at", "html_url")}
+                    if run.get("status") in ("in_progress", "queued"):
+                        try:
+                            jobs = gh.get(f"/repos/{repo}/actions/runs/{run['id']}/jobs",
+                                          token=token)
+                            for j in jobs.get("jobs", []):
+                                out["jobs"].append({
+                                    "name": j.get("name"), "status": j.get("status"),
+                                    "conclusion": j.get("conclusion"),
+                                    "started_at": j.get("started_at"),
+                                    "steps": [{"name": s.get("name"),
+                                               "status": s.get("status"),
+                                               "conclusion": s.get("conclusion")}
+                                              for s in (j.get("steps") or [])]})
+                        except Exception:
+                            pass
+                self._send_json(out)
+            except Exception as e:
+                self._send_json({"error": f"run_control failed: {e}"}, 500)
+
+        elif self.path == "/api/run_control/cancel":
+            repo = os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
+            token = os.environ.get("GITHUB_TOKEN", "")
+            try:
+                from hub import gh
+                run = gh.latest_run(repo, _cfg.WORKFLOW_WATCH, token)
+                if not run:
+                    self._send_json({"ok": False, "error": "no run found"}, 404)
+                elif run.get("status") not in ("in_progress", "queued"):
+                    self._send_json({"ok": False,
+                                     "error": f"run already {run.get('status')}"})
+                else:
+                    ok = gh.cancel_run(repo, run["id"], token)
+                    self._send_json({"ok": ok,
+                                     "message": f"cancel {'sent' if ok else 'failed'} "
+                                                f"for run #{run.get('run_number')}"})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, 500)
+
         elif self.path == "/api/feed":
             with _LIVE_LOCK:
                 tabs = list(_LIVE_TABS.values())

@@ -348,6 +348,19 @@
   </div>
 
   <div class="grid-header" style="margin-top: 28px;">
+    <h2>Live Run Control (<span id="run-label">no run</span>)</h2>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-log" id="btn-run-refresh">↻ Refresh</button>
+      <button class="btn-log" id="btn-run-cancel" style="color:var(--red); border-color:#ef444455;">■ Stop Run</button>
+    </div>
+  </div>
+  <div class="ci-panel" id="run-panel">
+    <div class="empty-state" style="grid-column:1/-1;padding:24px;">
+      <p>No active run. Set <strong>GITHUB_TOKEN</strong> in the server env to control runs.</p>
+    </div>
+  </div>
+
+  <div class="grid-header" style="margin-top: 28px;">
     <h2>Observation Deck — Central Hub (<span id="deck-label">loading</span>)</h2>
   </div>
   <div class="deck-grid" id="deck-cards"></div>
@@ -716,8 +729,55 @@
       } catch (err) { showToast('Policy save failed: ' + err.message, true); }
     });
 
+    // ── Live run control ──
+    const runPanel = document.getElementById('run-panel');
+    const runLabel = document.getElementById('run-label');
+
+    async function pollRun() {
+      try {
+        const d = await (await fetch('/api/run_control')).json();
+        if (d.error || !d.run) {
+          runLabel.textContent = d.error ? 'unavailable' : 'no run';
+          runPanel.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:24px;">
+            <p>${d.error ? escapeHtml(d.error) : 'No runs found.'}</p></div>`;
+          return;
+        }
+        const r = d.run;
+        const live = r.status === 'in_progress' || r.status === 'queued';
+        runLabel.textContent = `#${r.run_number} · ${r.status}${r.conclusion ? ' · ' + r.conclusion : ''}`;
+        const jobs = (d.jobs || []).map(j => {
+          const badge = j.conclusion === 'success' ? ['ok','✓ '+j.conclusion]
+            : (j.conclusion ? ['fail','✗ '+j.conclusion]
+            : (j.status === 'in_progress' ? ['run','▶ running'] : ['', j.status||'queued']));
+          const cur = (j.steps || []).find(s => s.status === 'in_progress');
+          const steps = (j.steps || []).filter(s => s.status !== 'pending' && s.status !== 'queued')
+            .map(s => { const [ico,cls] = stepIcon(s);
+              return `<div class="ci-step ${cls}"><span class="s-ico">${ico}</span><span>${escapeHtml(s.name)}</span></div>`; }).join('');
+          return `<div class="ci-job"><div class="ci-job-head">
+              <span class="ci-job-name">${escapeHtml(j.name||'job')}</span>
+              <span class="ci-job-meta"><span class="ci-badge ${badge[0]}">${escapeHtml(badge[1])}</span></span>
+            </div>
+            <div class="ci-steps">${steps}</div></div>`;
+        }).join('');
+        runPanel.innerHTML = jobs || `<div class="empty-state" style="grid-column:1/-1;padding:24px;">
+            <p>Run #${r.run_number} — ${live ? 'starting…' : r.conclusion || ''}</p></div>`;
+      } catch (err) { /* best-effort */ }
+    }
+
+    document.getElementById('btn-run-refresh').addEventListener('click', pollRun);
+    document.getElementById('btn-run-cancel').addEventListener('click', async () => {
+      if (!confirm('Stop the current run? This cancels all runner jobs.')) return;
+      try {
+        const d = await (await fetch('/api/run_control/cancel', { method: 'POST' })).json();
+        showToast(d.message || d.error || 'cancel requested', !d.ok);
+        pollRun();
+      } catch (err) { showToast('Stop failed: ' + err.message, true); }
+    });
+
     setInterval(pollState, 1500);
     pollState();
+    setInterval(pollRun, 4000);
+    pollRun();
     setInterval(pollCi, 5000);
     pollCi();
     setInterval(pollFactory, 5000);

@@ -1,0 +1,89 @@
+name: Gold Verification Suite
+
+# Proves — on a real Linux runner, not the operator's PC — that:
+#   1. the hub (registry, broker, policy, verify) works on Linux
+#   2. gold IPs are REAL gold: a signed-out CloakBrowser loads the watch
+#      page through the proxy and the <video> element actually PLAYS
+#   3. the curl oracle and browser reality agree (or don't — that's the finding)
+#
+# Runs the full test suite, then the browser-level gold verification.
+
+on:
+  workflow_dispatch:
+    inputs:
+      top:
+        description: 'How many gold exits to verify in a browser'
+        required: false
+        default: '5'
+      suite:
+        description: 'Run the unit test suite too (true/false)'
+        required: false
+        default: 'true'
+  push:
+    branches: [main]
+    paths:
+      - 'hub/**'
+      - '.github/workflows/verify.yml'
+
+jobs:
+  verify:
+    if: "!contains(github.event.head_commit.message, '[skip-ci]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb curl
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+          pip install cloakbrowser
+          npx cloakbrowser install || python -c "import cloakbrowser; print('cloakbrowser installed')"
+          python -m playwright install --with-deps chromium || true
+
+      - name: Hub smoke test (Linux)
+        run: |
+          python - <<'PY'
+          import sys, json; sys.path.insert(0, '.')
+          from hub import config, db, broker, gh, logging_setup
+          db.init()
+          db.set_policy('tabs_per_runner', 24)
+          assert db.get_policy('tabs_per_runner') == 24
+          db.upsert_account('ci-test', 'ci/test')
+          cap = db.fleet_capacity(); assert cap['accounts'] >= 1
+          db.upsert_ip('10.0.0.1:1', 'HTTP', cc='US', tier='T1', score=99)
+          gold = db.fetch_gold(); assert gold, 'fetch_gold empty'
+          broker.migrate_from_json()
+          print('HUB SMOKE OK on', sys.platform)
+          print('rack:', db.rack_stats()['gold'], 'gold |', json.dumps(cap))
+          PY
+
+      - name: Unit test suite
+        if: ${{ github.event.inputs.suite != 'false' }}
+        run: python -m pytest ipshelf/core/tests/ -q
+
+      - name: Browser-level gold verification (REAL playback test)
+        env:
+          CI: "true"
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+            python hub/verify.py --top ${{ github.event.inputs.top || '5' }} \
+              --from-snapshot --out data/verify_report.json
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gold-verification-report
+          path: data/verify_report.json
+          if-no-files-found: warn

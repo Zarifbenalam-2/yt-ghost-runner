@@ -127,6 +127,28 @@ def checks_ok(path, token="", timeout=8):
         return False
 
 
+def cancel_run(repo, run_id, token=""):
+    """Cancel a workflow run in flight. Returns True on success."""
+    try:
+        request("POST", f"/repos/{repo}/actions/runs/{run_id}/cancel", token=token)
+        log.info("cancelled run %s", run_id)
+        return True
+    except GitHubError as e:
+        log.error("cancel run %s failed: %s", run_id, e)
+        return False
+
+
+def latest_run(repo, workflow, token=""):
+    """Latest run of a workflow, or None."""
+    try:
+        data = get(f"/repos/{repo}/actions/workflows/{workflow}/runs?per_page=1",
+                   token=token)
+    except GitHubError:
+        return None
+    runs = data.get("workflow_runs", [])
+    return runs[0] if runs else None
+
+
 def watch_runs_active(token="", repo=None, per_page=5):
     """Return True iff a watcher run is queued/in_progress.
 
