@@ -498,7 +498,7 @@ def main():
             f.cancel()
     executor.shutdown(wait=False, cancel_futures=True)
     results = [finished.get(i + 1, {
-        "tabId": i + 1, "ok": False, "ip": "direct", "cc": "LOCAL",
+        "tabId": i + 1, "ok": False, "ip": "cut", "cc": "--",
         "video": args.url, "error": "run_deadline"})
         for i in range(args.tabs)]
     log.info("run deadline enforced: %d tabs finished, %d cut at %ss",
