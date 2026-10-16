@@ -221,6 +221,20 @@ jobs:
           CI: "true"
         run: |
           python3 collect.py --watch --run-id "${{ github.run_id }}"
+      - name: Compact live-deck branch (runners all done, keep latest state)
+        run: |
+          # Every runner pushes its deck file every ~150s (18 runners x ~90min
+          # = hundreds of commits per run, all overwriting one file each).
+          # Squash the branch to a single commit with the same tree: the deck
+          # stays readable, the repo stops growing a commit per push.
+          git fetch origin live-deck || exit 0
+          git rev-parse origin/live-deck >/dev/null 2>&1 || exit 0
+          TREE=$(git rev-parse 'origin/live-deck^{tree}')
+          COMMIT=$(git -c user.email=ghost-live@users.noreply.github.com \
+                       -c user.name=ghost-live commit-tree "$TREE" \
+                       -m "live-deck: compacted after run ${{ github.run_id }} [skip-ci]")
+          git push -f origin "$COMMIT:refs/heads/live-deck"
+          echo "live-deck compacted: $COMMIT"
       - name: Upload collect summary
         if: always()
         uses: actions/upload-artifact@v4
