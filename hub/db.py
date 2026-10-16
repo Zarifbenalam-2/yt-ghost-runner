@@ -280,13 +280,38 @@ def upsert_ip(addr, proto="HTTP", **fields):
 
 
 def burn_ip(addr, proto=None, reason="dead"):
+    """Remove a dead exit PERMANENTLY.
+
+    The operator's rule: dead IPs must not stay in the rack at all, and no IP
+    is kept indefinitely — only freshly harvested, freshly gated exits are
+    usable. A corpse re-injected from an old snapshot costs a gate check and
+    a ruined tab on EVERY run. Rows are DELETEd, not flagged 'burned', so no
+    tool that rebuilds a pool from the registry can resurrect them.
+    """
     c = conn()
     if proto:
-        c.execute("UPDATE ips SET status='burned', channels=0 WHERE addr=? AND proto=?",
-                  (addr, proto))
+        c.execute("DELETE FROM ips WHERE addr=? AND proto=?", (addr, proto))
     else:
-        c.execute("UPDATE ips SET status='burned', channels=0 WHERE addr=?", (addr,))
-    record_run("gate", addr, "warning", f"burned: {reason}")
+        c.execute("DELETE FROM ips WHERE addr=?", (addr,))
+    record_run("gate", addr, "warning", f"removed (dead): {reason}")
+
+
+def prune_old(max_age_sec=None):
+    """Drop every exit whose last successful gate is older than max_age_sec.
+
+    The shelf is a SHORT-LIVED cache, not an archive: free proxies live 1-3h,
+    so anything older is a corpse waiting to waste a tab. Returns rows pruned.
+    """
+    max_age_sec = float(max_age_sec or os.environ.get("IP_MAX_AGE_SEC", 3 * 3600))
+    cutoff = time.time() - max_age_sec
+    c = conn()
+    cur = c.execute("DELETE FROM ips WHERE COALESCE(last_gold_ok, first_seen) < ?",
+                    (cutoff,))
+    n = cur.rowcount or 0
+    if n:
+        record_run("gate", "prune", "warning",
+                   f"pruned {n} exits older than {int(max_age_sec)}s", count=n)
+    return n
 
 
 def purge_burned(older_than_days=None):

@@ -17,6 +17,7 @@ VIEW of the rack, not the source of truth.
 """
 import concurrent.futures
 import json
+import os
 import time
 
 from . import config, db
@@ -142,27 +143,39 @@ def regate_sweep(par=200):
 def write_snapshot(path=None):
     """Materialise the committed snapshot the cloud runners bootstrap from.
 
-    A VIEW of the rack: T1-first, best score first, gold only.
+    A VIEW of the rack: T1-first, best score first, gold only — and AGE
+    BOUNDED (operator rule: no IP is stored indefinitely; only freshly
+    harvested exits should ever be in use). Free proxies live 1-3h, so a
+    snapshot full of older verdicts is a list of corpses that costs a gate
+    check per entry and ruins real tabs. If the age filter would empty the
+    pool, the freshest entries are kept rather than starving the runners.
     """
     path = path or config.SNAPSHOT_FILE
+    max_age = float(os.environ.get("IP_MAX_AGE_SEC", 3 * 3600))
+    cutoff = time.time() - max_age
     gold = db.fetch_gold(limit=100000)
-    # status + gated_at ride along: downstream filters (gold_factory,
-    # factory_collect, load_pool_snapshot freshness sort) key off them, and
-    # a snapshot entry without gated_at sorts as infinitely stale. The rack
-    # stores the gate time as last_gold_ok; the JSON convention is gated_at.
+    fresh = [g for g in gold if (g.get("last_gold_ok") or 0) >= cutoff]
+    dropped = len(gold) - len(fresh)
+    if not fresh and gold:                       # never ship an empty pool
+        fresh = sorted(gold, key=lambda g: -(g.get("last_gold_ok") or 0))[:100]
     snap = {"snapshotted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "max_age_sec": int(max_age),
+            # status + gated_at ride along: downstream filters (gold_factory,
+            # factory_collect, load_pool_snapshot freshness sort) key off them;
+            # the rack stores the gate time as last_gold_ok.
             "exits": [{"status": "gold", "gated_at": g.get("last_gold_ok") or 0,
                        **{k: g[k] for k in ("addr", "proto", "cc", "tier",
                                             "kind", "score", "egress_ip",
                                             "latency_ms") if k in g}}
-                      for g in gold]}
+                      for g in fresh]}
     from pathlib import Path
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(".tmp")
     tmp.write_text(json.dumps(snap, indent=2), encoding="utf-8")
     tmp.replace(p)
-    log.info("snapshot written: %d gold -> %s", len(snap["exits"]), p.name)
+    log.info("snapshot written: %d gold (dropped %d older than %ds) -> %s",
+             len(snap["exits"]), dropped, int(max_age), p.name)
     return len(snap["exits"])
 
 

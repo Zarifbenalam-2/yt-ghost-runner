@@ -257,6 +257,8 @@ def main():
         log.info("watch feedback: %d burn reports + %d ip_usage maps",
                  len(watch_burns), len(ip_usage))
         applied = apply_burns(watch_burns, exclude=set())
+        pruned = db.prune_old()      # no exit is stored past its useful life
+        watch_burns = [b for b in watch_burns]      # (kept for the summary)
         n = broker.write_snapshot()
         try:
             from hub import allocator
@@ -267,6 +269,7 @@ def main():
             log.warning("allocator failed: %s", exc)
         pushed = commit_snapshot(push=not args.no_push)
         summary = {"burn_reports": len(watch_burns), "burned": applied,
+                   "pruned_old": pruned,
                    "watch_ips_used": len(ip_usage), "snapshot": n, "pushed": pushed}
         Path(config.DATA_DIR).mkdir(parents=True, exist_ok=True)
         Path(config.DATA_DIR / "collect_summary.json").write_text(
@@ -305,6 +308,7 @@ def main():
     # certified itself: a shard under high parallelism reports live proxies as
     # dead, and applying that blindly would evict gold proven seconds earlier.
     applied = apply_burns(burns, exclude=shelved_addrs)
+    pruned = db.prune_old()          # nothing is kept past its useful life
 
     # ── SAFETY: never wipe a good snapshot because a harvest failed ──
     # (a fleet run that collected 0 gold must NOT overwrite the committed
@@ -315,7 +319,8 @@ def main():
         log.error("rack EMPTY and no shard gold — refusing to write/commit an "
                   "empty snapshot (keeps the previous snapshot intact)")
         summary = {"shards_gold": len(golds), "burn_reports": len(burns),
-                   "burned": applied, "shelved": shelved, "snapshot": -1,
+                   "burned": applied, "shelved": shelved,
+                   "pruned_old": pruned, "snapshot": -1,
                    "pushed": False, "skipped": "empty_rack_guard"}
         Path(config.DATA_DIR).mkdir(parents=True, exist_ok=True)
         Path(config.DATA_DIR / "collect_summary.json").write_text(

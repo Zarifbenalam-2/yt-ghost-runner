@@ -36,9 +36,11 @@ STREAM_DIR = ROOT / "data" / "stream"
 #: but only while the merged pool would otherwise be thin.
 STREAM_FRESH_SEC = 45 * 60
 STREAM_MAX_AGE_SEC = 2 * 3600
-#: below this many candidates, old stream entries are kept rather than
-#: leaving the pool starving (a stale candidate costs one gate check)
-STREAM_KEEP_STALE_UNDER = 200
+#: keep old entries ONLY when nothing fresh exists at all. The operator's
+#: rule is "only freshly harvested IPs in use": a small fresh pool is correct,
+#: a big stale one is not. Scarcity is handled by tabs PARKING and waiting for
+#: supply, never by drinking water that is certainly dead.
+STREAM_KEEP_STALE_UNDER = 1
 
 
 def load_stream_entries():
@@ -80,19 +82,27 @@ def merge_snapshot_with_stream(snapshot_exits, stream_entries):
         else:
             stale.append(e)
     snap = []
+    snap_old = []
     for e in snapshot_exits:
         if not e.get("addr"):
             continue
         key = (e["addr"], e.get("proto", "HTTP"))
-        if key not in seen:
-            seen.add(key)
+        if key in seen:
+            continue
+        seen.add(key)
+        ga = e.get("gated_at") or 0
+        # age-bound the committed catalog too: a snapshot with no timestamps
+        # (old format) is trusted less than one that carries them
+        if not ga or (now - ga) < STREAM_MAX_AGE_SEC:
             snap.append(e)
+        else:
+            snap_old.append(e)
     # honest freshness order: <45min stream, then everything else by gated_at
     tail = sorted(recent_stream + snap, key=lambda e: -(e.get("gated_at") or 0))
     merged = fresh + tail
     kept_stale = False
     if len(merged) < STREAM_KEEP_STALE_UNDER:
-        merged = merged + stale
+        merged = merged + stale + snap_old
         kept_stale = True
     return merged, {"stream_total": len(stream_entries),
                     "stream_fresh": len(fresh),
@@ -100,6 +110,8 @@ def merge_snapshot_with_stream(snapshot_exits, stream_entries):
                     "stream_stale_kept": len(stale) if kept_stale else 0,
                     "stream_stale_dropped": 0 if kept_stale else len(stale),
                     "snapshot_exits": len(snap),
+                    "snapshot_old_kept": len(snap_old) if kept_stale else 0,
+                    "snapshot_old_dropped": 0 if kept_stale else len(snap_old),
                     "merged": len(merged)}
 
 
