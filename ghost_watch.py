@@ -26,6 +26,7 @@ from hub.logging_setup import get_logger
 
 log = get_logger("ghost_watch")
 
+import live_deck
 from engine.cloud_browser import open_ghost_context
 from engine.live_streamer import LiveStreamer
 from wu_lib import ensure_playing, video_state, watch_with_live_stream
@@ -221,15 +222,21 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
     counter). Only after exhausting retries does the tab report its failure.
     """
     attempts = int(os.environ.get("TAB_RETRIES", "3")) if not direct else 1
+    live_deck.mark(tab_idx, "starting", attempts=attempts)
     last_res = None
     for attempt in range(attempts):
         last_res = _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target,
                                 headful, direct, used, pool)
         if last_res.get("ok"):
+            live_deck.mark(tab_idx, "ok", ip=last_res.get("ip"),
+                           cc=last_res.get("cc"),
+                           currentTime=last_res.get("currentTime"))
             return last_res
         if attempt + 1 < attempts:
             log.info("tab %d attempt %d/%d failed (%s) — re-drawing IP",
                      tab_idx, attempt + 1, attempts, last_res.get("error")) 
+    live_deck.mark(tab_idx, "fail", ip=last_res.get("ip"),
+                   error=last_res.get("error"))
     return last_res
 
 
@@ -259,6 +266,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
         "cc": entry.get("cc") if entry else "LOCAL",
         "video": url,
     }
+    live_deck.mark(tab_idx, "watching", ip=res["ip"], cc=res["cc"])
 
     with sync_playwright() as p:
         ctx = None
@@ -333,6 +341,56 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             shutil.rmtree(profile_dir, ignore_errors=True)
 
 
+def _pool_refresher(pool, stop_evt):
+    """Water-pile tail: fold gold-stream gold into the LIVE pool mid-run.
+
+    The start-of-run fold-in only sees gold harvested BEFORE the run. Harvest
+    shards keep pushing to gold-stream cycle-by-cycle DURING the run; this
+    refresher picks those up every REFRESH_SEC and appends only genuinely NEW
+    addresses (validated first), so tabs keep drinking minutes-old IP instead
+    of draining the start-of-run pile. New entries are appended (draw_gold_ip
+    reads the list under the GIL and prefers least-used IPs, so fresh live
+    exits win the next draw). Any failure just leaves the current pool —
+    never kills the run.
+    """
+    import subprocess as sp
+    interval = int(os.environ.get("REFRESH_SEC", "600"))
+    known = {e["addr"] for e in pool}
+    while not stop_evt.wait(interval):
+        try:
+            sp.run(["git", "fetch", "origin", "gold-stream"], cwd=str(ROOT),
+                   capture_output=True, timeout=90)
+            if sp.run(["git", "checkout", "origin/gold-stream", "--", "data/stream"],
+                      cwd=str(ROOT), capture_output=True, timeout=60).returncode != 0:
+                continue
+            merged = ROOT / "data" / "pool_refresh.json"
+            sp.run([sys.executable, "load_pool_snapshot.py", "--with-stream",
+                    "--out", str(merged)], cwd=str(ROOT), capture_output=True,
+                   timeout=120)
+            if not merged.is_file():
+                continue
+            entries = json.loads(merged.read_text(encoding="utf-8")).get("exits", [])
+            with _FEEDBACK_LOCK:
+                fresh = [e for e in entries
+                         if e.get("addr") and e["addr"] not in known
+                         and e["addr"] not in _DEAD]
+            if not fresh:
+                continue
+            live = validate_candidates(
+                fresh, workers=int(os.environ.get("GATE_WORKERS", "32")))
+            added = 0
+            for e in live:
+                if e["addr"] not in known:
+                    pool.append(e)
+                    known.add(e["addr"])
+                    added += 1
+            if added:
+                log.info("pool refresh: +%d live of %d new stream candidates "
+                         "(pool now %d)", added, len(fresh), len(pool))
+        except Exception as e:
+            log.warning("pool refresh failed (continuing on current pool): %s", e)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Multi-tab Ghost Watcher with live screen feed.")
     ap.add_argument("--url", required=True, help="YouTube video URL to watch")
@@ -366,6 +424,17 @@ def main():
                 cands, workers=int(os.environ.get("GATE_WORKERS", "32")))
             pool_stats["live"] = len(pool)
             log.info("IP pool ready: %d live of %d candidates", len(pool), len(cands))
+
+    live_deck.set_meta(url=args.url, tabs=args.tabs,
+                       pool_live=pool_stats.get("live"),
+                       pool_candidates=pool_stats.get("candidates"))
+    live_deck.start()
+
+    # water-pile tail: keep folding gold-stream additions into the live pool
+    refresh_stop = threading.Event()
+    if not args.direct:
+        threading.Thread(target=_pool_refresher, args=(pool, refresh_stop),
+                         name="pool-refresh", daemon=True).start()
 
     executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=args.tabs, thread_name_prefix="tab")
@@ -410,6 +479,13 @@ def main():
              len(finished), args.tabs - len(finished), deadline)
     run_deadline_hit = deadline_hit
 
+    # final live-deck sync so the deck shows true end-of-run state
+    refresh_stop.set()
+    for r in results:
+        st = "ok" if r.get("ok") else (
+            "deadline" if r.get("error") == "run_deadline" else "fail")
+        live_deck.mark(r["tabId"], st, ip=r.get("ip"), error=r.get("error"))
+
     ok_count = sum(1 for r in results if r.get("ok"))
     log.info("Ghost Run Completed: %d/%d tabs reached watch target.", ok_count, args.tabs)
     print(f"[+] Ghost Run Completed: {ok_count}/{args.tabs} tabs reached watch target.", flush=True)
@@ -447,6 +523,7 @@ def main():
     # force-exit on deadline so hung tab threads cannot outlive the run
     # (see the executor note above: shutdown(wait=False) is not enough —
     # non-daemon worker threads keep the process alive until they die)
+    live_deck.flush_final()      # last deck push must beat the exit below
     if run_deadline_hit:
         log.warning("deadline hit — os._exit(0) to shed hung tab threads")
         os._exit(0)

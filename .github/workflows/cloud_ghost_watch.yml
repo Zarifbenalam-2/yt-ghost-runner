@@ -37,11 +37,21 @@ on:
         description: 'Max watch percent'
         required: false
         default: '95'
+      harvest_shards:
+        description: 'Gold-factory shards harvesting ALONGSIDE the watch (water-pile: fresh gold streams in mid-run; 18 watch + 2 harvest = steady state)'
+        required: false
+        default: '0'
+      harvest_par:
+        description: 'Parallel gold checks per harvest shard (200 = honest verdicts)'
+        required: false
+        default: '200'
 
 jobs:
   cloud-watch:
     if: "!contains(github.event.head_commit.message, '[skip-ci]')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # live-deck pushes (mid-run state, see live_deck.py)
     strategy:
       fail-fast: false
       matrix:
@@ -136,6 +146,9 @@ jobs:
           STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
           HUMAN_MOVES: ${{ github.event.inputs.human_moves || 'true' }}
           GHOST_LOG_LEVEL: "DEBUG"
+          LIVE_DECK: "1"         # push live_r<id>.json to live-deck branch mid-run
+          LIVE_DECK_SEC: "150"
+          REFRESH_SEC: "600"     # re-fold gold-stream into the live pool mid-run
         run: |
           mkdir -p data
           nohup python relay.py --port 8899 > relay.log 2>&1 &
@@ -172,6 +185,7 @@ jobs:
             data/run_report_${{ matrix.runner_id }}.json
             data/burn_report_${{ matrix.runner_id }}.json
             data/live_feed.json
+            data/live/live_r${{ matrix.runner_id }}.json
             data/tunnel_url_${{ matrix.runner_id }}.txt
             data/ghost_log_${{ matrix.runner_id }}.txt
             data/logs/human_moves.log
@@ -214,3 +228,49 @@ jobs:
           name: collect-summary
           path: data/collect_summary.json
           if-no-files-found: warn
+
+  # ── water-pile concurrent harvest (the user's 18:2 steady-state design) ──
+  # Runs at the SAME TIME as the watch jobs: while 18 runners watch, 2
+  # harvest shards scrape+certify fresh gold and stream it to the gold-stream
+  # branch cycle-by-cycle. Watch runners re-fold that stream MID-RUN
+  # (ghost_watch._pool_refresher), so gold reaches tabs minutes after
+  # certification instead of waiting for the next dispatch.
+  gold-harvest:
+    if: always() && !contains(github.event.head_commit.message, '[skip-ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # shards stream certified gold to gold-stream
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl
+          pip install -r requirements.txt 2>/dev/null || pip install PyYAML
+      - name: Harvest shard (streams gold mid-run)
+        env:
+          CI: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHARDS="${{ github.event.inputs.harvest_shards || '0' }}"
+          SHARD=${{ matrix.shard }}
+          if [ "$SHARD" -ge "$SHARDS" ]; then
+            echo "harvest shard $SHARD idle (only $SHARDS requested)"
+            exit 0
+          fi
+          python3 gold_factory.py --once \
+            --shard "$SHARD" --shards "$SHARDS" \
+            --par ${{ github.event.inputs.harvest_par || '200' }} \
+            --max-test 4000 \
+            --stream --no-ship
