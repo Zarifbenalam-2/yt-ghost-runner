@@ -363,16 +363,21 @@ def run_cycle(args, seen):
         seen[addr] = {"ts": now, "proto": proto}
 
     if golds and args.shards == 1:
-        pool = shelf.load_pool()
-        res = shelf.merge_exits(pool, golds)
-        shelf.save_pool(pool)
+        # Route through the BROKER: dedupe -> FINAL GATE -> registry.
+        # (Previously this merged straight into the JSON pool, so a proxy
+        # that was gold early in a long cycle could shelf already-dead.)
+        from hub import broker
+        res = broker.accept_gold(golds, source="factory", par=min(args.par, 200))
         append_gold_log(golds)
-        log(f"shelf merge: +{res['added']} added, {res['refreshed']} refreshed")
-        if args.ship and res["added"]:
-            ship(res["added"])
+        log(f"broker: shelved {res['shelved']} of {res['received']} "
+            f"(gated {res['fresh_checked']}, failed {res['failed']})")
+        if args.ship and res["shelved"]:
+            n = broker.write_snapshot()
+            log(f"snapshot: {n} gold")
+            ship(res["shelved"])
             if args.dispatch:
                 dispatch(args.dispatch)
-        return res["added"]
+        return res["shelved"]
 
     if golds:
         print("FACTORY_GOLD_JSON=" + json.dumps(golds), flush=True)

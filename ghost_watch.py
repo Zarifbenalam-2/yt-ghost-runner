@@ -38,37 +38,78 @@ def extract_video_id(url):
     return m.group(1) if m else None
 
 
-def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8):
-    """Select a gold exit from the IP Shelf pool, spread across tabs.
+def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None):
+    """Select a gold exit, spread across tabs, honouring the per-IP cap.
 
-    Gates the top-scored golds (dead ones are burned per LAW 5), then
-    picks RANDOMLY among the top `top_pick` survivors so N concurrent
-    tabs distribute over several exits instead of piling onto #1.
+    Source of truth: the hub registry (SQLite) when available — that gives
+    cap enforcement, T1-first ordering and central burn. Cloud runners have
+    no registry (it is not committed); they carry the snapshot therefore we
+    fall back to the JSON shelf loaded from data/ip_pool_snapshot.json.
+
+    Gates the top-scored golds (dead ones are burned, LAW 5), then picks
+    RANDOMLY among the survivors so N concurrent tabs spread over several
+    exits instead of piling onto #1.
     """
     if not use_proxy:
         return None
+
+    entries = None
+    registry = None
     try:
-        from ipshelf.core import gate, shelf
-        from ipshelf.core.assigner import burn_ip
-        pool = shelf.load_pool()
-        golds = [e for e in pool.get("exits", []) if e.get("status") == "gold"]
-        if not golds:
+        from hub import db
+        db.init()
+        t1_only = bool(db.get_policy("t1_only", 0))
+        entries = db.fetch_gold(region=region, t1_only=t1_only, limit=max_candidates * 3)
+        registry = db
+    except Exception:
+        entries = None
+
+    if not entries:
+        # fallback: JSON shelf (also what cloud runners use)
+        try:
+            from ipshelf.core import gate, shelf
+            if not shelf.load_pool().get("exits"):
+                # cloud: bootstrap the committed snapshot if the shelf is empty
+                try:
+                    import load_pool_snapshot
+                    load_pool_snapshot.main()
+                except Exception:
+                    pass
+            pool = shelf.load_pool()
+            entries = [e for e in pool.get("exits", []) if e.get("status") == "gold"]
+            entries.sort(key=lambda e: -(e.get("score") or 0))
+            entries = entries[:max_candidates * 3]
+        except Exception:
             return None
-        golds.sort(key=lambda e: -(e.get("score") or 0))
+
+    if not entries:
+        return None
+
+    try:
+        from ipshelf.core import gate
         ok_entries = []
-        for e in golds[:max_candidates]:
+        for e in entries[:max_candidates]:
             g = gate.quick_gold_check(e["addr"], e.get("proto"))
             if g.get("ok"):
                 ok_entries.append(e)
+            elif registry is not None:
+                registry.burn_ip(e["addr"], e.get("proto"), reason="ghost_gate_fail")
             else:
                 try:
+                    from ipshelf.core.assigner import burn_ip
                     burn_ip(e["addr"], "ghost_gate_fail")
                 except Exception:
                     pass
             if len(ok_entries) >= top_pick:
                 break
         if ok_entries:
-            return random.choice(ok_entries[:top_pick])
+            pick = random.choice(ok_entries[:top_pick])
+            if registry is not None:
+                try:      # record the tab as riding this exit (cap-aware)
+                    registry.register_tabs_riding([pick["addr"]], 1)
+                except Exception:
+                    pass
+            return pick
     except Exception:
         pass
     return None

@@ -236,6 +236,25 @@
       font-size: 12px; padding: 5px 10px;
     }
     .btn-log:hover { border-color: var(--accent); }
+    /* ── observation deck ── */
+    .deck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 14px; }
+    .deck-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+    }
+    .deck-card .k { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+    .deck-card .v { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+    .deck-card .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .deck-card.hi .v { color: var(--green); }
+    .deck-card.warn .v { color: var(--gold); }
+    .deck-card.bad .v { color: var(--red); }
+    .util-bar { width: 100%; height: 8px; background: #1f293d; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .util-fill { height: 100%; background: linear-gradient(90deg,#38bdf8,#10b981); }
+    .pol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 10px; }
+    .pol { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+           background: #0d1322; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; }
+    .pol label { font-size: 11.5px; color: var(--muted); }
+    .pol input { width: 66px; background: #060a12; border: 1px solid var(--border); color: var(--accent);
+                 border-radius: 5px; padding: 3px 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right; }
     .log-modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 9998;
       display: none; align-items: center; justify-content: center; padding: 32px;
@@ -327,6 +346,18 @@
       <p style="margin-top: 8px; font-size: 13px;">Enter a video link above and click <strong>"Run Local Test"</strong> or <strong>"Spawn Cloud Actions"</strong> to start watching.</p>
     </div>
   </div>
+
+  <div class="grid-header" style="margin-top: 28px;">
+    <h2>Observation Deck — Central Hub (<span id="deck-label">loading</span>)</h2>
+  </div>
+  <div class="deck-grid" id="deck-cards"></div>
+  <div class="deck-grid" id="deck-deck"></div>
+
+  <div class="grid-header" style="margin-top: 20px;">
+    <h2>Policy — absolute control</h2>
+    <button class="btn-log" id="btn-policy-save">💾 Save Policy</button>
+  </div>
+  <div class="pol-grid" id="policy-grid"></div>
 
   <div class="grid-header" style="margin-top: 28px;">
     <h2>GitHub Actions CI Monitor (<span id="ci-label">no runs</span>)</h2>
@@ -623,12 +654,76 @@
       }
     });
 
+    // ── Observation deck + policy editor ──
+    const deckCards = document.getElementById('deck-cards');
+    const deckDeck = document.getElementById('deck-deck');
+    const deckLabel = document.getElementById('deck-label');
+    const policyGrid = document.getElementById('policy-grid');
+    let policyLoaded = false;
+
+    function card(k, v, sub, cls='') {
+      return `<div class="deck-card ${cls}"><div class="k">${k}</div>
+              <div class="v">${v}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+    }
+
+    async function pollDeck() {
+      try {
+        const d = await (await fetch('/api/deck')).json();
+        if (d.error) { deckLabel.textContent = 'error'; return; }
+        const r = d.rack, f = d.fleet, cap = d.capacity;
+        deckLabel.textContent = `${f.accounts} account(s) · ${r.gold} gold`;
+        deckCards.innerHTML =
+          card('Rack gold', r.gold, `${r.t1} tier-1`, 'hi') +
+          card('Rack capacity', r.capacity, `${r.cap_per_ip} tabs/IP cap`) +
+          card('Tabs riding', r.riding, `${cap.utilisation_pct}% utilised`, cap.utilisation_pct > 80 ? 'warn' : '') +
+          card('Burned', r.burned, 'evicted by gate/gate-sweep', r.burned > 0 ? 'bad' : '') +
+          card('Accounts', f.accounts, `${f.total_jobs} jobs / ${f.total_tab_runners} tab-runners`) +
+          card('Fleet tabs', f.total_tabs, `${f.tabs_per_runner} tabs/runner`)
+        ;
+        // usage bar + per-account rows
+        const rows = f.rows.map(a => card(a.name, `${a.assigned_tabs}`, `${a.tab_runners} tab + ${a.harvest_runners} harvest runners · repo ${a.repo}`)).join('');
+        deckDeck.innerHTML =
+          `<div class="deck-card" style="grid-column:1/-1">
+             <div class="k">Capacity utilisation (riding / possible)</div>
+             <div class="util-bar"><div class="util-fill" style="width:${Math.min(cap.utilisation_pct,100)}%"></div></div>
+             <div class="s">${cap.tabs_riding} riding of ${cap.tabs_possible} possible</div>
+           </div>` + rows;
+
+        if (!policyLoaded && d.policy) { renderPolicy(d.policy); policyLoaded = true; }
+      } catch (err) { /* deck is best-effort */ }
+    }
+
+    function renderPolicy(p) {
+      const skip = new Set(['fresh_gold_target']);
+      policyGrid.innerHTML = Object.keys(p).filter(k => !skip.has(k)).sort().map(k => {
+        const v = p[k];
+        const t = typeof v === 'boolean' || k.startsWith('t1') || k.startsWith('auto') ? 'checkbox' : 'number';
+        return `<div class="pol"><label>${k.replace(/_/g,' ')}</label>
+          <input data-key="${k}" type="${t}" ${t==='checkbox' ? (v ? 'checked' : '') : `value="${v}"`}/></div>`;
+      }).join('');
+    }
+
+    document.getElementById('btn-policy-save').addEventListener('click', async () => {
+      const q = [];
+      policyGrid.querySelectorAll('input').forEach(i => {
+        const val = i.type === 'checkbox' ? (i.checked ? '1' : '0') : i.value;
+        q.push(`${i.dataset.key}=${encodeURIComponent(val)}`);
+      });
+      try {
+        const d = await (await fetch('/api/policy?' + q.join('&'))).json();
+        showToast(d.ok ? 'Policy saved — applied system-wide' : ('Policy error: ' + d.error), !d.ok);
+        pollDeck();
+      } catch (err) { showToast('Policy save failed: ' + err.message, true); }
+    });
+
     setInterval(pollState, 1500);
     pollState();
     setInterval(pollCi, 5000);
     pollCi();
     setInterval(pollFactory, 5000);
     pollFactory();
+    setInterval(pollDeck, 5000);
+    pollDeck();
   </script>
 </body>
 </html>

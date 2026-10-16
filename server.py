@@ -94,8 +94,14 @@ def _terminate_factory(reason):
 
 
 def factory_manager_loop():
-    """Every 60s: watcher live -> factory runs; watcher gone -> factory stops."""
+    """Every 60s: watcher live -> factory runs; watcher gone -> factory stops.
+
+    Also runs the rack re-gate sweep on the policy interval
+    (policy 'regate_minutes', default 5) so the shelf continuously sheds
+    exits that lost their gold grade.
+    """
     from gold_factory import watcher_active
+    last_sweep = 0.0
     while True:
         try:
             active = watcher_active()
@@ -108,6 +114,18 @@ def factory_manager_loop():
                 _spawn_factory("watcher active")
             elif not active and running:
                 _terminate_factory("watch ended")
+
+            # ── periodic rack re-gate sweep (policy-driven interval) ──
+            try:
+                from hub import db, broker
+                db.init()
+                interval = max(1, int(db.get_policy("regate_minutes", 5))) * 60
+                if time.time() - last_sweep >= interval:
+                    last_sweep = time.time()
+                    threading.Thread(target=broker.regate_sweep, daemon=True,
+                                     name="regate-sweep").start()
+            except Exception as se:
+                _factory_log(f"sweep error: {type(se).__name__}: {se}")
         except Exception as e:
             _factory_log(f"manager error: {type(e).__name__}: {e}")
         time.sleep(60)
@@ -240,14 +258,83 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "last_check": _FACTORY["last_check"],
                     "gold_certified": _gold_certified_count(),
                 })
+        elif self.path == "/api/deck":
+            # ── Observation deck: live capacity, usage, rack, fleet ──
+            try:
+                from hub import db
+                db.init()
+                rack = db.rack_stats()
+                fleet = db.fleet_capacity()
+                with _FACTORY_LOCK:
+                    p = _FACTORY["proc"]
+                    fac = {"running": bool(p and p.poll() is None),
+                           "watcher_active": _FACTORY["watcher_active"]}
+                self._send_json({
+                    "rack": rack,
+                    "fleet": fleet,
+                    "factory": fac,
+                    "policy": db.all_policy(),
+                    "capacity": {
+                        "tabs_possible": rack["capacity"],
+                        "tabs_riding": rack["riding"],
+                        "utilisation_pct": round(rack["riding"] / rack["capacity"] * 100, 1)
+                        if rack["capacity"] else 0,
+                    },
+                    "recent": db.recent_runs(25),
+                })
+            except Exception as e:
+                self._send_json({"error": f"deck failed: {e}"}, 500)
+        elif self.path.startswith("/api/policy"):
+            # Every tunable number, dashboard-editable (absolute control).
+            # GET /api/policy                    -> read
+            # GET /api/policy?tabs_per_runner=20 -> set one or many
+            from urllib.parse import urlparse, parse_qs
+            try:
+                from hub import db
+                db.init()
+                qs = parse_qs(urlparse(self.path).query)
+                changed = {}
+                for k, v in qs.items():
+                    raw = v[0]
+                    try:
+                        val = int(raw)
+                    except ValueError:
+                        val = raw.lower() in ("1", "true", "yes")
+                    db.set_policy(k, val)
+                    changed[k] = val
+                self._send_json({"ok": True, "policy": db.all_policy(), "changed": changed})
+            except Exception as e:
+                self._send_json({"error": f"policy failed: {e}"}, 500)
+        elif self.path.startswith("/api/rack"):
+            from urllib.parse import urlparse, parse_qs
+            try:
+                from hub import db
+                db.init()
+                qs = parse_qs(urlparse(self.path).query)
+                region = qs.get("region", [None])[0]
+                t1_only = qs.get("t1", ["0"])[0] in ("1", "true")
+                limit = int(qs.get("limit", ["100"])[0])
+                self._send_json({"gold": db.fetch_gold(region, t1_only, limit),
+                                 "stats": db.rack_stats()})
+            except Exception as e:
+                self._send_json({"error": f"rack failed: {e}"}, 500)
         elif self.path == "/api/accounts":
-            # Safe list: names + repos only, never tokens
-            self._send_json({
-                "accounts": [
-                    {"name": a["name"], "repo": a["repo"]}
-                    for a in load_accounts()
-                ],
-            })
+            # Registry accounts (safe fields only, never tokens)
+            try:
+                from hub import db
+                db.init()
+                if not db.list_accounts(only_enabled=False):
+                    for a in load_accounts():      # first run: seed from env/accounts.json
+                        db.upsert_account(a["name"], a["repo"])
+                self._send_json({
+                    "accounts": [{k: a[k] for k in ("name", "repo", "max_jobs",
+                                                    "tab_runners", "harvest_runners",
+                                                    "enabled")}
+                                 for a in db.list_accounts(only_enabled=False)],
+                    "fleet": db.fleet_capacity(),
+                })
+            except Exception as e:
+                self._send_json({"error": f"accounts failed: {e}"}, 500)
         elif self.path.startswith("/api/ci_reports"):
             # Pull run reports + screenshots from GitHub Actions artifacts.
             # Query: ?repo=owner/name&run_id=latest (needs GITHUB_TOKEN env)
