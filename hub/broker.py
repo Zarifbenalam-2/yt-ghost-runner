@@ -84,12 +84,14 @@ def accept_gold(entries, source="factory", par=200, regate_within=600):
 
     # ---- 3) shelf it
     shelved = 0
+    shelved_addrs = set()
     for entry, _ in passed:
         added = db.upsert_ip(entry["addr"], entry.get("proto", "HTTP"),
                              source=source, **{k: entry.get(k) for k in
                              ("cc", "tier", "score", "egress_ip", "latency_ms", "kind")
                              if entry.get(k) is not None})
         shelved += 1
+        shelved_addrs.add(entry["addr"])
         if added:
             db.record_run("harvest", entry["addr"], message="shelved",
                           cc=entry.get("cc"), score=entry.get("score"))
@@ -100,7 +102,10 @@ def accept_gold(entries, source="factory", par=200, regate_within=600):
 
     result = {"received": len(entries), "duplicates": dup,
               "fresh_checked": len(fresh), "passed": len(passed),
-              "failed": len(failed), "shelved": shelved}
+              "failed": len(failed), "shelved": shelved,
+              # returned so the collector can apply runner burn reports
+              # without evicting anything it just certified
+              "shelved_addrs": shelved_addrs}
     db.record_run("harvest", source, message="broker cycle", **result)
     log.info("broker: shelf += %d (failed %d, trusted %d)", len(passed),
              len(failed), len(trusted))

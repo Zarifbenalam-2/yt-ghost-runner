@@ -37,6 +37,7 @@ GHOST_PROFILE_BASE = ROOT / "profiles" / "ghost_temp"
 _RIDING = {}
 _BURNED = set()
 _USED = {}          # addr -> tab count on THIS runner (cap enforcement)
+_DEAD = set()       # addrs that failed a live gate on THIS runner
 _FEEDBACK_LOCK = threading.Lock()
 
 
@@ -45,43 +46,27 @@ def extract_video_id(url):
     return m.group(1) if m else None
 
 
-def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
-                 used=None):
-    """Select a gold exit, spread across tabs, honouring the global per-IP cap.
+def load_candidates(region=None, limit=400):
+    """Raw candidate exits for this runner.
 
     Source priority:
       1. local hub registry (SQLite) — cap-aware, central burn
       2. THIS runner's sharded snapshot slice (data/snapshot_shard_<i>_of_<n>.json)
-         — the global cap fix: the collector pre-partitions IPs across runners
-         so one IP can appear in at most cap_per_ip runners
+         — the global cap fix: the pool is partitioned one IP per runner
+         (reach=1), so policy cap_per_ip tabs on an address is a true GLOBAL
+         cap rather than cap x tabs_per_runner
       3. the whole committed snapshot (fallback)
-
-    `used` is this runner's {addr: count}; an IP already at cap for this
-    runner is skipped, and the least-used survivors are preferred.
     """
-    if not use_proxy:
-        return None
-    used = used if used is not None else {}
-    cap = 5
-    try:
-        from hub import db
-        cap = int(db.get_policy("cap_per_ip", cap))
-    except Exception:
-        pass
-
     entries = None
-    registry = None
     try:
         from hub import db
         db.init()
         t1_only = bool(db.get_policy("t1_only", 0))
-        entries = db.fetch_gold(region=region, t1_only=t1_only, limit=max_candidates * 3)
-        registry = db
+        entries = db.fetch_gold(region=region, t1_only=t1_only, limit=limit)
     except Exception:
         entries = None
 
     if not entries:
-        # runner slice first (global cap), then the full snapshot
         try:
             from hub import allocator
             idx = int(os.environ.get("MATRIX_RUNNER_INDEX",
@@ -96,7 +81,78 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
             entries = load_pool_snapshot.load_snapshot_exits()
         except Exception:
             entries = []
+    return entries or []
 
+
+def validate_candidates(entries, workers=32, limit=None):
+    """Gate a slice in PARALLEL once; return the live exits.
+
+    Why not gate per tab: every tab used to walk the same few top-scored
+    candidates sequentially, so 25 tabs re-tested the same corpses and gave
+    up on a rack that was stale but had live addresses further down. One
+    parallel wave validates the whole slice (~100+ exits in a couple of
+    waves) and every tab then draws from the survivors.
+    """
+    from ipshelf.core import gate
+    cands = [e for e in entries if e.get("addr")][: limit or len(entries)]
+    if not cands:
+        return []
+    live = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+        futs = {ex.submit(gate.quick_gold_check, e["addr"], e.get("proto", "HTTP")): e
+                for e in cands}
+        for f in concurrent.futures.as_completed(futs):
+            e = futs[f]
+            try:
+                r = f.result()
+            except Exception:
+                r = {}
+            if r.get("ok"):
+                live.append(e)
+            else:
+                with _FEEDBACK_LOCK:
+                    _DEAD.add(e["addr"])
+    live.sort(key=lambda e: -(e.get("score") or 0))
+    log.info("validated %d/%d candidates live on this runner", len(live), len(cands))
+    return live
+
+
+def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
+                 used=None, pool=None):
+    """Select a live exit for one tab, honouring the per-IP cap.
+
+    `pool` (from validate_candidates) is already gated: pick from it with no
+    further network check. Without a pool, fall back to the old per-call
+    sequential gate. `used` is this runner's {addr: count}; an IP at cap is
+    skipped and the least-used survivors are preferred.
+    """
+    if not use_proxy:
+        return None
+    used = used if used is not None else {}
+    cap = 5
+    try:
+        from hub import db
+        cap = int(db.get_policy("cap_per_ip", cap))
+    except Exception:
+        pass
+
+    # ---- fast path: pre-validated pool ------------------------------------
+    if pool:
+        avail = [e for e in pool
+                 if used.get(e["addr"], 0) < cap and e["addr"] not in _DEAD]
+        if avail:
+            avail.sort(key=lambda e: used.get(e["addr"], 0))
+            pick = avail[0]
+            used[pick["addr"]] = used.get(pick["addr"], 0) + 1
+            try:
+                from hub import db
+                db.register_tabs_riding([pick["addr"]], 1)
+            except Exception:
+                pass
+            return pick
+        return None
+
+    entries = load_candidates(region=region, limit=max_candidates * 3)
     if not entries:
         return None
     entries = sorted(entries, key=lambda e: -(e.get("score") or 0))
@@ -104,42 +160,61 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
     try:
         from ipshelf.core import gate
         ok_entries = []
-        for e in entries[:max_candidates]:
+        checked = 0
+        for e in entries:
+            if len(ok_entries) >= top_pick or checked >= max_candidates:
+                break
+            if e["addr"] in _DEAD:
+                continue
             if used.get(e["addr"], 0) >= cap:
                 continue                    # this runner is at cap for this IP
+            checked += 1
             g = gate.quick_gold_check(e["addr"], e.get("proto"))
             if g.get("ok"):
                 ok_entries.append(e)
-            elif registry is not None:
-                registry.burn_ip(e["addr"], e.get("proto"), reason="ghost_gate_fail")
             else:
-                try:
-                    from ipshelf.core.assigner import burn_ip
-                    burn_ip(e["addr"], "ghost_gate_fail")
-                except Exception:
-                    pass
-            if len(ok_entries) >= top_pick:
-                break
+                with _FEEDBACK_LOCK:
+                    _DEAD.add(e["addr"])
+                _burn(e)
         if ok_entries:
             # prefer the least-used survivors so the cap spreads evenly
             ok_entries.sort(key=lambda e: used.get(e["addr"], 0))
             pick = random.choice(ok_entries[:max(1, top_pick // 2)])
             used[pick["addr"]] = used.get(pick["addr"], 0) + 1
-            if registry is not None:
-                try:      # record the tab as riding this exit (cap-aware)
-                    registry.register_tabs_riding([pick["addr"]], 1)
-                except Exception:
-                    pass
+            _register(pick)
             return pick
     except Exception:
         pass
     return None
 
 
-def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=False, direct=False, used=None):
+def _burn(entry):
+    """Report a dead exit to the rack (registry locally, else the shelf)."""
+    try:
+        from hub import db
+        db.burn_ip(entry["addr"], entry.get("proto"), reason="ghost_gate_fail")
+        return
+    except Exception:
+        pass
+    try:
+        from ipshelf.core.assigner import burn_ip
+        burn_ip(entry["addr"], "ghost_gate_fail")
+    except Exception:
+        pass
+
+
+def _register(entry):
+    try:
+        from hub import db
+        db.register_tabs_riding([entry["addr"]], 1)
+    except Exception:
+        pass
+
+
+def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=False, direct=False, used=None, pool=None):
     """Run an isolated ghost watcher tab with live frame broadcasting."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
-    entry = draw_gold_ip(use_proxy=not direct, used=used)
+    entry = draw_gold_ip(use_proxy=not direct, used=used, pool=pool)
     if entry:
         with _FEEDBACK_LOCK:
             _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
@@ -252,6 +327,22 @@ def main():
     _RIDING.clear()
     _BURNED.clear()
     _USED.clear()
+    _DEAD.clear()
+
+    # ── validate this runner's slice ONCE, in parallel ──
+    # 25 tabs each gating the top of the same list re-tested the same corpses
+    # and gave up on a stale-but-usable rack. One wave finds every live exit
+    # in the slice; the tabs then just draw from the survivors.
+    pool = []
+    pool_stats = {"candidates": 0, "live": 0}
+    if not args.direct:
+        cands = load_candidates(limit=int(os.environ.get("POOL_SCAN", "160")))
+        pool_stats["candidates"] = len(cands)
+        if cands:
+            pool = validate_candidates(
+                cands, workers=int(os.environ.get("GATE_WORKERS", "32")))
+            pool_stats["live"] = len(pool)
+            log.info("IP pool ready: %d live of %d candidates", len(pool), len(cands))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.tabs) as executor:
         futures = [
@@ -265,6 +356,7 @@ def main():
                 args.headful,
                 args.direct,
                 _USED,
+                pool,
             )
             for i in range(args.tabs)
         ]
@@ -287,6 +379,8 @@ def main():
             # ── runner -> rack feedback ──
             "ip_usage": {addr: n for addr, n in _RIDING.items()},
             "burned_ips": sorted(_BURNED),
+            "pool": pool_stats,
+            "dead_in_slice": sorted(_DEAD),
         }
         DATA.mkdir(parents=True, exist_ok=True)
         rid = report["runner_id"]

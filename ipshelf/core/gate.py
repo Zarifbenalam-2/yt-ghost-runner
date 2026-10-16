@@ -152,6 +152,16 @@ def quick_gold_check(addr: str, proto: str, timeout: int = 35) -> dict:
     code, ttfb, _t, _s = _curl_stats(LAT_URL, addr, socks, timeout)
     latency_ms = round(ttfb * 1000) if code == "204" else None
 
+    # EARLY EXIT on "000": curl received no HTTP response at all, so the exit
+    # never connected. It cannot serve the YouTube watch page either, and
+    # stopping here skips two more full-length timeouts — ~70s saved per dead
+    # candidate. Dead candidates are ~90% of every harvest, so this is what
+    # lets a fleet harvest finish before the gold it certified goes stale.
+    if code == "000":
+        shelf.append_log("gate", addr=addr, ok=False, playability="UNREACHABLE")
+        return {"ok": False, "playability": "UNREACHABLE", "latency_ms": None,
+                "egress_ip": "", "checked_at": checked_at}
+
     # 2) egress IP (true public IP as the internet sees it)
     body = _curl_body(EGRESS_URL, addr, socks, timeout)
     body = (body or "").strip()

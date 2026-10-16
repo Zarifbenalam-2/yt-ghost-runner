@@ -68,6 +68,21 @@ jobs:
         if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
         run: python3 load_pool_snapshot.py
 
+      # Global per-IP cap: partition the snapshot into one slice per runner
+      # ON the runner, from the committed file. Building it here (rather than
+      # trusting slices the collector pre-made for a different fleet size)
+      # is what makes the cap hold for ANY runner count: reach=1 means an IP
+      # belongs to exactly one runner, so policy cap_per_ip tabs on it is a
+      # true global cap. Without this every runner fell back to the whole
+      # snapshot and picked the same top-scored IPs (run #43: 13 tabs on one IP).
+      - name: Partition pool (global per-IP cap)
+        if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
+        run: |
+          python3 -m hub.allocator \
+            --slices ${{ github.event.inputs.runners || '4' }} \
+            --snapshot data/ip_pool_snapshot.json --reach 1
+          ls -1 data/snapshot_shard_*_of_*.json | head -3
+
       - name: Set up Python 3.11
         if: steps.guard.outputs.skip == 'false'
         uses: actions/setup-python@v5

@@ -114,13 +114,20 @@ def fetch_run_artifacts(repo, token, run_id=None):
     return golds, burns
 
 
-def apply_burns(burns):
+def apply_burns(burns, exclude=None):
     """Runner feedback: mark dead exits in the rack. This is what makes the
-    per-IP cap real — the rack finally learns what the runners saw."""
+    per-IP cap real — the rack finally learns what the runners saw.
+
+    `exclude` = addresses this collector just certified itself. A shard tests
+    candidates at high parallelism, so a live proxy can time out for one shard
+    and be reported dead; without this guard that report would evict gold the
+    collector's own final gate has just proven.
+    """
+    exclude = exclude or set()
     n = 0
     for b in burns:
         addr = b.get("addr")
-        if not addr:
+        if not addr or addr in exclude:
             continue
         db.burn_ip(addr, b.get("proto"), reason=b.get("reason", "runner_reported"))
         n += 1
@@ -198,9 +205,8 @@ def main():
     golds, burns = fetch_run_artifacts(args.repo, token, args.run_id)
     log.info("collected %d gold + %d burn reports from shards", len(golds), len(burns))
 
-    applied = apply_burns(burns)
-
     shelved = 0
+    shelved_addrs = set()
     if golds:
         if args.no_gate:
             for g in golds:
@@ -209,10 +215,23 @@ def main():
                                                          "egress_ip", "latency_ms")
                                    if g.get(k) is not None}):
                     shelved += 1
+                shelved_addrs.add(g["addr"])
         else:
-            res = broker.accept_gold(golds, source="fleet", par=250)
+            # Final-gate parallelism: this gate runs while nothing else is
+            # hammering the proxies, so it can be far wider than a shard's.
+            # It also has to be: gold dies while it sits in the queue, and a
+            # par of 250 for ~1900 candidates took 597s.
+            par = int(os.environ.get("BROKER_PAR", "600"))
+            res = broker.accept_gold(golds, source="fleet", par=par)
             shelved = res["shelved"]
-            log.info("broker: %s", res)
+            shelved_addrs = res.get("shelved_addrs") or set()
+            log.info("broker: %s", {k: v for k, v in res.items()
+                                    if k != "shelved_addrs"})
+
+    # Burns come AFTER the gold, and never over an address this collector just
+    # certified itself: a shard under high parallelism reports live proxies as
+    # dead, and applying that blindly would evict gold proven seconds earlier.
+    applied = apply_burns(burns, exclude=shelved_addrs)
 
     # ── SAFETY: never wipe a good snapshot because a harvest failed ──
     # (a fleet run that collected 0 gold must NOT overwrite the committed
@@ -237,7 +256,10 @@ def main():
     #  runner independently picked the same top-scored address)
     try:
         from hub import allocator
-        runners = int(os.environ.get("SLICE_RUNNERS", "4"))
+        # The watch workflow now rebuilds its own slices for its actual runner
+        # count; these are committed for inspection/offline slots, so they
+        # default to the account's job ceiling rather than a stale guess.
+        runners = int(os.environ.get("SLICE_RUNNERS", "20"))
         alloc = allocator.build_sharded_snapshot(runners)
         log.info("allocator (commit side): %s", alloc)
     except Exception as exc:

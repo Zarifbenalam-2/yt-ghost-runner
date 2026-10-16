@@ -188,7 +188,10 @@ def test_candidates(cands, par):
             if r.get("ok"):
                 return {"addr": addr, "proto": proto,
                         "latency_ms": r.get("latency_ms"),
-                        "egress_ip": r.get("egress_ip")}
+                        "egress_ip": r.get("egress_ip"),
+                        # provenance: when this verdict was taken. A shard's
+                        # verdict is only meaningful while it is fresh.
+                        "gated_at": time.time()}
         except Exception:
             pass
         return None

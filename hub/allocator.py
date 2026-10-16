@@ -91,3 +91,82 @@ def load_my_slice(runner_index, n_runners, base=None):
             encoding="utf-8")).get("exits", [])
     except (OSError, json.JSONDecodeError):
         return []
+
+
+# --------------------------------------------------------------------------
+# Deterministic file-based slicing — built ON the runner, for the runner
+# count the workflow actually uses.
+#
+# WHY THIS EXISTS: build_sharded_snapshot() above runs at collect time and
+# needs the registry, so the collector had to guess the fleet size
+# (SLICE_RUNNERS=4). A 20-runner watch then found no `_of_20` file, fell
+# back to the WHOLE snapshot, and every runner picked the same top-scored
+# addresses — the exact run-#43 cap violation coming back. Slicing from the
+# committed snapshot file on each runner makes the partition self-consistent
+# for any runner count, with no registry and no guess.
+#
+# `reach` = how many runners may share one address. reach=1 means an address
+# belongs to exactly one runner, so `cap_per_ip` tabs on it is a REAL global
+# cap (worst case = cap, not cap x tabs_per_runner).
+# --------------------------------------------------------------------------
+
+def build_slices_from_file(n_runners, snapshot_path=None, out_prefix=None,
+                           cap=None, reach=1):
+    """Slice a snapshot FILE round-robin into n_runners per-runner files.
+
+    Deterministic: same file + same n_runners -> same slices on every runner.
+    Returns {"runners", "exits", "slices": [...], "reach"}.
+    """
+    snapshot_path = Path(snapshot_path or config.SNAPSHOT_FILE)
+    out_prefix = Path(out_prefix or (config.DATA_DIR / "snapshot_shard"))
+    cap = int(cap if cap is not None else db.get_policy("cap_per_ip", config.CAP_PER_IP))
+    reach = max(1, int(reach))
+
+    try:
+        exits = json.loads(snapshot_path.read_text(encoding="utf-8")).get("exits", [])
+    except (OSError, json.JSONDecodeError) as exc:
+        log.warning("allocator: snapshot unreadable (%s)", exc)
+        exits = []
+
+    slices = [[] for _ in range(n_runners)]
+    for i, e in enumerate(exits):
+        if not e.get("addr"):
+            continue
+        start = i % n_runners
+        for k in range(reach):
+            slices[(start + k) % n_runners].append(e)
+
+    out_prefix.parent.mkdir(parents=True, exist_ok=True)
+    counts = []
+    for idx, sl in enumerate(slices):
+        p = Path(f"{out_prefix}_{idx}_of_{n_runners}.json")
+        p.write_text(json.dumps({
+            "runner_index": idx, "of_runners": n_runners,
+            "cap_per_ip": cap, "reach": reach, "exits": sl,
+        }, indent=2), encoding="utf-8")
+        counts.append(len(sl))
+
+    res = {"runners": n_runners, "exits": len(exits), "slices": counts,
+           "reach": reach, "cap_per_ip": cap}
+    log.info("allocator: %d exits -> %d slices (reach=%d, cap=%d): %s",
+             len(exits), n_runners, reach, cap, counts)
+    return res
+
+
+def _cli(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(description="Slice a gold snapshot for the fleet")
+    ap.add_argument("--slices", type=int, required=True, help="number of runner shards")
+    ap.add_argument("--snapshot", default=None)
+    ap.add_argument("--out-prefix", default=None)
+    ap.add_argument("--cap", type=int, default=None, help="max tabs per IP")
+    ap.add_argument("--reach", type=int, default=1,
+                    help="how many runners may share one IP (1 = true global cap)")
+    a = ap.parse_args(argv)
+    res = build_slices_from_file(a.slices, a.snapshot, a.out_prefix, a.cap, a.reach)
+    print("SLICE_SUMMARY=" + json.dumps(res), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli())
