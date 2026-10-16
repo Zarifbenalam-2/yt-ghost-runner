@@ -367,41 +367,48 @@ def main():
             pool_stats["live"] = len(pool)
             log.info("IP pool ready: %d live of %d candidates", len(pool), len(cands))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.tabs) as executor:
-        futures = [
-            executor.submit(
-                run_tab_session,
-                i + 1,
-                args.url,
-                args.depth_lo,
-                args.depth_hi,
-                args.stream_target,
-                args.headful,
-                args.direct,
-                _USED,
-                pool,
-            )
-            for i in range(args.tabs)
-        ]
-        # Wall-clock deadline: a single stuck tab must NEVER hold the whole
-        # runner for hours (watch #52: 15 of 20 jobs hung ~90min with zero
-        # logs, exactly the failure this guards). When the deadline hits,
-        # finish with what completed and report the rest as run_deadline.
-        deadline = int(os.environ.get("RUN_MAX_SEC", "3300"))
-        finished = {}
-        try:
-            for f in concurrent.futures.as_completed(futures, timeout=deadline):
-                finished[f.result()["tabId"]] = f.result()
-        except concurrent.futures.TimeoutError:
-            log.warning("run hit %ss deadline — terminating remaining tabs", deadline)
-            for f in futures:
-                f.cancel()
-        results = [finished.get(i + 1, {
-            "tabId": i + 1, "ok": False, "ip": "direct", "cc": "LOCAL",
-            "video": args.url, "error": "run_deadline"})
-            for i in range(args.tabs)]
-        log.info("run deadline enforced: %d tabs finished, %d cut at %ss",
-                 len(finished), args.tabs - len(finished), deadline)
+    executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=args.tabs, thread_name_prefix="tab")
+    futures = [
+        executor.submit(
+            run_tab_session,
+            i + 1,
+            args.url,
+            args.depth_lo,
+            args.depth_hi,
+            args.stream_target,
+            args.headful,
+            args.direct,
+            _USED,
+            pool,
+        )
+        for i in range(args.tabs)
+    ]
+    # Wall-clock deadline: a single stuck tab must NEVER hold the whole
+    # runner for hours (watch #52: 15 of 20 jobs hung ~90min with zero logs).
+    # We do NOT use `with ThreadPoolExecutor(...)` here — its __exit__ calls
+    # shutdown(wait=True), which blocks until every hung tab thread finishes,
+    # so the deadline would still never fire. shutdown(wait=False) + a hard
+    # os._exit after the report is written is what actually ends the run.
+    deadline = int(os.environ.get("RUN_MAX_SEC", "3300"))
+    deadline_hit = False
+    finished = {}
+    try:
+        for f in concurrent.futures.as_completed(futures, timeout=deadline):
+            finished[f.result()["tabId"]] = f.result()
+    except concurrent.futures.TimeoutError:
+        deadline_hit = True
+        log.warning("run hit %ss deadline — terminating remaining tabs", deadline)
+        for f in futures:
+            f.cancel()
+    executor.shutdown(wait=False, cancel_futures=True)
+    results = [finished.get(i + 1, {
+        "tabId": i + 1, "ok": False, "ip": "direct", "cc": "LOCAL",
+        "video": args.url, "error": "run_deadline"})
+        for i in range(args.tabs)]
+    log.info("run deadline enforced: %d tabs finished, %d cut at %ss",
+             len(finished), args.tabs - len(finished), deadline)
+    run_deadline_hit = deadline_hit
 
     ok_count = sum(1 for r in results if r.get("ok"))
     log.info("Ghost Run Completed: %d/%d tabs reached watch target.", ok_count, args.tabs)
@@ -436,6 +443,13 @@ def main():
                 "ip_usage": report["ip_usage"]}, indent=2), encoding="utf-8")
     except Exception as e:
         log.error("Report write failed: %s", e)
+
+    # force-exit on deadline so hung tab threads cannot outlive the run
+    # (see the executor note above: shutdown(wait=False) is not enough —
+    # non-daemon worker threads keep the process alive until they die)
+    if run_deadline_hit:
+        log.warning("deadline hit — os._exit(0) to shed hung tab threads")
+        os._exit(0)
 
 
 def snapshot_resources():
