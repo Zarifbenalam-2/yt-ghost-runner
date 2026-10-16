@@ -119,7 +119,7 @@ def main():
                 body = z.read(name).decode("utf-8")
             except Exception:
                 continue
-            if name.endswith("run_report.json"):
+            if "run_report" in name:
                 try:
                     r = json.loads(body)
                 except json.JSONDecodeError:

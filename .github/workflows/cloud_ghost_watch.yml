@@ -177,3 +177,40 @@ jobs:
             data/logs/human_moves.log
             data/logs/ghost.log
           if-no-files-found: warn
+
+  # ── the missing half of the runner->rack loop ──
+  # Watcher VMs upload burn reports but nothing centralizes them, so the
+  # rack keeps serving the same corpses. This job ingests every burn report
+  # of the watch run into the rack, rebuilds the snapshot/slices and commits
+  # them, so the NEXT watch draws cleaned, fresher-graded gold.
+  post-collect:
+    needs: cloud-watch
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt 2>/dev/null || pip install PyYAML
+      - name: Ingest watch burn reports -> rack -> snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"
+        run: |
+          python3 collect.py --watch --run-id "${{ github.run_id }}"
+      - name: Upload collect summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collect-summary
+          path: data/collect_summary.json
+          if-no-files-found: warn

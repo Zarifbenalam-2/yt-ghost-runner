@@ -114,6 +114,41 @@ def fetch_run_artifacts(repo, token, run_id=None):
     return golds, burns
 
 
+def fetch_watch_artifacts(repo, token, run_id=None):
+    """Download every ghost-runner REPORT of a WATCH run.
+
+    This is the missing half of the runner->rack loop: each watcher VM
+    ships a burn_report_<id>.json listing the IPs that died in a real
+    browser during the watch. Before this, they were uploaded, verified,
+    and then FORGOTTEN — the rack kept serving the same corpses. Returns
+    (burn_lists, ip_usage).
+    """
+    if not run_id:
+        run_id = os.environ.get("GITHUB_RUN_ID")
+    arts = api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts",
+               token)
+    burns, usage = [], {}
+    for a in arts.get("artifacts", []):
+        if not a["name"].startswith("ghost-report-runner-"):
+            continue
+        log.info("downloading watch report %s (%d bytes)", a["name"], a["size_in_bytes"])
+        raw = download_artifact_zip(repo, token, a["id"])
+        z = zipfile.ZipFile(io.BytesIO(raw))
+        for name in z.namelist():
+            if "burn_report" not in name and "run_report" not in name:
+                continue
+            try:
+                payload = json.loads(z.read(name).decode("utf-8"))
+            except Exception:
+                continue
+            if "burn_report" in name:
+                bl = payload.get("burns", []) if isinstance(payload, dict) else payload
+                burns.extend(bl if isinstance(bl, list) else [])
+            if "run_report" in name and isinstance(payload, dict):
+                usage.update(payload.get("ip_usage", {}) or {})
+    return burns, usage
+
+
 def apply_burns(burns, exclude=None):
     """Runner feedback: mark dead exits in the rack. This is what makes the
     per-IP cap real — the rack finally learns what the runners saw.
@@ -171,6 +206,9 @@ def main():
     ap.add_argument("--no-gate", action="store_true",
                     help="skip the broker final gate (trust shard verdicts)")
     ap.add_argument("--no-push", action="store_true")
+    ap.add_argument("--watch", action="store_true",
+                    help="mode: ingest a WATCH run's burn reports (the "
+                         "runner->rack feedback loop) instead of a fleet run")
     args = ap.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -201,6 +239,34 @@ def main():
             log.info("bootstrapped rack from snapshot: %d exits", seeded)
     except (OSError, json.JSONDecodeError) as exc:
         log.warning("snapshot bootstrap failed: %s", exc)
+
+    if args.watch:
+        # ── WATCH feedback loop ──
+        # Every watcher VM uploads burn_report_<id>.json (IPs that died in a
+        # real browser). Ingest them so the rack stops serving the same
+        # corpses on the next watch. The runner-side cap/feedback stays
+        # correct because the burn is keyed by (addr, proto) as before.
+        watch_burns, ip_usage = fetch_watch_artifacts(args.repo, token, args.run_id)
+        log.info("watch feedback: %d burn reports + %d ip_usage maps",
+                 len(watch_burns), len(ip_usage))
+        applied = apply_burns(watch_burns, exclude=set())
+        n = broker.write_snapshot()
+        try:
+            from hub import allocator
+            runners = int(os.environ.get("SLICE_RUNNERS", "20"))
+            alloc = allocator.build_sharded_snapshot(runners)
+            log.info("allocator (watch side): %s", alloc)
+        except Exception as exc:
+            log.warning("allocator failed: %s", exc)
+        pushed = commit_snapshot(push=not args.no_push)
+        summary = {"burn_reports": len(watch_burns), "burned": applied,
+                   "watch_ips_used": len(ip_usage), "snapshot": n, "pushed": pushed}
+        Path(config.DATA_DIR).mkdir(parents=True, exist_ok=True)
+        Path(config.DATA_DIR / "collect_summary.json").write_text(
+            json.dumps(summary, indent=2), encoding="utf-8")
+        log.info("collect summary: %s", summary)
+        print("COLLECT_SUMMARY=" + json.dumps(summary), flush=True)
+        return 0
 
     golds, burns = fetch_run_artifacts(args.repo, token, args.run_id)
     log.info("collected %d gold + %d burn reports from shards", len(golds), len(burns))

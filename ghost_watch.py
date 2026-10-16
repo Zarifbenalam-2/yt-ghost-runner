@@ -212,7 +212,29 @@ def _register(entry):
 
 
 def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=False, direct=False, used=None, pool=None):
-    """Run an isolated ghost watcher tab with live frame broadcasting."""
+    """Run an isolated ghost watcher tab; re-draw a fresh IP on failure.
+
+    The dead-IP fallback: free proxies die between validation and use, so a
+    drawn IP can fail page load mid-run. Instead of wasting the tab, this
+    retries up to TAB_RETRIES times, each time drawing a DIFFERENT live IP
+    (dead ones are marked and skipped, and released from the runner's per-IP
+    counter). Only after exhausting retries does the tab report its failure.
+    """
+    attempts = int(os.environ.get("TAB_RETRIES", "3")) if not direct else 1
+    last_res = None
+    for attempt in range(attempts):
+        last_res = _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target,
+                                headful, direct, used, pool)
+        if last_res.get("ok"):
+            return last_res
+        if attempt + 1 < attempts:
+            log.info("tab %d attempt %d/%d failed (%s) — re-drawing IP",
+                     tab_idx, attempt + 1, attempts, last_res.get("error")) 
+    return last_res
+
+
+def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direct, used, pool):
+    """One attempt of a tab session on one freshly drawn IP."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
     entry = draw_gold_ip(use_proxy=not direct, used=used, pool=pool)
     if entry:
@@ -299,6 +321,7 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
             if entry and not direct:
                 with _FEEDBACK_LOCK:
                     _BURNED.add(entry["addr"])
+                    _DEAD.add(entry["addr"])      # re-draw skips it
                     _RIDING.pop(entry["addr"], None)
             return res
         finally:

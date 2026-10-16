@@ -93,6 +93,25 @@ def _terminate_factory(reason):
         _factory_log(f"STOPPED ({reason}) pid={p.pid}")
 
 
+def _git_ship_snapshot(message):
+    """Commit + push the refreshed snapshot (what cloud runners bootstrap)
+    so the sweep actually reaches the repo shelf, not just hub.db.
+    Best-effort; retried because concurrent pushes (collector) race."""
+    import subprocess as _sp
+    _sp.run(["git", "add", "data/ip_pool_snapshot.json"], cwd=str(ROOT), check=False)
+    for _ in range(8):
+        _sp.run(["git", "pull", "--rebase", "origin", "main"], cwd=str(ROOT),
+                capture_output=True, text=True, timeout=60)
+        _sp.run(["git", "-c", "user.email=ghost-hub@users.noreply.github.com",
+                 "-c", "user.name=ghost-hub", "commit", "-m", message],
+                cwd=str(ROOT), capture_output=True, text=True)
+        r = _sp.run(["git", "push", "origin", "main"], cwd=str(ROOT),
+                    capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            return True
+    return False
+
+
 def factory_manager_loop():
     """Every 60s: watcher live -> factory runs; watcher gone -> factory stops.
 
@@ -122,7 +141,21 @@ def factory_manager_loop():
                 interval = max(1, int(db.get_policy("regate_minutes", 5))) * 60
                 if time.time() - last_sweep >= interval:
                     last_sweep = time.time()
-                    threading.Thread(target=broker.regate_sweep, daemon=True,
+
+                    def _sweep_then_ship():
+                        # previous behavior: the sweep only touched hub.db and
+                        # never re-pushed the snapshot, so a sweep that burned
+                        # bodies still left them in the committed shelf. Now:
+                        # burn -> refresh snapshot -> commit -> push, exactly
+                        # like collect.py, so the repo shelf learns.
+                        res = broker.regate_sweep()
+                        if res["checked"]:
+                            n = broker.write_snapshot()
+                            _git_ship_snapshot(
+                                f"watch: post-sweep {n} gold [skip-ci]")
+                            _factory_log(f"sweep: {res['alive']}/{res['checked']} alive, "
+                                         f"burned {res['burned']}, snapshot {n}")
+                    threading.Thread(target=_sweep_then_ship, daemon=True,
                                      name="regate-sweep").start()
             except Exception as se:
                 _factory_log(f"sweep error: {type(se).__name__}: {se}")
