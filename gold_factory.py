@@ -321,11 +321,12 @@ def ship(new_gold_n):
     subprocess.run(["git", "add", "data/ip_pool_snapshot.json"], cwd=str(ROOT), check=True)
     msg = f"gold-factory: +{new_gold_n} fresh gold, snapshot {n} exits [skip-ci]"
     subprocess.run(["git", "commit", "-m", msg], cwd=str(ROOT), check=True)
-    r = subprocess.run(["git", "push"], cwd=str(ROOT), capture_output=True, text=True, timeout=90)
-    if r.returncode == 0:
+    # plain push loses the ship whenever origin moved since checkout; the
+    # robust push merges the moved origin's snapshot and retries
+    from hub.git_ops import robust_snapshot_push
+    if robust_snapshot_push(ROOT, "data/ip_pool_snapshot.json", log=lambda m: log(f"[ship] {m}")):
         log(f"[ship] PUSHED: {msg}")
         return True
-    log(f"[ship] push failed: {r.stderr.strip()[:200]}")
     return False
 
 

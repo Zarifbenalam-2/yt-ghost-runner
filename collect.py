@@ -190,12 +190,15 @@ def commit_snapshot(push=True):
                     f"gold-fleet: collector merged shards -> snapshot [skip-ci]"],
                    cwd=str(ROOT), check=False)
     if push:
-        r = subprocess.run(["git", "push"], cwd=str(ROOT), capture_output=True,
-                           text=True, timeout=120)
-        if r.returncode == 0:
+        # a plain push dies whenever origin/main moved since checkout (watch
+        # #59: 240 burns applied, snapshot rebuilt, push non-FF -> all lost).
+        # robust push data-merges the moved origin and replays our commit.
+        from hub.git_ops import robust_snapshot_push
+        rel = str(config.SNAPSHOT_FILE.relative_to(ROOT)).replace("\\", "/")
+        if robust_snapshot_push(ROOT, rel, log=lambda m: log.info("%s", m)):
             log.info("snapshot pushed")
             return True
-        log.error("push failed: %s", (r.stderr or "")[:300])
+        log.error("push failed even after merge retries")
     return False
 
 
