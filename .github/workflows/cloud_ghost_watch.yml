@@ -174,4 +174,6 @@ jobs:
             data/live_feed.json
             data/tunnel_url_${{ matrix.runner_id }}.txt
             data/ghost_log_${{ matrix.runner_id }}.txt
+            data/logs/human_moves.log
+            data/logs/ghost.log
           if-no-files-found: warn
