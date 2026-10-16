@@ -146,9 +146,15 @@ def write_snapshot(path=None):
     """
     path = path or config.SNAPSHOT_FILE
     gold = db.fetch_gold(limit=100000)
+    # status + gated_at ride along: downstream filters (gold_factory,
+    # factory_collect, load_pool_snapshot freshness sort) key off them, and
+    # a snapshot entry without gated_at sorts as infinitely stale. The rack
+    # stores the gate time as last_gold_ok; the JSON convention is gated_at.
     snap = {"snapshotted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "exits": [{k: g[k] for k in ("addr", "proto", "cc", "tier", "kind",
-                                         "score", "egress_ip", "latency_ms")}
+            "exits": [{"status": "gold", "gated_at": g.get("last_gold_ok") or 0,
+                       **{k: g[k] for k in ("addr", "proto", "cc", "tier",
+                                            "kind", "score", "egress_ip",
+                                            "latency_ms") if k in g}}
                       for g in gold]}
     from pathlib import Path
     p = Path(path)
