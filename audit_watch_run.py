@@ -73,14 +73,41 @@ def artifact_zip(repo, token, artifact_id, timeout=120):
 
 
 def human_lines(text):
-    """Pull human-move + watch evidence lines out of a ghost log."""
+    """Pull human-move evidence out of a ghost log.
+
+    Two log shapes carry the fired move names:
+      "... human move(s) fired at 210s: pause+volume"
+      "... watch done: fired human moves ['pause', 'seek']"
+    Timestamps contain colons, so the payload is taken after the LAST colon
+    (and inside brackets for the summary shape).
+    """
     out = collections.Counter()
+    fired = collections.Counter()
     for line in text.splitlines():
-        if "human move" in line.lower():
-            out["human_move_lines"] += 1
-            out["human_move_text"] = line
-        elif "HUMAN" in line and "fired" in line:
-            out["human_fired_lines"] += 1
+        low = line.lower()
+        if "human move" not in low and "human-move" not in low:
+            continue
+        out["human_move_lines"] += 1
+        out["human_move_text"] = line
+        if "fired" not in low:
+            continue
+        out["human_fired_lines"] += 1
+        if "fired at" in low:
+            payload = line.rsplit(":", 1)[-1]   # "pause+volume" — the firings
+        elif "[" in line and "]" in line:
+            # "... watch done: fired human moves ['pause', 'seek']" — the
+            # per-watch summary restates the same fires; count it once, not
+            # as extra moves
+            out["human_done_lines"] += 1
+            continue
+        else:
+            continue
+        for mv in re.split(r"[^A-Za-z]+", payload):
+            if mv and mv.lower() not in ("at", "s"):
+                fired[mv.lower()] += 1
+    for k, v in fired.items():
+        out[f"fired_{k}"] = v
+    out["fired_total"] = sum(fired.values())
     return out
 
 
