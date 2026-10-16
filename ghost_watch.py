@@ -459,7 +459,9 @@ def main():
     # shutdown(wait=True), which blocks until every hung tab thread finishes,
     # so the deadline would still never fire. shutdown(wait=False) + a hard
     # os._exit after the report is written is what actually ends the run.
-    deadline = int(os.environ.get("RUN_MAX_SEC", "3300"))
+    # 5400s: #59's audit showed 3300s cutting STILL-WATCHING tabs (the video
+    # is 910s and 25 parallel browsers slow each other on 4 vCPU runners).
+    deadline = int(os.environ.get("RUN_MAX_SEC", "5400"))
     deadline_hit = False
     finished = {}
     try:

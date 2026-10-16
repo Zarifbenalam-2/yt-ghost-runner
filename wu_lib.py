@@ -223,11 +223,20 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
     """Watch video until currentTime >= target_seconds while pushing real-time screen frames.
 
     This is the ghost-runner's live-streaming variant of watch_until().
+    Human-ish moves (pause/seek/volume/quality via the player's own controls)
+    are planned once per watch and fired as their time comes — the same
+    behaviour watch_until has; the streaming variant had silently dropped it.
     """
+    from human_moves import HumanMoves
     max_wall = max_wall_seconds or (target_seconds * 3 + 120)
     start_time = time.time()
     last_ct = -1.0
     stalls = 0
+
+    moves = HumanMoves.plan((video_state(page) or {}).get("duration") or 0,
+                            target_seconds, _human_moves_cfg())
+    _hlog.info("tab %s human-move plan: planned=%s (target %.0fs)",
+               tab_id, moves.summary().get("planned"), target_seconds)
 
     ensure_playing(page)
 
@@ -250,6 +259,11 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
                 stalls = 0
             last_ct = ct
 
+            moved = moves.tick(page, ct)   # fire due human-move events
+            if moved:
+                _hlog.info("tab %s human move(s) fired at %.0fs: %s",
+                           tab_id, ct, "+".join(moved))
+
             telemetry = {
                 "tabId": tab_id,
                 "title": title,
@@ -262,17 +276,24 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
                 "country": (ip_info or {}).get("cc", "US"),
                 "stalled": stalls > 3,
             }
+            if moved:
+                telemetry["humanMove"] = "+".join(moved)
 
             if streamer:
                 streamer.push_frame(page, telemetry, min_interval=1.2)
 
             if ct >= target_seconds:
+                _hlog.info("tab %s watch done: fired human moves %s",
+                           tab_id, moves.summary().get("fired"))
                 telemetry["status"] = "completed"
                 if streamer:
                     streamer.push_frame(page, telemetry, min_interval=0.1)
-                return {"reached": True, "currentTime": ct, "duration": dur}
+                return {"reached": True, "currentTime": ct, "duration": dur,
+                        "humanMoves": moves.summary()}
 
         if now - start_time > max_wall:
+            _hlog.info("tab %s watch wall-timeout: fired human moves %s",
+                       tab_id, moves.summary().get("fired"))
             telemetry = {
                 "tabId": tab_id,
                 "title": title,
@@ -281,9 +302,12 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
                 "duration": (st or {}).get("duration", 0),
                 "ip": (ip_info or {}).get("addr", "direct"),
                 "country": (ip_info or {}).get("cc", "US"),
+                "humanMoves": moves.summary(),
             }
             if streamer:
                 streamer.push_frame(page, telemetry, min_interval=0.1)
-            return {"reached": False, "currentTime": last_ct, "duration": (st or {}).get("duration", 0)}
+            return {"reached": False, "currentTime": last_ct,
+                    "duration": (st or {}).get("duration", 0),
+                    "humanMoves": moves.summary()}
 
         time.sleep(random.uniform(1.2, 2.0))
