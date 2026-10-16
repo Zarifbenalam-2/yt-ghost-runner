@@ -230,6 +230,18 @@ jobs:
           CI: "true"
         run: |
           python3 collect.py --watch --run-id "${{ github.run_id }}"
+      # Salvage this run's harvest gold: the concurrent shards' certified
+      # gold normally reaches the shelf via the gold-stream branch; if that
+      # push was lost, their artifacts still carry it. Fold them in through
+      # the broker (dedupe + final gate) exactly like a fleet run's collect.
+      - name: Fold in harvest shards of this run (salvage)
+        if: ${{ github.event.inputs.harvest_shards != '0' && github.event.inputs.harvest_shards != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"
+        run: |
+          python3 collect.py --repo "${{ github.repository }}" \
+            --run-id "${{ github.run_id }}" || true
       - name: Compact live-deck branch (runners all done, keep latest state)
         run: |
           # Every runner pushes its deck file every ~150s (18 runners x ~90min
@@ -297,3 +309,15 @@ jobs:
             --par ${{ github.event.inputs.harvest_par || '200' }} \
             --max-test 4000 \
             --stream --no-ship
+      # salvage path: if the stream push failed (network/ref race), the gold
+      # must still be recoverable — post-collect folds these artifacts into
+      # the snapshot so a harvest cycle is never simply lost.
+      - name: Upload shard gold + burn report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harvest-shard-${{ matrix.shard }}
+          path: |
+            data/factory_gold_shard_${{ matrix.shard }}.json
+            data/factory_burn_shard_${{ matrix.shard }}.json
+          if-no-files-found: ignore

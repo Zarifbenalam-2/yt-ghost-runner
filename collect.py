@@ -92,8 +92,12 @@ def fetch_run_artifacts(repo, token, run_id=None):
                token)
     golds, burns = [], []
     # artifact names are `factory-shard-<n>` (gold + burn files inside).
-    # Older runs used `factory-gold-shard-*` / `factory-burn-shard-*`; accept both.
-    wanted = ("factory-shard-", "factory-gold-shard-", "factory-burn-shard-")
+    # Older runs used `factory-gold-shard-*` / `factory-burn-shard-*`; accept
+    # those, plus `harvest-shard-*` (the watch workflow's concurrent harvest,
+    # so a harvest cycle is salvageable even when streaming to gold-stream
+    # failed mid-run).
+    wanted = ("factory-shard-", "factory-gold-shard-", "factory-burn-shard-",
+              "harvest-shard-")
     for a in arts.get("artifacts", []):
         if not a["name"].startswith(wanted):
             continue
