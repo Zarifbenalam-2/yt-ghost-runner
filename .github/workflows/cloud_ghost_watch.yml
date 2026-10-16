@@ -148,7 +148,8 @@ jobs:
           GHOST_LOG_LEVEL: "DEBUG"
           LIVE_DECK: "1"         # push live_r<id>.json to live-deck branch mid-run
           LIVE_DECK_SEC: "150"
-          REFRESH_SEC: "600"     # re-fold gold-stream into the live pool mid-run
+          REFRESH_SEC: "300"     # re-fold gold-stream into the live pool mid-run
+          PARK_MAX_SEC: "900"    # park a tab waiting for a live exit (direct = captcha)
         run: |
           mkdir -p data
           nohup python relay.py --port 8899 > relay.log 2>&1 &

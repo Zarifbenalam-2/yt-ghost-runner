@@ -232,6 +232,8 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
                            cc=last_res.get("cc"),
                            currentTime=last_res.get("currentTime"))
             return last_res
+        if last_res.get("error") == "no_live_exit":
+            break                       # parked the max already — don't re-park
         if attempt + 1 < attempts:
             log.info("tab %d attempt %d/%d failed (%s) — re-drawing IP",
                      tab_idx, attempt + 1, attempts, last_res.get("error")) 
@@ -244,12 +246,28 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
     """One attempt of a tab session on one freshly drawn IP."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
     entry = draw_gold_ip(use_proxy=not direct, used=used, pool=pool)
+    if entry is None and not direct:
+        # No usable exit right now. Going direct is a GUARANTEED loss on
+        # YouTube — the deck from watch #65 showed every direct tab dying
+        # "Captcha on IP" (a datacenter IP gets the captcha wall). So park
+        # and wait for supply instead: the stream refresher certifies new
+        # IPs every REFRESH_SEC and other tabs release as they finish.
+        park_max = int(os.environ.get("PARK_MAX_SEC", "900"))
+        poll = int(os.environ.get("PARK_POLL_SEC", "20"))
+        park_until = time.time() + park_max
+        while time.time() < park_until:
+            live_deck.mark(tab_idx, "parked", note="waiting for a live exit")
+            time.sleep(poll)
+            entry = draw_gold_ip(use_proxy=True, used=used, pool=pool)
+            if entry:
+                break
+        if entry is None:
+            live_deck.mark(tab_idx, "fail", ip="parked", error="no_live_exit")
+            return {"tabId": tab_idx, "ok": False, "ip": "parked", "cc": "--",
+                    "video": url, "error": "no_live_exit"}
     if entry:
         with _FEEDBACK_LOCK:
             _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
-    elif not direct:
-        # proxy wanted but none usable -> nothing to ride (not a burn per se)
-        pass
     
     proxy_url = None
     if entry:
