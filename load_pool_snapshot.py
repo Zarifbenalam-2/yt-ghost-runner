@@ -48,3 +48,13 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def load_snapshot_exits():
+    """Return the snapshot's exits as a list (no shelf write). Used by the
+    watcher's IP draw as the last-resort source on a cloud runner."""
+    try:
+        data = json.loads(SNAP.read_text(encoding="utf-8"))
+        return data.get("exits", [])
+    except (OSError, json.JSONDecodeError):
+        return []

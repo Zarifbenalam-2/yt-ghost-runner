@@ -8,19 +8,35 @@ on:
       video_url:
         description: 'YouTube Video URL'
         required: true
-        default: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        default: 'https://youtu.be/vgm306Ha0lw'
       tabs_per_runner:
-        description: 'Number of tabs per runner VM'
+        description: 'Number of tabs per runner VM (proven max 24)'
         required: true
         default: '5'
+      runners:
+        description: 'How many runner VMs (1-20; idle beyond this exit immediately)'
+        required: false
+        default: '4'
       stream_target:
-        description: 'Dashboard Webhook/Relay URL for live screen frames (Optional)'
+        description: 'Dashboard webhook URL for live frames (optional)'
         required: false
         default: ''
       use_ip_pool:
-        description: 'Ride committed gold-IP pool snapshot (false = direct from runner IP)'
+        description: 'Ride gold-IP pool (false = direct from runner IP)'
         required: false
         default: 'true'
+      human_moves:
+        description: 'Enable human moves + logging (true/false)'
+        required: false
+        default: 'true'
+      depth_lo:
+        description: 'Min watch percent'
+        required: false
+        default: '60'
+      depth_hi:
+        description: 'Max watch percent'
+        required: false
+        default: '95'
 
 jobs:
   cloud-watch:
@@ -29,24 +45,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner_id: [1, 2, 3, 4]  # Scales across 4 runners (e.g. 4 runners x 5 tabs = 20 concurrent streams)
+        # 20 = Free-plan concurrent-job ceiling per account. Jobs above the
+        # `runners` input exit immediately (idle), so one workflow serves any size.
+        runner_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     timeout-minutes: 360
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Idle check (above requested runner count)
+        id: guard
+        run: |
+          if [ "${{ matrix.runner_id }}" -gt "${{ github.event.inputs.runners || '4' }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "runner ${{ matrix.runner_id }} idle (only ${{ github.event.inputs.runners || '4' }} requested)"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Load Gold IP Pool Snapshot
-        if: ${{ github.event.inputs.use_ip_pool != 'false' }}
+        if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
         run: python3 load_pool_snapshot.py
 
       - name: Set up Python 3.11
+        if: steps.guard.outputs.skip == 'false'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Install Xvfb & CloakBrowser
+        if: steps.guard.outputs.skip == 'false'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
@@ -55,24 +85,30 @@ jobs:
           npx cloakbrowser install || python -c "import cloakbrowser; print('cloakbrowser installed')"
 
       - name: Install Playwright System Dependencies
+        if: steps.guard.outputs.skip == 'false'
         run: |
           pip install playwright
           playwright install-deps chromium
 
       - name: Install cloudflared (quick tunnel, no account)
+        if: steps.guard.outputs.skip == 'false'
         run: |
           curl -fsSL -o /tmp/cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
           chmod +x /tmp/cloudflared
           /tmp/cloudflared --version
 
       - name: Run Ghost Watcher in Virtual 1080p Display
+        if: steps.guard.outputs.skip == 'false'
         env:
           CI: "true"
           RUNNER_ID: ${{ matrix.runner_id }}
+          MATRIX_RUNNER_INDEX: ${{ matrix.runner_id }}
+          TOTAL_RUNNERS: ${{ github.event.inputs.runners || '4' }}
           STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
+          HUMAN_MOVES: ${{ github.event.inputs.human_moves || 'true' }}
+          GHOST_LOG_LEVEL: "DEBUG"
         run: |
           mkdir -p data
-          # Live frame relay + ephemeral public URL (runner-initiated, dies with job)
           nohup python relay.py --port 8899 > relay.log 2>&1 &
           echo $! > relay.pid
           nohup /tmp/cloudflared tunnel --url http://127.0.0.1:8899 > cloudflared.log 2>&1 &
@@ -86,20 +122,20 @@ jobs:
           echo "TUNNEL_URL=${TUNNEL_URL}"
           echo "${TUNNEL_URL}" > data/tunnel_url_${{ matrix.runner_id }}.txt
           DIRECT_FLAG=""
-          if [ "${{ github.event.inputs.use_ip_pool }}" = "false" ]; then
-            DIRECT_FLAG="--direct"
-          fi
+          if [ "${{ github.event.inputs.use_ip_pool }}" = "false" ]; then DIRECT_FLAG="--direct"; fi
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
-              --url "${{ github.event.inputs.video_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }}" \
-              --tabs ${{ github.event.inputs.tabs_per_runner || '12' }} \
-              --depth-lo 60 \
-              --depth-hi 95 $DIRECT_FLAG \
+              --url "${{ github.event.inputs.video_url }}" \
+              --tabs ${{ github.event.inputs.tabs_per_runner || '5' }} \
+              --depth-lo ${{ github.event.inputs.depth_lo || '60' }} \
+              --depth-hi ${{ github.event.inputs.depth_hi || '95' }} $DIRECT_FLAG \
               --stream-target "${STREAM_TARGET_URL}"
+          # ship the runner's local logs too (human-moves trace, gate decisions)
+          cp data/logs/ghost.log data/ghost_log_${{ matrix.runner_id }}.txt 2>/dev/null || true
           kill $(cat relay.pid) $(cat cloudflared.pid) 2>/dev/null || true
 
       - name: Upload Run Report & Screenshots
-        if: always()
+        if: always() && steps.guard.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ghost-report-runner-${{ matrix.runner_id }}
@@ -108,4 +144,5 @@ jobs:
             data/burn_report_${{ matrix.runner_id }}.json
             data/live_feed.json
             data/tunnel_url_${{ matrix.runner_id }}.txt
+            data/ghost_log_${{ matrix.runner_id }}.txt
           if-no-files-found: warn

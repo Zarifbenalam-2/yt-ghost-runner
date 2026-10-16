@@ -36,6 +36,7 @@ GHOST_PROFILE_BASE = ROOT / "profiles" / "ghost_temp"
 #: runner -> rack feedback, filled in during the run
 _RIDING = {}
 _BURNED = set()
+_USED = {}          # addr -> tab count on THIS runner (cap enforcement)
 _FEEDBACK_LOCK = threading.Lock()
 
 
@@ -44,20 +45,29 @@ def extract_video_id(url):
     return m.group(1) if m else None
 
 
-def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None):
-    """Select a gold exit, spread across tabs, honouring the per-IP cap.
+def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
+                 used=None):
+    """Select a gold exit, spread across tabs, honouring the global per-IP cap.
 
-    Source of truth: the hub registry (SQLite) when available — that gives
-    cap enforcement, T1-first ordering and central burn. Cloud runners have
-    no registry (it is not committed); they carry the snapshot therefore we
-    fall back to the JSON shelf loaded from data/ip_pool_snapshot.json.
+    Source priority:
+      1. local hub registry (SQLite) — cap-aware, central burn
+      2. THIS runner's sharded snapshot slice (data/snapshot_shard_<i>_of_<n>.json)
+         — the global cap fix: the collector pre-partitions IPs across runners
+         so one IP can appear in at most cap_per_ip runners
+      3. the whole committed snapshot (fallback)
 
-    Gates the top-scored golds (dead ones are burned, LAW 5), then picks
-    RANDOMLY among the survivors so N concurrent tabs spread over several
-    exits instead of piling onto #1.
+    `used` is this runner's {addr: count}; an IP already at cap for this
+    runner is skipped, and the least-used survivors are preferred.
     """
     if not use_proxy:
         return None
+    used = used if used is not None else {}
+    cap = 5
+    try:
+        from hub import db
+        cap = int(db.get_policy("cap_per_ip", cap))
+    except Exception:
+        pass
 
     entries = None
     registry = None
@@ -71,30 +81,32 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None):
         entries = None
 
     if not entries:
-        # fallback: JSON shelf (also what cloud runners use)
+        # runner slice first (global cap), then the full snapshot
         try:
-            from ipshelf.core import gate, shelf
-            if not shelf.load_pool().get("exits"):
-                # cloud: bootstrap the committed snapshot if the shelf is empty
-                try:
-                    import load_pool_snapshot
-                    load_pool_snapshot.main()
-                except Exception:
-                    pass
-            pool = shelf.load_pool()
-            entries = [e for e in pool.get("exits", []) if e.get("status") == "gold"]
-            entries.sort(key=lambda e: -(e.get("score") or 0))
-            entries = entries[:max_candidates * 3]
+            from hub import allocator
+            idx = int(os.environ.get("MATRIX_RUNNER_INDEX",
+                                     os.environ.get("RUNNER_ID", "1"))) - 1
+            n = int(os.environ.get("TOTAL_RUNNERS", "1"))
+            entries = allocator.load_my_slice(max(0, idx), max(1, n))
         except Exception:
-            return None
+            entries = None
+    if not entries:
+        try:
+            import load_pool_snapshot
+            entries = load_pool_snapshot.load_snapshot_exits()
+        except Exception:
+            entries = []
 
     if not entries:
         return None
+    entries = sorted(entries, key=lambda e: -(e.get("score") or 0))
 
     try:
         from ipshelf.core import gate
         ok_entries = []
         for e in entries[:max_candidates]:
+            if used.get(e["addr"], 0) >= cap:
+                continue                    # this runner is at cap for this IP
             g = gate.quick_gold_check(e["addr"], e.get("proto"))
             if g.get("ok"):
                 ok_entries.append(e)
@@ -109,7 +121,10 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None):
             if len(ok_entries) >= top_pick:
                 break
         if ok_entries:
-            pick = random.choice(ok_entries[:top_pick])
+            # prefer the least-used survivors so the cap spreads evenly
+            ok_entries.sort(key=lambda e: used.get(e["addr"], 0))
+            pick = random.choice(ok_entries[:max(1, top_pick // 2)])
+            used[pick["addr"]] = used.get(pick["addr"], 0) + 1
             if registry is not None:
                 try:      # record the tab as riding this exit (cap-aware)
                     registry.register_tabs_riding([pick["addr"]], 1)
@@ -121,10 +136,10 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None):
     return None
 
 
-def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=False, direct=False):
+def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=False, direct=False, used=None):
     """Run an isolated ghost watcher tab with live frame broadcasting."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
-    entry = draw_gold_ip(use_proxy=not direct)
+    entry = draw_gold_ip(use_proxy=not direct, used=used)
     if entry:
         with _FEEDBACK_LOCK:
             _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
@@ -236,6 +251,7 @@ def main():
     # Track which IPs each tab rode + which died, so the runner can report back.
     _RIDING.clear()
     _BURNED.clear()
+    _USED.clear()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.tabs) as executor:
         futures = [
@@ -248,6 +264,7 @@ def main():
                 args.stream_target,
                 args.headful,
                 args.direct,
+                _USED,
             )
             for i in range(args.tabs)
         ]

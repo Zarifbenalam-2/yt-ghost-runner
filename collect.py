@@ -99,6 +99,10 @@ def apply_burns(burns):
 def commit_snapshot(push=True):
     """Commit + push the freshly written snapshot so the next watch has it."""
     subprocess.run(["git", "add", str(config.SNAPSHOT_FILE)], cwd=str(ROOT), check=False)
+    # include the per-runner slices (the global cap) in the same commit
+    import glob as _glob
+    for shard in _glob.glob(str(config.DATA_DIR / "snapshot_shard_*.json")):
+        subprocess.run(["git", "add", shard], cwd=str(ROOT), check=False)
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(ROOT))
     if diff.returncode == 0:
         log.info("snapshot unchanged — nothing to commit")
@@ -194,6 +198,16 @@ def main():
         return 0
 
     n = broker.write_snapshot()
+    # ── build per-runner SLICES so the global per-IP cap holds ──
+    # (proven necessary: watch run #43 put 13+ tabs on one IP because every
+    #  runner independently picked the same top-scored address)
+    try:
+        from hub import allocator
+        runners = int(os.environ.get("SLICE_RUNNERS", "4"))
+        alloc = allocator.build_sharded_snapshot(runners)
+        log.info("allocator (commit side): %s", alloc)
+    except Exception as exc:
+        log.warning("allocator failed: %s", exc)
     pushed = commit_snapshot(push=not args.no_push)
 
     summary = {"shards_gold": len(golds), "burn_reports": len(burns),

@@ -16,7 +16,15 @@ ROOT = Path(__file__).resolve().parent
 PROXIES_US = ROOT / "proxies_us.json"
 
 
-_DEMO_MOVES = False   # set by warmup payload demoMoves: all probs -> 1.0
+import os as _os
+
+_DEMO_MOVES = _os.environ.get("HUMAN_MOVES_DEMO", "") == "1"
+#: on by default so human behavior is exercised (and logged) on every watch;
+#: set HUMAN_MOVES=false in the workflow to disable entirely.
+_HUMAN_ON = _os.environ.get("HUMAN_MOVES", "true").lower() not in ("0", "false", "no")
+
+from hub.logging_setup import get_logger as _get_logger
+_hlog = _get_logger("human_moves")
 
 
 def _human_moves_cfg():
@@ -24,6 +32,10 @@ def _human_moves_cfg():
 
     Demo mode (--demo-moves): every probability becomes 1.0 so each watch
     fires every move type — for the user's live demo/verification runs."""
+    if not _HUMAN_ON:
+        return {"pauseProbability": 0.0, "seekProbability": 0.0,
+                "volumeProbability": 0.0, "fullscreenProbability": 0.0,
+                "qualityProbability": 0.0}
     if _DEMO_MOVES:
         return {"pauseProbability": 1.0, "seekProbability": 1.0,
                 "volumeProbability": 1.0, "fullscreenProbability": 1.0,
@@ -167,6 +179,8 @@ def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capt
     stalls = 0
     moves = HumanMoves.plan((video_state(page) or {}).get("duration") or 0,
                             target_seconds, _human_moves_cfg())
+    _hlog.info("human-move plan: planned=%s (target %.0fs)",
+               moves.summary().get("planned"), target_seconds)
     ensure_playing(page)
     while True:
         st = video_state(page)
@@ -183,6 +197,7 @@ def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capt
             last_ct = ct
             moved = moves.tick(page, ct)   # fire due human-move events
             if moved:
+                _hlog.info("human move(s) fired at %.0fs: %s", ct, "+".join(moved))
                 capture(page, f"{label}_move_{'_'.join(moved)}",
                         "human move", f"at {ct:.0f}s: {'+'.join(moved)}")
             if now - last_cap >= capture_every:
@@ -192,6 +207,7 @@ def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capt
             if ct >= target_seconds:
                 capture(page, f"{label}_done", f"{label} reached target",
                         f"ct={ct:.0f}/{dur:.0f}")
+                _hlog.info("watch done: fired human moves %s", moves.summary().get("fired"))
                 return {"reached": True, "currentTime": ct, "duration": dur,
                         "humanMoves": moves.summary()}
         if now - start > max_wall:
