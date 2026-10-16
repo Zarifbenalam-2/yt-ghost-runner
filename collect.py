@@ -241,7 +241,11 @@ def main():
                     db.upsert_ip(e["addr"], e.get("proto", "HTTP"), cc=e.get("cc"),
                                  tier=e.get("tier"), score=e.get("score"),
                                  egress_ip=e.get("egress_ip"),
-                                 latency_ms=e.get("latency_ms"), source="seed")
+                                 latency_ms=e.get("latency_ms"), source="seed",
+                                 # keep the entry's REAL gate time: stamping
+                                 # "now" would make every seeded corpse look
+                                 # freshly harvested and defeat the age policy
+                                 last_gold_ok=e.get("gated_at"))
                     seeded += 1
             log.info("bootstrapped rack from snapshot: %d exits", seeded)
     except (OSError, json.JSONDecodeError) as exc:

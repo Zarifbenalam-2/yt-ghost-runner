@@ -19,6 +19,7 @@ Design rules:
   - policy is a key/value table with typed accessors and sane defaults
 """
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -253,14 +254,21 @@ def recent_runs(limit=100, kind=None):
 # ------------------------------------------------------------------- ips
 
 def upsert_ip(addr, proto="HTTP", **fields):
-    """Insert or refresh an exit in the rack. Returns True if newly added."""
+    """Insert or refresh an exit in the rack. Returns True if newly added.
+
+    `last_gold_ok` may be supplied (a caller seeding from a snapshot passes the
+    entry's real gate time). Without that, bootstrapping would stamp every
+    seeded corpse with "gated just now", which defeats the age policy: the
+    snapshot/shelf would look 100% fresh while being mostly dead.
+    """
     c = conn()
     existing = c.execute("SELECT addr FROM ips WHERE addr=? AND proto=?",
                          (addr, proto)).fetchone()
     now = time.time()
+    gold_ts = float(fields.get("last_gold_ok") or now)
     if existing:
         sets = ["last_gold_ok=?", "last_gate=?", "status='gold'"]
-        vals = [now, now]
+        vals = [gold_ts, gold_ts]
         for k in ("cc", "tier", "kind", "score", "egress_ip", "latency_ms", "source"):
             if k in fields and fields[k] is not None:
                 sets.append(f"{k}=?")
@@ -275,7 +283,8 @@ def upsert_ip(addr, proto="HTTP", **fields):
         (addr, proto, fields.get("cc", "??"), fields.get("tier", "T3"),
          fields.get("kind", "unknown"), fields.get("score", 0),
          fields.get("egress_ip", ""), fields.get("latency_ms"),
-         now, now, now, fields.get("source", "factory")))
+         fields.get("first_seen") or now, gold_ts, gold_ts,
+         fields.get("source", "factory")))
     return True
 
 
