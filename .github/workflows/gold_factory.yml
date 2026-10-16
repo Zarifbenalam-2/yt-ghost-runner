@@ -37,6 +37,8 @@ jobs:
   harvest:
     if: "!contains(github.event.head_commit.message, '[skip-ci]')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # shards stream certified gold to gold-stream each cycle
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +47,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -60,6 +64,7 @@ jobs:
       - name: Harvest shard
         env:
           CI: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SHARDS="${{ github.event.inputs.shards || '10' }}"
           SHARD=${{ matrix.shard }}
@@ -69,9 +74,9 @@ jobs:
           fi
           python3 gold_factory.py --once \
             --shard "$SHARD" --shards "$SHARDS" \
-            --par ${{ github.event.inputs.par || '400' }} \
-            --max-test ${{ github.event.inputs.max_test || '9000' }} \
-            --no-ship
+            --par ${{ github.event.inputs.par || '200' }} \
+            --max-test ${{ github.event.inputs.max_test || '4000' }} \
+            --stream --no-ship
 
       - name: Upload shard gold + burn report
         if: always()

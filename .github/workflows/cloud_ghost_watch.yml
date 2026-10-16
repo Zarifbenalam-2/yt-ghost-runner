@@ -68,6 +68,20 @@ jobs:
         if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
         run: python3 load_pool_snapshot.py
 
+      # Water-pile: fold in the gold-stream branch — certified gold the
+      # harvest shards pushed CYCLE BY CYCLE (minutes old) — on top of the
+      # committed snapshot (which may be hours old). Freshest verdicts go
+      # first in the pool; every candidate is still re-gated before use.
+      - name: Fold in live gold stream
+        if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
+        run: |
+          git fetch origin gold-stream || true
+          git checkout origin/gold-stream -- data/stream 2>/dev/null || true
+          python3 load_pool_snapshot.py --with-stream --out data/pool_merged.json || true
+          if [ -f data/pool_merged.json ]; then POOL_FILE=data/pool_merged.json; else POOL_FILE=data/ip_pool_snapshot.json; fi
+          echo "POOL_FILE=$POOL_FILE" >> $GITHUB_ENV
+          echo "using $POOL_FILE"
+
       # Global per-IP cap: partition the snapshot into one slice per runner
       # ON the runner, from the committed file. Building it here (rather than
       # trusting slices the collector pre-made for a different fleet size)
@@ -80,7 +94,7 @@ jobs:
         run: |
           python3 -m hub.allocator \
             --slices ${{ github.event.inputs.runners || '4' }} \
-            --snapshot data/ip_pool_snapshot.json --reach 1
+            --snapshot ${POOL_FILE:-data/ip_pool_snapshot.json} --reach 1
           ls -1 data/snapshot_shard_*_of_*.json | head -3
 
       - name: Set up Python 3.11

@@ -2,27 +2,88 @@
 
 The live shelf (ipshelf/data/) is gitignored, so a fresh Actions runner
 has an empty pool. This script loads data/ip_pool_snapshot.json (a
-committed snapshot of a recent local harvest) into the shelf so
+committed snapshot of a recent harvest) into the shelf so
 ghost_watch.draw_gold_ip can ride real exits instead of the runner's
 datacenter IP.
 
-Every IP is still re-gated by draw_gold_ip before use — dead snapshot
-entries get burned/skipped, and an all-dead snapshot degrades gracefully
-to a direct connection.
+With --with-stream it ALSO folds in the gold-stream branch's per-shard
+files (data/stream/gold_shard_*.json) — certified gold that harvest shards
+pushed CYCLE BY CYCLE while harvesting. The committed snapshot may be
+hours old; the stream is minutes old. That is the water-pile model: watch
+runners draw from the freshest water in the pile. draw_gold_ip re-gates
+every candidate before use anyway, so a noisy stream entry costs one gate
+check, never a bad watch.
 
-Usage: python3 load_pool_snapshot.py
+Every IP is still re-gated before use — dead entries get burned/skipped,
+and an all-dead pool degrades gracefully to a direct connection.
+
+Usage:
+  python3 load_pool_snapshot.py                                  # shelf merge
+  python3 load_pool_snapshot.py --with-stream --out data/pool_merged.json
 """
 import json
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 SNAP = ROOT / "data" / "ip_pool_snapshot.json"
+STREAM_DIR = ROOT / "data" / "stream"
+#: streamed gold older than this is near-certainly dead (free proxies live
+#: 1-3h); older entries still land in the merged file, after the fresh ones
+STREAM_FRESH_SEC = 45 * 60
+
+
+def load_stream_entries():
+    """Gold entries streamed cycle-by-cycle by the harvest shards."""
+    out = []
+    if not STREAM_DIR.is_dir():
+        return out
+    for p in sorted(STREAM_DIR.glob("gold_shard_*.json")):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, list):
+            out.extend(e for e in data if e.get("addr"))
+    return out
+
+
+def merge_snapshot_with_stream(snapshot_exits, stream_entries):
+    """Dedupe snapshot + stream by (addr, proto); freshest verdict wins."""
+    now = time.time()
+    fresh, older, seen = [], [], set()
+    for e in sorted(stream_entries, key=lambda e: -(e.get("gated_at") or 0)):
+        key = (e["addr"], e.get("proto", "HTTP"))
+        if key in seen:
+            continue
+        seen.add(key)
+        ga = e.get("gated_at") or 0
+        (fresh if now - ga < STREAM_FRESH_SEC else older).append(e)
+    for e in snapshot_exits:
+        if not e.get("addr"):
+            continue
+        key = (e["addr"], e.get("proto", "HTTP"))
+        if key not in seen:
+            seen.add(key)
+            older.append(e)
+    return fresh + older, {"stream_total": len(stream_entries),
+                           "stream_fresh": len(fresh),
+                           "snapshot_exits": len(snapshot_exits),
+                           "merged": len(fresh) + len(older)}
 
 
 def main():
+    argv = list(sys.argv[1:])
+    with_stream = "--with-stream" in argv
+    out = None
+    if "--out" in argv:
+        i = argv.index("--out")
+        if i + 1 < len(argv):
+            out = Path(argv[i + 1])
+
     if not SNAP.is_file():
         print("[snapshot] no data/ip_pool_snapshot.json — pool stays empty (direct)")
         return 0
@@ -32,6 +93,21 @@ def main():
         print(f"[snapshot] snapshot unreadable ({exc}) — pool stays empty")
         return 0
     exits = data.get("exits", [])
+
+    if with_stream:
+        stream = load_stream_entries()
+        exits, st = merge_snapshot_with_stream(exits, stream)
+        print(f"[snapshot] +stream: {st['stream_fresh']} fresh of "
+              f"{st['stream_total']} streamed + {st['snapshot_exits']} from "
+              f"snapshot -> {st['merged']} candidates")
+        if out is not None:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(
+                {"snapshotted_at": data.get("snapshotted_at"), "exits": exits},
+                indent=2), encoding="utf-8")
+            print(f"[snapshot] merged pool written: {out.name} ({st['merged']} exits)")
+            return 0
+
     if not exits:
         print("[snapshot] snapshot has no exits — pool stays empty")
         return 0

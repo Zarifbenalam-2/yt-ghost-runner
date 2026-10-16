@@ -106,7 +106,8 @@ def accept_gold(entries, source="factory", par=200, regate_within=600):
               # returned so the collector can apply runner burn reports
               # without evicting anything it just certified
               "shelved_addrs": shelved_addrs}
-    db.record_run("harvest", source, message="broker cycle", **result)
+    db.record_run("harvest", source, message="broker cycle",
+                  **{k: v for k, v in result.items() if k != "shelved_addrs"})
     log.info("broker: shelf += %d (failed %d, trusted %d)", len(passed),
              len(failed), len(trusted))
     return result

@@ -46,6 +46,11 @@ SEEN_FILE = DATA / "factory_seen.json"
 GOLD_LOG = DATA / "factory_gold_log.jsonl"
 SNAPSHOT = DATA / "ip_pool_snapshot.json"
 
+#: the live shelf channel: shards push certified gold here CYCLE BY CYCLE so
+#: the pile is topped while tabs work, instead of everything waiting for the
+#: batch-end collector (where gold dies in the queue)
+STREAM_BRANCH = "gold-stream"
+
 from ipshelf.core import gate, shelf                     # noqa: E402
 from ipshelf.hunt.exitpool import geo_lookup2, ip_type, score_exit, tier_of  # noqa: E402
 from hub import config                                   # noqa: E402
@@ -221,6 +226,77 @@ def enrich(golds):
 
 
 # ------------------------------------------------------------------- ship
+
+def stream_push(args, golds):
+    """Push THIS cycle's certified gold to the shelf channel immediately.
+
+    THE WATER-PILE RULE (the user's design, and the reason the central hub
+    exists): the shelf must be topped WHILE tabs work. A batch-end collector
+    means every IP waits in the artifact queue for the whole fleet run, and
+    free-proxy gold (1-3h life) dies before it ever reaches the shelf.
+
+    Each shard keeps its own stream file and pushes it to the gold-stream
+    branch: fetch -> merge branch's copy of OUR file -> commit -> push,
+    retried, because sibling shards push concurrently (per-shard paths mean
+    the rebase itself never conflicts). The hub folds the stream through the
+    broker's final gate, so the stream is an early DELIVERY, not a bypass.
+    """
+    if not golds or not getattr(args, "stream", False):
+        return False
+    if not os.environ.get("GITHUB_TOKEN"):
+        return False
+
+    rel = f"data/stream/gold_shard_{args.shard}.json"
+    path = ROOT / rel
+    existing = []
+    if path.is_file():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing = []
+    merged = {(g["addr"], g.get("proto", "HTTP")): g for g in existing}
+    for g in golds:
+        merged[(g["addr"], g.get("proto", "HTTP"))] = g
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(list(merged.values()), indent=2), encoding="utf-8")
+
+    r = None
+    for attempt in range(4):
+        subprocess.run(["git", "fetch", "origin", STREAM_BRANCH],
+                       cwd=str(ROOT), capture_output=True, text=True, timeout=90)
+        has_remote = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"origin/{STREAM_BRANCH}"],
+            cwd=str(ROOT), capture_output=True).returncode == 0
+        if has_remote:
+            # start from the branch's current state so our commit replays clean
+            subprocess.run(["git", "rebase", f"origin/{STREAM_BRANCH}"],
+                           cwd=str(ROOT), capture_output=True, text=True, timeout=90)
+            remote_file = subprocess.run(
+                ["git", "show", f"origin/{STREAM_BRANCH}:{rel}"],
+                cwd=str(ROOT), capture_output=True, text=True)
+            if remote_file.returncode == 0:
+                try:
+                    for g in json.loads(remote_file.stdout or "[]"):
+                        merged.setdefault((g["addr"], g.get("proto", "HTTP")), g)
+                    path.write_text(json.dumps(list(merged.values()), indent=2),
+                                    encoding="utf-8")
+                except json.JSONDecodeError:
+                    pass
+        subprocess.run(["git", "add", rel], cwd=str(ROOT), check=False)
+        subprocess.run(["git", "-c", "user.email=ghost-factory@users.noreply.github.com",
+                        "-c", "user.name=ghost-factory", "commit", "-m",
+                        f"gold-stream: shard {args.shard} +{len(golds)} [skip-ci]"],
+                       cwd=str(ROOT), capture_output=True, text=True)
+        r = subprocess.run(["git", "push", "origin", f"HEAD:{STREAM_BRANCH}"],
+                           cwd=str(ROOT), capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            log(f"shard {args.shard}: STREAMED {len(golds)} gold to {STREAM_BRANCH} "
+                f"(cycle gold reaches the shelf in minutes, not at batch end)")
+            return True
+        time.sleep(3 * (attempt + 1))       # sibling pushed first — refetch + retry
+    log(f"shard {args.shard}: stream push failed after retries: {(r.stderr or '')[:200]}")
+    return False
+
 
 def rebuild_snapshot():
     """Snapshot = all shelf gold, T1-first then score — the watcher's menu."""
@@ -398,6 +474,8 @@ def run_cycle(args, seen):
             (DATA / f"factory_burn_shard_{args.shard}.json").write_text(
                 json.dumps(dead[:20000], indent=2), encoding="utf-8")
             log(f"shard {args.shard}: wrote {len(golds)} gold + {len(dead)} burn entries")
+            # water-pile: ship this cycle's gold NOW, not at batch end
+            stream_push(args, golds)
     elif args.shards > 1:
         # no gold this cycle — still report the burns so the rack stays honest
         DATA.mkdir(parents=True, exist_ok=True)
@@ -420,6 +498,10 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--shards", type=int, default=1)
     ap.add_argument("--no-ship", dest="ship", action="store_false")
+    ap.add_argument("--stream", dest="stream", action="store_true",
+                    default=bool(os.environ.get("GHOST_STREAM")),
+                    help="fleet mode: push each cycle's gold to the gold-stream "
+                         "branch immediately (water-pile, not batch end)")
     args = ap.parse_args()
 
     seen = load_seen()

@@ -226,10 +226,15 @@ def all_policy():
 # ------------------------------------------------------------------- runs
 
 def record_run(kind, ref=None, level="info", message="", **data):
-    """Structured event log — so behavior is queryable, not grepped."""
+    """Structured event log — so behavior is queryable, not grepped.
+
+    default=str: a logging path must never crash the pipeline that called
+    it (a set in kwargs once killed the fleet collector at the exact moment
+    its gold was certified).
+    """
     conn().execute(
         "INSERT INTO runs(ts, kind, ref, level, message, data) VALUES (?,?,?,?,?,?)",
-        (time.time(), kind, ref, level, message, json.dumps(data)))
+        (time.time(), kind, ref, level, message, json.dumps(data, default=str)))
     getattr(log, level if level in ("info", "warning", "error") else "info")(
         "[%s] %s %s", kind, ref or "", message)
 
