@@ -382,10 +382,25 @@ def run_cycle(args, seen):
     if golds:
         print("FACTORY_GOLD_JSON=" + json.dumps(golds), flush=True)
         if args.shards > 1:
-            # fleet mode: drop gold as a file for the workflow artifact upload
+            # ── fleet mode: emit gold + BURN REPORT for the collector ──
+            # The burn report is the feedback channel: it tells the rack
+            # which candidates this shard found dead, so the collector can
+            # evict them centrally instead of every run re-testing corpses.
             DATA.mkdir(parents=True, exist_ok=True)
             (DATA / f"factory_gold_shard_{args.shard}.json").write_text(
                 json.dumps(golds, indent=2), encoding="utf-8")
+            # anything tested but NOT gold is a burn report entry
+            dead = [{"addr": a, "proto": p, "reason": "shard_gate_fail"}
+                    for (a, p) in fresh if a not in {g["addr"] for g in golds}]
+            (DATA / f"factory_burn_shard_{args.shard}.json").write_text(
+                json.dumps(dead[:20000], indent=2), encoding="utf-8")
+            log(f"shard {args.shard}: wrote {len(golds)} gold + {len(dead)} burn entries")
+    elif args.shards > 1:
+        # no gold this cycle — still report the burns so the rack stays honest
+        DATA.mkdir(parents=True, exist_ok=True)
+        (DATA / f"factory_burn_shard_{args.shard}.json").write_text(
+            json.dumps([{"addr": a, "proto": p, "reason": "shard_gate_fail"}
+                        for (a, p) in fresh], indent=2), encoding="utf-8")
     return len(golds)
 
 

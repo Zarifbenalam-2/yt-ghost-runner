@@ -105,6 +105,7 @@ jobs:
           name: ghost-report-runner-${{ matrix.runner_id }}
           path: |
             data/run_report_${{ matrix.runner_id }}.json
+            data/burn_report_${{ matrix.runner_id }}.json
             data/live_feed.json
             data/tunnel_url_${{ matrix.runner_id }}.txt
           if-no-files-found: warn

@@ -371,6 +371,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                                  "stats": db.rack_stats()})
             except Exception as e:
                 self._send_json({"error": f"rack failed: {e}"}, 500)
+        elif self.path == "/api/rack/purge":
+            # Hard-delete burned exits (the Purge button).
+            # Optional ?days=N to purge only burns older than N days.
+            from urllib.parse import urlparse, parse_qs
+            try:
+                from hub import db
+                db.init()
+                qs = parse_qs(urlparse(self.path).query)
+                days = qs.get("days", [None])[0]
+                res = db.purge_burned(older_than_days=float(days) if days else None)
+                self._send_json({"ok": True, "message":
+                                 f"Purged {res['purged']} burned IPs "
+                                 f"({res['remaining_burned']} left)", **res})
+            except Exception as e:
+                self._send_json({"ok": False, "error": f"purge failed: {e}"}, 500)
+
         elif self.path == "/api/accounts":
             # Registry accounts (safe fields only, never tokens)
             try:

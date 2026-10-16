@@ -284,6 +284,28 @@ def burn_ip(addr, proto=None, reason="dead"):
     record_run("gate", addr, "warning", f"burned: {reason}")
 
 
+def purge_burned(older_than_days=None):
+    """Hard-delete burned exits from the rack (the Purge button).
+
+    Default: delete ALL burned. If older_than_days is given, only delete
+    burned rows whose last gate attempt is older than that.
+
+    Returns {"purged": n, "remaining_burned": n}.
+    """
+    c = conn()
+    if older_than_days:
+        cutoff = time.time() - float(older_than_days) * 86400
+        cur = c.execute("DELETE FROM ips WHERE status='burned' AND "
+                        "COALESCE(last_gate, last_gold_ok, first_seen) < ?", (cutoff,))
+    else:
+        cur = c.execute("DELETE FROM ips WHERE status='burned'")
+    purged = cur.rowcount or 0
+    left = c.execute("SELECT COUNT(*) n FROM ips WHERE status='burned'").fetchone()["n"]
+    record_run("gate", "purge", "warning", f"purged {purged} burned exits",
+               purged=purged, remaining=left)
+    return {"purged": purged, "remaining_burned": left}
+
+
 def fetch_gold(region=None, t1_only=False, limit=200):
     """Best gold first. Enforces the per-IP channel cap."""
     cap = get_policy("cap_per_ip", config.CAP_PER_IP)

@@ -1,12 +1,17 @@
 name: Gold Factory Fleet
 
-# Factory #2 — sharded gold-IP harvesting on GitHub's own runners.
-# N VMs scrape + test DIFFERENT slices of the proxy universe in parallel,
-# each uploads its certified gold as an artifact. Merge locally with
-# factory_collect.py (needs a token with Actions:read on this repo).
+# Factory #2 — sharded gold-IP harvesting ENTIRELY on GitHub runners.
 #
-# Free plan = 20 concurrent jobs per account -> shards up to 20.
-# On a public repo these minutes are free.
+# The operator's PC does nothing. Flow:
+#   1. N shard jobs each scrape + test a different slice of the proxy
+#      universe, and upload (a) certified gold, (b) a BURN REPORT of what
+#      they found dead.
+#   2. A collector job downloads every shard, merges through the broker
+#      (dedupe + final live gate), applies the burn reports to the rack,
+#      writes the snapshot and commits it back.
+#
+# Per-account split (policy: tab_runners : harvest_runners, default 18:2)
+# means a fleet run uses the account's harvest allocation.
 
 on:
   workflow_dispatch:
@@ -23,6 +28,10 @@ on:
         description: 'Max candidates tested per VM'
         required: false
         default: '9000'
+      collect:
+        description: 'Run the collector afterwards (merge + commit snapshot)'
+        required: false
+        default: 'true'
 
 jobs:
   harvest:
@@ -36,6 +45,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl
+          pip install -r requirements.txt 2>/dev/null || pip install PyYAML
 
       - name: Harvest shard
         env:
@@ -53,10 +73,50 @@ jobs:
             --max-test ${{ github.event.inputs.max_test || '9000' }} \
             --no-ship
 
-      - name: Upload shard gold
+      - name: Upload shard gold + burn report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: factory-gold-shard-${{ matrix.shard }}
-          path: data/factory_gold_shard_${{ matrix.shard }}.json
+          name: factory-shard-${{ matrix.shard }}
+          path: |
+            data/factory_gold_shard_${{ matrix.shard }}.json
+            data/factory_burn_shard_${{ matrix.shard }}.json
           if-no-files-found: ignore
+
+  collect:
+    needs: harvest
+    if: always() && github.event.inputs.collect != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write      # needed to commit the refreshed snapshot
+      actions: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install -r requirements.txt 2>/dev/null || pip install PyYAML
+
+      - name: Collect shards -> broker -> snapshot -> commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: "true"
+        run: |
+          python3 collect.py --repo "${{ github.repository }}" \
+            --run-id "${{ github.run_id }}"
+
+      - name: Upload collect summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collect-summary
+          path: data/collect_summary.json
+          if-no-files-found: warn

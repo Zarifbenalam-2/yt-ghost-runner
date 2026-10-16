@@ -11,6 +11,7 @@ import random
 import re
 import shutil
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,6 +32,11 @@ from wu_lib import ensure_playing, video_state, watch_with_live_stream
 
 DATA = ROOT / "data"
 GHOST_PROFILE_BASE = ROOT / "profiles" / "ghost_temp"
+
+#: runner -> rack feedback, filled in during the run
+_RIDING = {}
+_BURNED = set()
+_FEEDBACK_LOCK = threading.Lock()
 
 
 def extract_video_id(url):
@@ -119,6 +125,12 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
     """Run an isolated ghost watcher tab with live frame broadcasting."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
     entry = draw_gold_ip(use_proxy=not direct)
+    if entry:
+        with _FEEDBACK_LOCK:
+            _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
+    elif not direct:
+        # proxy wanted but none usable -> nothing to ride (not a burn per se)
+        pass
     
     proxy_url = None
     if entry:
@@ -193,6 +205,11 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
             return res
         except Exception as e:
             res["error"] = f"{type(e).__name__}: {str(e)[:100]}"
+            # runner -> rack feedback: this proxy failed for a real browser
+            if entry and not direct:
+                with _FEEDBACK_LOCK:
+                    _BURNED.add(entry["addr"])
+                    _RIDING.pop(entry["addr"], None)
             return res
         finally:
             try:
@@ -215,7 +232,11 @@ def main():
     args = ap.parse_args()
 
     log.info("Starting Ghost Watcher: %d concurrent tabs on %s", args.tabs, args.url)
-    
+
+    # Track which IPs each tab rode + which died, so the runner can report back.
+    _RIDING.clear()
+    _BURNED.clear()
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.tabs) as executor:
         futures = [
             executor.submit(
@@ -246,12 +267,21 @@ def main():
             "tabs_ok": ok_count,
             "results": results,
             "resources": snapshot_resources(),
+            # ── runner -> rack feedback ──
+            "ip_usage": {addr: n for addr, n in _RIDING.items()},
+            "burned_ips": sorted(_BURNED),
         }
         DATA.mkdir(parents=True, exist_ok=True)
         rid = report["runner_id"]
         report_path = DATA / f"run_report_{rid}.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
         log.info("Report written: %s", report_path)
+
+        # standalone burn report the collector can consume directly
+        (DATA / f"burn_report_{rid}.json").write_text(
+            json.dumps({"runner_id": rid, "burns": [
+                {"addr": a, "reason": "watch_gate_fail"} for a in sorted(_BURNED)],
+                "ip_usage": report["ip_usage"]}, indent=2), encoding="utf-8")
     except Exception as e:
         log.error("Report write failed: %s", e)
 

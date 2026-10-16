@@ -368,7 +368,10 @@
 
   <div class="grid-header" style="margin-top: 20px;">
     <h2>Policy — absolute control</h2>
-    <button class="btn-log" id="btn-policy-save">💾 Save Policy</button>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-log" id="btn-rack-purge" style="color:var(--red); border-color:#ef444455;">🗑 Purge burned IPs</button>
+      <button class="btn-log" id="btn-policy-save">💾 Save Policy</button>
+    </div>
   </div>
   <div class="pol-grid" id="policy-grid"></div>
 
@@ -772,6 +775,15 @@
         showToast(d.message || d.error || 'cancel requested', !d.ok);
         pollRun();
       } catch (err) { showToast('Stop failed: ' + err.message, true); }
+    });
+
+    document.getElementById('btn-rack-purge').addEventListener('click', async () => {
+      if (!confirm('Permanently delete ALL burned IPs from the rack? They are re-discoverable by future harvests.')) return;
+      try {
+        const d = await (await fetch('/api/rack/purge', { method: 'POST' })).json();
+        showToast(d.message || d.error || 'purge done', !d.ok);
+        pollDeck();
+      } catch (err) { showToast('Purge failed: ' + err.message, true); }
     });
 
     setInterval(pollState, 1500);
