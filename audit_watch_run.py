@@ -129,6 +129,8 @@ def main():
     per_runner = {}
     ip_tabs = collections.Counter()      # addr -> tabs across ALL runners
     direct_tabs = 0
+    parked_tabs = 0
+    deadline_tabs = 0
     burned = set()
     moves = collections.Counter()
     resources = {}
@@ -162,6 +164,12 @@ def main():
         usage = r.get("ip_usage", {}) or {}
         ip_tabs.update({k: v for k, v in usage.items() if isinstance(v, int)})
         direct_tabs += sum(1 for x in r.get("results", []) if x.get("ip") == "direct")
+        # a parked tab was never sent anywhere: it waited for a live exit and
+        # gave up (no_live_exit). Counting it as "on proxies" would overstate
+        # the pool's reach exactly when the pool was empty.
+        parked_tabs += sum(1 for x in r.get("results", []) if x.get("ip") == "parked")
+        deadline_tabs += sum(1 for x in r.get("results", [])
+                             if x.get("error") == "run_deadline")
         burned.update(r.get("burned_ips", []) or [])
         hl = human_lines(logtxt)
         resources[rid] = r.get("resources", {})
@@ -184,8 +192,10 @@ def main():
         "tabs_requested": tabs_req,
         "tabs_ok": tabs_ok,
         "tab_success_rate": round(tabs_ok / tabs_req, 3) if tabs_req else 0,
-        "tabs_on_proxies": tabs_req - direct_tabs if tabs_req else 0,
+        "tabs_on_proxies": (tabs_req - direct_tabs - parked_tabs) if tabs_req else 0,
         "tabs_direct": direct_tabs,
+        "tabs_parked": parked_tabs,
+        "tabs_cut_at_deadline": deadline_tabs,
         "distinct_ips_ridden": len(ip_tabs),
         "max_tabs_one_ip": worst_n,
         "max_tabs_one_ip_addr": worst_ip,
