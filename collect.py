@@ -55,7 +55,9 @@ def fetch_run_artifacts(repo, token, run_id=None):
     arts = api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts",
                token)
     golds, burns = [], []
-    wanted = ("factory-gold-shard-", "factory-burn-shard-")
+    # artifact names are `factory-shard-<n>` (gold + burn files inside).
+    # Older runs used `factory-gold-shard-*` / `factory-burn-shard-*`; accept both.
+    wanted = ("factory-shard-", "factory-gold-shard-", "factory-burn-shard-")
     for a in arts.get("artifacts", []):
         if not a["name"].startswith(wanted):
             continue
@@ -70,10 +72,11 @@ def fetch_run_artifacts(repo, token, run_id=None):
             except Exception as exc:
                 log.warning("%s/%s unreadable: %s", a["name"], name, exc)
                 continue
-            if "gold-shard" in a["name"]:
-                golds.extend(payload if isinstance(payload, list) else [])
-            else:
+            # route by the FILE name inside the artifact, not the artifact name
+            if "burn_shard" in name or "burn-shard" in name:
                 burns.extend(payload if isinstance(payload, list) else [])
+            elif "gold_shard" in name or "gold-shard" in name:
+                golds.extend(payload if isinstance(payload, list) else [])
     return golds, burns
 
 
@@ -131,6 +134,29 @@ def main():
         return 2
 
     db.init()
+
+    # ── bootstrap the rack from the committed snapshot ──
+    # hub.db is NOT committed (live mutable state), so a runner's registry
+    # starts empty. Hydrate it from the existing snapshot first, so the
+    # merge ADDS to the known-good shelf instead of replacing it. Without
+    # this the collector would see an empty rack and (correctly, per the
+    # guard below) refuse to write — or worse, write an empty snapshot.
+    try:
+        snap_path = Path(config.SNAPSHOT_FILE)
+        if snap_path.is_file():
+            snap = json.loads(snap_path.read_text(encoding="utf-8"))
+            seeded = 0
+            for e in snap.get("exits", []):
+                if e.get("addr"):
+                    db.upsert_ip(e["addr"], e.get("proto", "HTTP"), cc=e.get("cc"),
+                                 tier=e.get("tier"), score=e.get("score"),
+                                 egress_ip=e.get("egress_ip"),
+                                 latency_ms=e.get("latency_ms"), source="seed")
+                    seeded += 1
+            log.info("bootstrapped rack from snapshot: %d exits", seeded)
+    except (OSError, json.JSONDecodeError) as exc:
+        log.warning("snapshot bootstrap failed: %s", exc)
+
     golds, burns = fetch_run_artifacts(args.repo, token, args.run_id)
     log.info("collected %d gold + %d burn reports from shards", len(golds), len(burns))
 
@@ -149,6 +175,23 @@ def main():
             res = broker.accept_gold(golds, source="fleet", par=250)
             shelved = res["shelved"]
             log.info("broker: %s", res)
+
+    # ── SAFETY: never wipe a good snapshot because a harvest failed ──
+    # (a fleet run that collected 0 gold must NOT overwrite the committed
+    #  snapshot with an empty one — that silently destroys the shelf for
+    #  every future watch)
+    rack_gold = db.rack_stats()["gold"]
+    if rack_gold == 0 and not golds:
+        log.error("rack EMPTY and no shard gold — refusing to write/commit an "
+                  "empty snapshot (keeps the previous snapshot intact)")
+        summary = {"shards_gold": len(golds), "burn_reports": len(burns),
+                   "burned": applied, "shelved": shelved, "snapshot": -1,
+                   "pushed": False, "skipped": "empty_rack_guard"}
+        Path(config.DATA_DIR).mkdir(parents=True, exist_ok=True)
+        Path(config.DATA_DIR / "collect_summary.json").write_text(
+            json.dumps(summary, indent=2), encoding="utf-8")
+        print("COLLECT_SUMMARY=" + json.dumps(summary), flush=True)
+        return 0
 
     n = broker.write_snapshot()
     pushed = commit_snapshot(push=not args.no_push)
