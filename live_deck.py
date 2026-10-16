@@ -57,6 +57,8 @@ def mark(tab_id, status, **fields):
     """Record a tab state change. Cheap, thread-safe, never blocks."""
     with _LOCK:
         e = _STATE.setdefault(int(tab_id), {"tabId": int(tab_id)})
+        if e.get("status") != status:
+            e["since"] = time.strftime("%H:%M:%S", time.gmtime())
         e["status"] = status
         e["updated"] = time.strftime("%H:%M:%S", time.gmtime())
         e.update(fields)
@@ -186,12 +188,21 @@ def _push_once():
 
 def _thread_body():
     interval = int(os.environ.get("LIVE_DECK_SEC", "120"))
+    heartbeat = int(os.environ.get("LIVE_DECK_HEARTBEAT", "300"))
+    last_push = 0.0
     while not _STOP.wait(interval):
-        if _DIRTY["flag"]:
-            try:
-                _push_once()
-            except Exception as e:
-                log.warning("live deck push error: %s", e)
+        # A 12-minute watch changes no tab state, so a dirty-only push left
+        # the deck silent for minutes at a time (#65: 14 min with the whole
+        # fleet watching). Heartbeat at least every LIVE_DECK_HEARTBEAT so
+        # "watching since ..." is always fresh and a failed push is retried.
+        due = _DIRTY["flag"] or (time.time() - last_push) >= heartbeat
+        if not due or not _STATE:
+            continue
+        try:
+            if _push_once():
+                last_push = time.time()
+        except Exception as e:
+            log.warning("live deck push error: %s", e)
 
 
 # ------------------------------------------------------------- read side
@@ -233,12 +244,17 @@ def summarize(deck):
         ok = sum(1 for t in tabs if t.get("status") == "ok")
         done = sum(1 for t in tabs if t.get("status") in ("ok", "fail", "deadline"))
         watch = sum(1 for t in tabs if t.get("status") == "watching")
+        parked = sum(1 for t in tabs if t.get("status") == "parked")
+        since = min((t.get("since") for t in tabs
+                     if t.get("status") in ("watching", "parked") and t.get("since")),
+                    default="?")
         tot_ok += ok
         tot_done += done
         tot_tabs += len(tabs)
         lines.append(
             f"  r{rid:>2}: {ok:>2} ok / {done:>2} done of {len(tabs):>2}"
-            f"  ({watch} watching)  pushed {d.get('pushed_at', '?')}")
+            f"  ({watch} watching, {parked} parked, oldest since {since})"
+            f"  pushed {d.get('pushed_at', '?')}")
     lines.append(f"FLEET: {tot_ok} ok / {tot_done} done of {tot_tabs} tabs "
                  f"across {len(deck)} runners")
     return "\n".join(lines)
