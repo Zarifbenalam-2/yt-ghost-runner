@@ -383,7 +383,25 @@ def main():
             )
             for i in range(args.tabs)
         ]
-        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+        # Wall-clock deadline: a single stuck tab must NEVER hold the whole
+        # runner for hours (watch #52: 15 of 20 jobs hung ~90min with zero
+        # logs, exactly the failure this guards). When the deadline hits,
+        # finish with what completed and report the rest as run_deadline.
+        deadline = int(os.environ.get("RUN_MAX_SEC", "3300"))
+        finished = {}
+        try:
+            for f in concurrent.futures.as_completed(futures, timeout=deadline):
+                finished[f.result()["tabId"]] = f.result()
+        except concurrent.futures.TimeoutError:
+            log.warning("run hit %ss deadline — terminating remaining tabs", deadline)
+            for f in futures:
+                f.cancel()
+        results = [finished.get(i + 1, {
+            "tabId": i + 1, "ok": False, "ip": "direct", "cc": "LOCAL",
+            "video": args.url, "error": "run_deadline"})
+            for i in range(args.tabs)]
+        log.info("run deadline enforced: %d tabs finished, %d cut at %ss",
+                 len(finished), args.tabs - len(finished), deadline)
 
     ok_count = sum(1 for r in results if r.get("ok"))
     log.info("Ghost Run Completed: %d/%d tabs reached watch target.", ok_count, args.tabs)
