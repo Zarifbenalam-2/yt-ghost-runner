@@ -110,6 +110,19 @@ def load_my_slice(runner_index, n_runners, base=None):
 # cap (worst case = cap, not cap x tabs_per_runner).
 # --------------------------------------------------------------------------
 
+def _policy_cap(default):
+    """cap_per_ip from the registry — or the default on a stateless runner.
+
+    The runner-side CLI runs BEFORE any hub.db exists (fresh checkout: the
+    sqlite file either isn't there or has no tables yet), so this must never
+    raise — watch #49 died in exactly that spot on 19 runners at once.
+    """
+    try:
+        return int(db.get_policy("cap_per_ip", default))
+    except Exception:
+        return int(default)
+
+
 def build_slices_from_file(n_runners, snapshot_path=None, out_prefix=None,
                            cap=None, reach=1):
     """Slice a snapshot FILE round-robin into n_runners per-runner files.
@@ -119,7 +132,7 @@ def build_slices_from_file(n_runners, snapshot_path=None, out_prefix=None,
     """
     snapshot_path = Path(snapshot_path or config.SNAPSHOT_FILE)
     out_prefix = Path(out_prefix or (config.DATA_DIR / "snapshot_shard"))
-    cap = int(cap if cap is not None else db.get_policy("cap_per_ip", config.CAP_PER_IP))
+    cap = int(cap if cap is not None else _policy_cap(config.CAP_PER_IP))
     reach = max(1, int(reach))
 
     try:
