@@ -32,8 +32,13 @@ sys.path.insert(0, str(ROOT))
 SNAP = ROOT / "data" / "ip_pool_snapshot.json"
 STREAM_DIR = ROOT / "data" / "stream"
 #: streamed gold older than this is near-certainly dead (free proxies live
-#: 1-3h); older entries still land in the merged file, after the fresh ones
+#: 1-3h); older entries still land in the merged file, after the fresh ones,
+#: but only while the merged pool would otherwise be thin.
 STREAM_FRESH_SEC = 45 * 60
+STREAM_MAX_AGE_SEC = 2 * 3600
+#: below this many candidates, old stream entries are kept rather than
+#: leaving the pool starving (a stale candidate costs one gate check)
+STREAM_KEEP_STALE_UNDER = 200
 
 
 def load_stream_entries():
@@ -52,27 +57,50 @@ def load_stream_entries():
 
 
 def merge_snapshot_with_stream(snapshot_exits, stream_entries):
-    """Dedupe snapshot + stream by (addr, proto); freshest verdict wins."""
+    """Dedupe snapshot + stream by (addr, proto); freshest verdict wins.
+
+    Stream entries older than STREAM_MAX_AGE_SEC are dropped UNLESS the pool
+    would otherwise be thin (< STREAM_KEEP_STALE_UNDER candidates): the
+    gold-stream branch is append-only, so without this a week-old branch
+    re-injects hundreds of corpses into every run's gate wave (the shelf's
+    whole point is minute-old water, not yesterday's).
+    """
     now = time.time()
-    fresh, older, seen = [], [], set()
+    fresh, recent_stream, stale, seen = [], [], [], set()
     for e in sorted(stream_entries, key=lambda e: -(e.get("gated_at") or 0)):
         key = (e["addr"], e.get("proto", "HTTP"))
         if key in seen:
             continue
         seen.add(key)
-        ga = e.get("gated_at") or 0
-        (fresh if now - ga < STREAM_FRESH_SEC else older).append(e)
+        age = now - (e.get("gated_at") or 0)
+        if age < STREAM_FRESH_SEC:
+            fresh.append(e)
+        elif age < STREAM_MAX_AGE_SEC:
+            recent_stream.append(e)
+        else:
+            stale.append(e)
+    snap = []
     for e in snapshot_exits:
         if not e.get("addr"):
             continue
         key = (e["addr"], e.get("proto", "HTTP"))
         if key not in seen:
             seen.add(key)
-            older.append(e)
-    return fresh + older, {"stream_total": len(stream_entries),
-                           "stream_fresh": len(fresh),
-                           "snapshot_exits": len(snapshot_exits),
-                           "merged": len(fresh) + len(older)}
+            snap.append(e)
+    # honest freshness order: <45min stream, then everything else by gated_at
+    tail = sorted(recent_stream + snap, key=lambda e: -(e.get("gated_at") or 0))
+    merged = fresh + tail
+    kept_stale = False
+    if len(merged) < STREAM_KEEP_STALE_UNDER:
+        merged = merged + stale
+        kept_stale = True
+    return merged, {"stream_total": len(stream_entries),
+                    "stream_fresh": len(fresh),
+                    "stream_recent": len(recent_stream),
+                    "stream_stale_kept": len(stale) if kept_stale else 0,
+                    "stream_stale_dropped": 0 if kept_stale else len(stale),
+                    "snapshot_exits": len(snap),
+                    "merged": len(merged)}
 
 
 def main():
@@ -97,9 +125,10 @@ def main():
     if with_stream:
         stream = load_stream_entries()
         exits, st = merge_snapshot_with_stream(exits, stream)
-        print(f"[snapshot] +stream: {st['stream_fresh']} fresh of "
-              f"{st['stream_total']} streamed + {st['snapshot_exits']} from "
-              f"snapshot -> {st['merged']} candidates")
+        print(f"[snapshot] +stream: {st['stream_fresh']} fresh + "
+              f"{st['stream_recent']} recent of {st['stream_total']} streamed "
+              f"({st['stream_stale_dropped']} too old, dropped) + "
+              f"{st['snapshot_exits']} from snapshot -> {st['merged']} candidates")
         if out is not None:
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(

@@ -85,8 +85,16 @@ jobs:
       - name: Fold in live gold stream
         if: steps.guard.outputs.skip == 'false' && github.event.inputs.use_ip_pool != 'false'
         run: |
-          git fetch origin gold-stream || true
-          git checkout origin/gold-stream -- data/stream 2>/dev/null || true
+          # Explicit refspec: a depth-1 checkout has NO origin/gold-stream
+          # tracking ref, so plain `git fetch origin gold-stream` + `git
+          # checkout origin/gold-stream -- data/stream` silently folded in
+          # nothing at all (the water-pile never actually reached runners).
+          git fetch origin +refs/heads/gold-stream:refs/remotes/origin/gold-stream || true
+          mkdir -p data/stream
+          for f in $(git ls-tree --name-only refs/remotes/origin/gold-stream:data/stream/ 2>/dev/null); do
+            git show "refs/remotes/origin/gold-stream:data/stream/$f" > "data/stream/$f" || true
+          done
+          ls -1 data/stream/ 2>/dev/null | head -3
           python3 load_pool_snapshot.py --with-stream --out data/pool_merged.json || true
           if [ -f data/pool_merged.json ]; then POOL_FILE=data/pool_merged.json; else POOL_FILE=data/ip_pool_snapshot.json; fi
           echo "POOL_FILE=$POOL_FILE" >> $GITHUB_ENV
@@ -228,9 +236,9 @@ jobs:
           # = hundreds of commits per run, all overwriting one file each).
           # Squash the branch to a single commit with the same tree: the deck
           # stays readable, the repo stops growing a commit per push.
-          git fetch origin live-deck || exit 0
-          git rev-parse origin/live-deck >/dev/null 2>&1 || exit 0
-          TREE=$(git rev-parse 'origin/live-deck^{tree}')
+          git fetch origin +refs/heads/live-deck:refs/remotes/origin/live-deck || exit 0
+          git rev-parse refs/remotes/origin/live-deck >/dev/null 2>&1 || exit 0
+          TREE=$(git rev-parse 'refs/remotes/origin/live-deck^{tree}')
           COMMIT=$(git -c user.email=ghost-live@users.noreply.github.com \
                        -c user.name=ghost-live commit-tree "$TREE" \
                        -m "live-deck: compacted after run ${{ github.run_id }} [skip-ci]")

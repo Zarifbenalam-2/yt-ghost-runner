@@ -258,44 +258,23 @@ def stream_push(args, golds):
     for g in golds:
         merged[(g["addr"], g.get("proto", "HTTP"))] = g
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(list(merged.values()), indent=2), encoding="utf-8")
+    payload = json.dumps(list(merged.values()), indent=2)
+    path.write_text(payload, encoding="utf-8")
 
-    r = None
-    for attempt in range(4):
-        subprocess.run(["git", "fetch", "origin", STREAM_BRANCH],
-                       cwd=str(ROOT), capture_output=True, text=True, timeout=90)
-        has_remote = subprocess.run(
-            ["git", "rev-parse", "--verify", "--quiet", f"origin/{STREAM_BRANCH}"],
-            cwd=str(ROOT), capture_output=True).returncode == 0
-        if has_remote:
-            # start from the branch's current state so our commit replays clean
-            subprocess.run(["git", "rebase", f"origin/{STREAM_BRANCH}"],
-                           cwd=str(ROOT), capture_output=True, text=True, timeout=90)
-            remote_file = subprocess.run(
-                ["git", "show", f"origin/{STREAM_BRANCH}:{rel}"],
-                cwd=str(ROOT), capture_output=True, text=True)
-            if remote_file.returncode == 0:
-                try:
-                    for g in json.loads(remote_file.stdout or "[]"):
-                        merged.setdefault((g["addr"], g.get("proto", "HTTP")), g)
-                    path.write_text(json.dumps(list(merged.values()), indent=2),
-                                    encoding="utf-8")
-                except json.JSONDecodeError:
-                    pass
-        subprocess.run(["git", "add", rel], cwd=str(ROOT), check=False)
-        subprocess.run(["git", "-c", "user.email=ghost-factory@users.noreply.github.com",
-                        "-c", "user.name=ghost-factory", "commit", "-m",
-                        f"gold-stream: shard {args.shard} +{len(golds)} [skip-ci]"],
-                       cwd=str(ROOT), capture_output=True, text=True)
-        r = subprocess.run(["git", "push", "origin", f"HEAD:{STREAM_BRANCH}"],
-                           cwd=str(ROOT), capture_output=True, text=True, timeout=120)
-        if r.returncode == 0:
-            log(f"shard {args.shard}: STREAMED {len(golds)} gold to {STREAM_BRANCH} "
-                f"(cycle gold reaches the shelf in minutes, not at batch end)")
-            return True
-        time.sleep(3 * (attempt + 1))       # sibling pushed first — refetch + retry
-    log(f"shard {args.shard}: stream push failed after retries: {(r.stderr or '')[:200]}")
-    return False
+    # Plumbing push (private index on top of the branch tip): the old
+    # fetch/rebase/commit flow silently failed on runners — a depth-1
+    # checkout has no origin/gold-stream tracking ref, so it committed onto
+    # main and every push was rejected as non-FF while the log still said
+    # "STREAMED". hub.git_ops verifies the remote actually moved and retries
+    # over concurrent sibling pushes.
+    from hub.git_ops import push_plumbing
+    ok = push_plumbing(ROOT, STREAM_BRANCH, rel, payload,
+                       f"gold-stream: shard {args.shard} +{len(golds)} [skip-ci]",
+                       log=lambda m: log(f"shard {args.shard}: {m}"))
+    if ok:
+        log(f"shard {args.shard}: STREAMED {len(golds)} gold to {STREAM_BRANCH} "
+            f"(cycle gold reaches the shelf in minutes, not at batch end)")
+    return ok
 
 
 def rebuild_snapshot():

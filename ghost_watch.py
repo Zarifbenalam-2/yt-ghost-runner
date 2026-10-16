@@ -372,14 +372,20 @@ def _pool_refresher(pool, stop_evt):
     never kills the run.
     """
     import subprocess as sp
-    interval = int(os.environ.get("REFRESH_SEC", "600"))
+    interval = int(os.environ.get("REFRESH_SEC", "300"))
     known = {e["addr"] for e in pool}
     while not stop_evt.wait(interval):
         try:
-            sp.run(["git", "fetch", "origin", "gold-stream"], cwd=str(ROOT),
-                   capture_output=True, timeout=90)
-            if sp.run(["git", "checkout", "origin/gold-stream", "--", "data/stream"],
-                      cwd=str(ROOT), capture_output=True, timeout=60).returncode != 0:
+            # explicit refspec + blob reads: on a depth-1 checkout the old
+            # `git fetch origin gold-stream` never created the tracking ref,
+            # so `git checkout origin/gold-stream -- data/stream` failed and
+            # the refresh silently did nothing (it never refreshed once).
+            from hub.git_ops import fetch_branch, materialize_branch_dir
+            if not fetch_branch(ROOT, "gold-stream"):
+                continue
+            n = materialize_branch_dir(ROOT, "gold-stream", "data/stream",
+                                       ROOT / "data" / "stream")
+            if not n:
                 continue
             merged = ROOT / "data" / "pool_refresh.json"
             sp.run([sys.executable, "load_pool_snapshot.py", "--with-stream",

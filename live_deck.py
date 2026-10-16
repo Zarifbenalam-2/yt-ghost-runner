@@ -141,12 +141,13 @@ def _push_once():
     last_err = None
     for attempt in range(4):
         try:
-            _git(["fetch", "origin", BRANCH], timeout=90)
-            base = None
-            r = _git(["rev-parse", "--verify", "--quiet",
-                      f"origin/{BRANCH}"])
-            if r.returncode == 0 and r.stdout.strip():
-                base = r.stdout.strip()
+            # explicit refspec: plain `git fetch origin live-deck` does NOT
+            # create origin/live-deck in a depth-1 checkout, so every push
+            # after the first built on "no base" and was rejected as non-FF
+            # (the deck froze at each runner's first push — watch #65).
+            from hub.git_ops import fetch_branch, remote_tip
+            fetch_branch(ROOT, BRANCH)
+            base = remote_tip(ROOT, BRANCH)
             ge = dict(ident)
             ge["GIT_INDEX_FILE"] = idx
             if base:
@@ -173,11 +174,15 @@ def _push_once():
             pr = _git(["push", "origin",
                        f"{commit.stdout.strip()}:refs/heads/{BRANCH}"],
                       timeout=120)
-            if pr.returncode == 0:
+            # verify the remote moved: a rejected push must not look like a
+            # landed one (the #65 deck froze precisely because it did)
+            from hub.git_ops import fetch_branch, remote_tip
+            fetch_branch(ROOT, BRANCH)
+            if remote_tip(ROOT, BRANCH) == commit.stdout.strip():
                 _PUSHED["count"] += 1
                 _PUSHED["last_ok"] = payload["pushed_at"]
                 return True
-            last_err = (pr.stderr or "")[:200]      # ref moved -> refetch+retry
+            last_err = (pr.stderr or "push ok but remote did not move")[:200]
         except Exception as e:
             last_err = str(e)[:200]
         time.sleep(2 * (attempt + 1))
@@ -207,7 +212,7 @@ def _thread_body():
 
 # ------------------------------------------------------------- read side
 def _show(path):
-    r = subprocess.run(["git", "show", f"origin/{BRANCH}:{path}"],
+    r = subprocess.run(["git", "show", f"refs/remotes/origin/{BRANCH}:{path}"],
                        cwd=str(ROOT), capture_output=True, text=True,
                        timeout=60)
     if r.returncode != 0:
@@ -221,11 +226,16 @@ def _show(path):
 def read_deck(fetch=True):
     """PC side: fetch the live-deck branch and return {runner_id: payload}."""
     if fetch:
-        subprocess.run(["git", "fetch", "origin", BRANCH], cwd=str(ROOT),
-                       capture_output=True, timeout=90)
+        try:
+            from hub.git_ops import fetch_branch
+            fetch_branch(ROOT, BRANCH)
+        except Exception:
+            subprocess.run(["git", "fetch", "origin", BRANCH], cwd=str(ROOT),
+                           capture_output=True, timeout=90)
     deck = {}
     ls = subprocess.run(
-        ["git", "ls-tree", "--name-only", f"origin/{BRANCH}:{REL_PREFIX}/"],
+        ["git", "ls-tree", "--name-only",
+         f"refs/remotes/origin/{BRANCH}:{REL_PREFIX}/"],
         cwd=str(ROOT), capture_output=True, text=True, timeout=60)
     for line in (ls.stdout or "").split():
         if line.startswith("live_r") and line.endswith(".json"):
