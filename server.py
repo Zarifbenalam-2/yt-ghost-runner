@@ -17,6 +17,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from hub import config as _cfg                       # noqa: E402
+from hub.logging_setup import get_logger             # noqa: E402
+
+log = get_logger("server")
 UI_INDEX = ROOT / "ui" / "index.html"
 DATA_DIR = ROOT / "data"
 FEED_DATA = DATA_DIR / "live_feed.json"

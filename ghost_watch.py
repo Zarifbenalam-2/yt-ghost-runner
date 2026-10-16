@@ -21,6 +21,10 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from hub.logging_setup import get_logger
+
+log = get_logger("ghost_watch")
+
 from engine.cloud_browser import open_ghost_context
 from engine.live_streamer import LiveStreamer
 from wu_lib import ensure_playing, video_state, watch_with_live_stream
@@ -169,7 +173,7 @@ def main():
     ap.add_argument("--direct", action="store_true", help="Bypass IP shelf proxies and connect direct")
     args = ap.parse_args()
 
-    print(f"[*] Starting Ghost Watcher: {args.tabs} concurrent tabs on {args.url}")
+    log.info("Starting Ghost Watcher: %d concurrent tabs on %s", args.tabs, args.url)
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.tabs) as executor:
         futures = [
@@ -188,7 +192,8 @@ def main():
         results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
     ok_count = sum(1 for r in results if r.get("ok"))
-    print(f"[+] Ghost Run Completed: {ok_count}/{args.tabs} tabs reached watch target.")
+    log.info("Ghost Run Completed: %d/%d tabs reached watch target.", ok_count, args.tabs)
+    print(f"[+] Ghost Run Completed: {ok_count}/{args.tabs} tabs reached watch target.", flush=True)
 
     # Write run report for CI artifact upload (hands-off info back to dashboard)
     try:
@@ -205,9 +210,9 @@ def main():
         rid = report["runner_id"]
         report_path = DATA / f"run_report_{rid}.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-        print(f"[*] Report written: {report_path}")
+        log.info("Report written: %s", report_path)
     except Exception as e:
-        print(f"[!] Report write failed: {e}")
+        log.error("Report write failed: %s", e)
 
 
 def snapshot_resources():

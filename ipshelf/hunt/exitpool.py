@@ -43,11 +43,14 @@ EGRESS_URL = "https://api.ipify.org"
 BW_URL = "https://speed.cloudflare.com/__down?bytes=8000000"
 GH_URL = "https://api.github.com/zen"
 
-T1 = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO", "FI",
-      "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
-T2 = {"ES", "IT", "PT", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI",
-      "EE", "LV", "LT", "IL", "AE", "QA", "SA", "TR", "MY", "TH", "VN", "IN",
-      "ID", "PH", "BR", "MX", "AR", "CL", "CO", "ZA", "RU", "UA"}
+try:                                     # single source of truth
+    from hub.config import T1_SET as T1, T2_SET as T2
+except ImportError:                      # standalone/zip use of ipshelf
+    T1 = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO",
+          "FI", "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
+    T2 = {"ES", "IT", "PT", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR",
+          "SI", "EE", "LV", "LT", "IL", "AE", "QA", "SA", "TR", "MY", "TH",
+          "VN", "IN", "ID", "PH", "BR", "MX", "AR", "CL", "CO", "ZA", "RU", "UA"}
 
 DC_HINTS = ("ovh", "hetzner", "digitalocean", "linode", "vultr", "oracle",
             "amazon", "aws", "google llc", "microsoft", "azure", "contabo",

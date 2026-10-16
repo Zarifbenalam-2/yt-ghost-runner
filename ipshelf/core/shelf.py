@@ -42,8 +42,11 @@ CAP = 5
 #: LAW 3 — the tier-1 commons (mirrors hunt machine exitpool.py T1).
 #: "T1" is a valid pseudo-region: a channel locked to "T1" draws from
 #: any tier-1 country's shelf.
-T1_SET = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO",
-          "FI", "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
+try:                                     # single source of truth
+    from hub.config import T1_SET
+except ImportError:                      # standalone/zip use of ipshelf
+    T1_SET = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO",
+              "FI", "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
 
 # ------------------------------------------------------------------- paths
 

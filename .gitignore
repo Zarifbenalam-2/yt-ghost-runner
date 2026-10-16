@@ -13,3 +13,19 @@ _hunt/
 .env
 accounts.json
 autopilot_state.json
+
+# ── runtime state & generated evidence (must NEVER be committed) ──
+data/logs/
+data/audit_evidence/
+data/factory_seen.json
+data/factory_gold_log.jsonl
+data/factory_gold_shard_*.json
+data/run_report_*.json
+data/tunnel_url_*.txt
+data/policy.json
+data/*.db
+data/*.db-journal
+data/*.db-wal
+
+# NOTE: data/ip_pool_snapshot.json IS intentionally tracked — cloud runners
+# bootstrap their shelf from it (load_pool_snapshot.py).

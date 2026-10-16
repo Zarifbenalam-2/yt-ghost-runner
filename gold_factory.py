@@ -48,6 +48,14 @@ SNAPSHOT = DATA / "ip_pool_snapshot.json"
 
 from ipshelf.core import gate, shelf                     # noqa: E402
 from ipshelf.hunt.exitpool import geo_lookup2, ip_type, score_exit, tier_of  # noqa: E402
+from hub import config                                   # noqa: E402
+from hub.logging_setup import get_logger                 # noqa: E402
+
+_log = get_logger("gold_factory")
+
+#: consecutive watch-check API failures (module state for the idle gate,
+#: so a GitHub outage cannot leave the factory harvesting forever)
+_WATCH_CHECK_FAILS = 0
 
 # (url, default proto) — same sources as proxy_hunt.sh
 SOURCES = [
@@ -89,11 +97,13 @@ SOURCES = [
 ADDR_RE = re.compile(r"(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})")
 PROTO_RE = re.compile(r"^(socks4|socks5|https?)://", re.I)
 
-T1 = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO",
-      "FI", "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
+T1 = config.T1_SET   # single source of truth (hub/config.py)
 
 
-def log(msg):
+def log(msg, level="info"):
+    """Log through the hub logger (levels + rotation + run_id) AND stdout,
+    because the fleet workflow greps stdout for FACTORY_GOLD_JSON."""
+    getattr(_log, level, _log.info)(str(msg))
     print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
@@ -240,24 +250,24 @@ def ship(new_gold_n):
     return False
 
 
-def dispatch(tabs):
+def dispatch(tabs, use_ip_pool=True):
+    """Fire a watcher run. use_ip_pool is caller-controlled (was hardcoded
+    true, which meant a factory-triggered run could never fall back to
+    direct even when the snapshot was empty/stale)."""
     token = os.environ.get("GITHUB_TOKEN", "")
-    repo = os.environ.get("GITHUB_REPOSITORY", "Zarifbenalam-2/yt-ghost-runner")
+    repo = os.environ.get("GITHUB_REPOSITORY", config.REPO)
     if not token:
         log("[dispatch] no GITHUB_TOKEN env — skipped")
         return
-    url = (f"https://api.github.com/repos/{repo}/actions/workflows/"
-           f"cloud_ghost_watch.yml/dispatches")
-    body = json.dumps({"ref": "main", "inputs": {
-        "video_url": os.environ.get("FACTORY_VIDEO_URL",
-                                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
-        "tabs_per_runner": str(tabs), "use_ip_pool": "true"}}).encode()
-    req = urllib.request.Request(url, data=body, method="POST", headers={
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json", "User-Agent": "gold-factory"})
+    body = {"ref": "main", "inputs": {
+        "video_url": os.environ.get("FACTORY_VIDEO_URL", config.WATCH_URL),
+        "tabs_per_runner": str(tabs),
+        "use_ip_pool": "true" if use_ip_pool else "false"}}
     try:
-        with urllib.request.urlopen(req, timeout=15) as r:
-            log(f"[dispatch] watcher fired (HTTP {r.status}) tabs_per_runner={tabs}")
+        from hub import gh
+        gh.post(f"/repos/{repo}/actions/workflows/{config.WORKFLOW_WATCH}/dispatches",
+                token=token, data=body)
+        log(f"[dispatch] watcher fired tabs_per_runner={tabs} use_ip_pool={use_ip_pool}")
     except Exception as e:
         log(f"[dispatch] failed: {e}")
 
@@ -276,27 +286,34 @@ def watcher_active(repo=None):
 
     Used by --require-watch: the factory only burns CPU while a watch is
     actually consuming gold (fresh gold dies in minutes — harvesting with
-    no watcher running is waste). Fails OPEN: if the API check errors we
-    assume a watch is live rather than stall the factory mid-watch.
+    no watcher running is waste).
+
+    Policy on API failure: retry with backoff first (hub.gh), and if it
+    still fails, treat as ACTIVE for a bounded number of consecutive
+    failures only. Previously this failed open unconditionally, so a single
+    GitHub 403 rate-limit made the factory harvest forever with no watch
+    running (observed in factory_manager.log).
     """
-    repo = repo or os.environ.get("GITHUB_REPOSITORY", "Zarifbenalam-2/yt-ghost-runner")
-    url = (f"https://api.github.com/repos/{repo}/actions/workflows/"
-           f"cloud_ghost_watch.yml/runs?per_page=5")
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/vnd.github+json", "User-Agent": "gold-factory"})
-    tok = os.environ.get("GITHUB_TOKEN", "")
-    if tok:
-        req.add_header("Authorization", f"Bearer {tok}")
+    global _WATCH_CHECK_FAILS
+    repo = repo or os.environ.get("GITHUB_REPOSITORY", config.REPO)
     try:
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode("utf-8"))
-        for run in data.get("workflow_runs", []):
-            if run.get("status") in ("in_progress", "queued"):
-                return True
-        return False
+        from hub import gh
+        active = gh.watch_runs_active(token=os.environ.get("GITHUB_TOKEN", ""), repo=repo)
     except Exception as e:
-        log(f"[watch-check] API check failed ({e}) — assuming ACTIVE")
-        return True
+        log(f"[watch-check] client error: {e}")
+        active = None
+
+    if active is None:
+        _WATCH_CHECK_FAILS += 1
+        # assume active for the first 3 consecutive failures (transient blips),
+        # then assume idle so a persistent outage cannot run the factory forever
+        if _WATCH_CHECK_FAILS <= 3:
+            log(f"[watch-check] API unavailable (#{_WATCH_CHECK_FAILS}) — assuming ACTIVE")
+            return True
+        log(f"[watch-check] API unavailable x{_WATCH_CHECK_FAILS} — assuming IDLE")
+        return False
+    _WATCH_CHECK_FAILS = 0
+    return bool(active)
 
 
 # ------------------------------------------------------------------- cycle

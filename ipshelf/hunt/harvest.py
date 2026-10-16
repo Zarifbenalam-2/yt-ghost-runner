@@ -52,8 +52,11 @@ DATA_DIR = os.environ.get("IPSHELF_DATA", os.path.join(_IPSHELF, "data"))
 LOG_PATH = os.path.join(DATA_DIR, "harvest.log")
 STATUS_PATH = os.path.join(DATA_DIR, "harvest_status.json")
 
-T1 = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO", "FI",
-      "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
+try:                                     # single source of truth
+    from hub.config import T1_SET as T1
+except ImportError:
+    T1 = {"US", "GB", "CA", "DE", "FR", "NL", "SE", "CH", "AT", "DK", "NO",
+          "FI", "IE", "BE", "LU", "JP", "SG", "AU", "NZ", "KR", "HK", "TW"}
 
 
 def now_ts():

@@ -1,1 +1,12 @@
-playwright
+# Ghost Runner — runtime dependencies (pinned)
+#
+# Verified against the installed environment on 2026-10-16.
+# The standard library covers the HTTP server, JSON, subprocess and networking.
+
+playwright==1.61.0
+PyYAML==6.0.3
+Pillow==12.2.0
+
+# NOTE: cloakbrowser is installed separately in CI (pip install cloakbrowser)
+# because it ships a pinned Chromium build and is optional locally — when it is
+# absent, engine/cloud_browser.py falls back to Playwright's Chromium.
