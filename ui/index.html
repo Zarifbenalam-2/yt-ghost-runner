@@ -361,6 +361,11 @@
   </div>
 
   <div class="grid-header" style="margin-top: 28px;">
+    <h2>Cloud Watch — live from the deck branch (<span id="cloud-label">loading</span>)</h2>
+  </div>
+  <div class="deck-grid" id="cloud-cards"></div>
+
+  <div class="grid-header" style="margin-top: 28px;">
     <h2>Observation Deck — Central Hub (<span id="deck-label">loading</span>)</h2>
   </div>
   <div class="deck-grid" id="deck-cards"></div>
@@ -709,6 +714,32 @@
       } catch (err) { /* deck is best-effort */ }
     }
 
+    // ── Cloud watch, live: the fleet's own pushes to the live-deck branch ──
+    // (runners cannot reach this PC, and GitHub hides a running job's logs,
+    //  so the branch is the shared channel — this is the real cloud feed)
+    const cloudCards = document.getElementById('cloud-cards');
+    const cloudLabel = document.getElementById('cloud-label');
+    async function pollCloud() {
+      try {
+        const d = await (await fetch('/api/deck/live')).json();
+        if (d.error) { cloudLabel.textContent = 'error'; return; }
+        const f = d.fleet || {};
+        if (!f.runners) {
+          cloudLabel.textContent = 'no cloud run reporting';
+          cloudCards.innerHTML = `<div class="deck-card" style="grid-column:1/-1">
+            <div class="k">No cloud watch has pushed to live-deck yet</div>
+            <div class="s">A watcher VM publishes here every ~150s while it runs.</div></div>`;
+          return;
+        }
+        cloudLabel.textContent = `${f.runners} runners · ${f.ok} ok / ${f.done} done of ${f.tabs} tabs`;
+        cloudCards.innerHTML = (d.runners || []).map(r => card(
+          `runner ${r.runner}`,
+          `${r.ok} ok / ${r.done} done`,
+          `${r.watching} watching · ${r.parked} parked · pool ${r.pool_live ?? '?'}/${r.pool_candidates ?? '?'} live · ${r.pushed_at || ''}`,
+          r.ok > 0 ? 'hi' : '')).join('');
+      } catch (err) { /* best-effort */ }
+    }
+
     function renderPolicy(p) {
       const skip = new Set(['fresh_gold_target']);
       policyGrid.innerHTML = Object.keys(p).filter(k => !skip.has(k)).sort().map(k => {
@@ -796,6 +827,8 @@
     pollFactory();
     setInterval(pollDeck, 5000);
     pollDeck();
+    setInterval(pollCloud, 5000);
+    pollCloud();
   </script>
 </body>
 </html>

@@ -32,6 +32,9 @@ FEED_DATA = DATA_DIR / "live_feed.json"
 _LIVE_TABS = {}
 _LIVE_LOCK = threading.Lock()
 
+# Cached read of the cloud fleet's live-deck branch (see /api/deck/live)
+_LIVE_DECK_CACHE = {"deck": {}, "at": 0.0}
+
 # ── Factory manager: harvester auto-runs ONLY while a watcher run is live ──
 _FACTORY = {"proc": None, "started_at": None, "manual_stop": False,
             "watcher_active": None, "last_check": None}
@@ -370,6 +373,50 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 })
             except Exception as e:
                 self._send_json({"error": f"deck failed: {e}"}, 500)
+        elif self.path == "/api/deck/live":
+            # ── CLOUD watch, live, from the live-deck branch ──
+            # Runners cannot reach this PC, and GitHub refuses to serve a
+            # running job's logs, so the fleet commits its own state to the
+            # `live-deck` branch mid-run. That branch is the only channel both
+            # sides share — this endpoint turns it into the dashboard feed for
+            # cloud runs (git fetch is cached, polling must not hammer git).
+            try:
+                now = time.time()
+                if (not _LIVE_DECK_CACHE["deck"]
+                        or now - _LIVE_DECK_CACHE["at"] > 45):
+                    import live_deck
+                    _LIVE_DECK_CACHE["deck"] = live_deck.read_deck(fetch=True)
+                    _LIVE_DECK_CACHE["at"] = now
+                deck = _LIVE_DECK_CACHE["deck"]
+                runners = []
+                tot_ok = tot_done = tot_tabs = 0
+                for rid, d in deck.items():
+                    tabs = d.get("tabs", [])
+                    meta = d.get("meta", {}) or {}
+                    ok = sum(1 for t in tabs if t.get("status") == "ok")
+                    done = sum(1 for t in tabs
+                               if t.get("status") in ("ok", "fail", "deadline"))
+                    runners.append({
+                        "runner": rid, "ok": ok, "done": done,
+                        "tabs": len(tabs),
+                        "watching": sum(1 for t in tabs if t.get("status") == "watching"),
+                        "parked": sum(1 for t in tabs if t.get("status") == "parked"),
+                        "pushed_at": d.get("pushed_at"),
+                        "pool_live": meta.get("pool_live"),
+                        "pool_candidates": meta.get("pool_candidates"),
+                        "url": meta.get("url"),
+                    })
+                    tot_ok += ok
+                    tot_done += done
+                    tot_tabs += len(tabs)
+                runners.sort(key=lambda r: int(r["runner"])
+                             if str(r["runner"]).isdigit() else 999)
+                self._send_json({"runners": runners, "fleet": {
+                    "runners": len(runners), "ok": tot_ok,
+                    "done": tot_done, "tabs": tot_tabs},
+                    "cached_at": _LIVE_DECK_CACHE["at"]})
+            except Exception as e:
+                self._send_json({"error": f"live deck failed: {e}"}, 500)
         elif self.path.startswith("/api/policy"):
             # Every tunable number, dashboard-editable (absolute control).
             # GET /api/policy                    -> read
