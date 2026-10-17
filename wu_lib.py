@@ -229,6 +229,15 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
     """
     from human_moves import HumanMoves
     max_wall = max_wall_seconds or (target_seconds * 3 + 120)
+    # a NaN/infinite target would make BOTH the target test and the wall test
+    # false forever (NaN compares false against everything) — a tab must never
+    # be able to watch unbounded, so sanitise and add an absolute ceiling.
+    hard_cap = float(_os.environ.get("TAB_HARD_MAX_SEC", "1800"))
+    if not (max_wall == max_wall) or max_wall <= 0 or max_wall == float("inf"):
+        max_wall = hard_cap
+    max_wall = min(max_wall, hard_cap)
+    if not (target_seconds == target_seconds) or target_seconds <= 0:
+        target_seconds = min(60.0, max_wall / 2)
     start_time = time.time()
     last_ct = -1.0
     stalls = 0

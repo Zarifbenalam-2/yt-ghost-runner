@@ -49,7 +49,9 @@ WATCH_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 # ----------------------------------------------------------------- scale / policy
 #: Law 2 — max channels (tabs) served by one exit IP.
-CAP_PER_IP = _int("CAP_PER_IP", 5)
+# 4 not 5: 5 tabs on one exit is 5 shares of one identity, and
+# YouTube credits ~one session per IP — the extra tabs are duplicates
+CAP_PER_IP = _int("CAP_PER_IP", 4)
 #: Proven ceiling: 24 tabs/runner passed 96/96; 30 collapsed to goto-timeouts.
 TABS_PER_RUNNER = _int("TABS_PER_RUNNER", 24)
 #: Free-plan concurrency per account.

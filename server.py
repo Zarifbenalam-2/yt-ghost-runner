@@ -8,6 +8,7 @@ Features:
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -165,6 +166,49 @@ def factory_manager_loop():
         except Exception as e:
             _factory_log(f"manager error: {type(e).__name__}: {e}")
         time.sleep(60)
+
+
+def resolve_github_token():
+    """Find a GitHub token for the dashboard without asking the operator.
+
+    Order: env GITHUB_TOKEN -> local git credential store (the PAT this clone
+    already pushes with) -> data/.gh_token (gitignored). The work now happens
+    on GitHub runners, so the dashboard is the CONTROL PANEL: without a token
+    its run-control pane is blind ("Set GITHUB_TOKEN in the server env").
+    """
+    tok = os.environ.get("GITHUB_TOKEN", "")
+    if tok:
+        return tok
+    try:
+        out = subprocess.run(
+            ["git", "credential", "fill"], cwd=str(ROOT), input="protocol=https\nhost=github.com\n\n",
+            capture_output=True, text=True, timeout=15).stdout
+        for line in out.splitlines():
+            if line.startswith("password="):
+                return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    try:
+        f = ROOT / "data" / ".gh_token"
+        if f.is_file():
+            return f.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    return ""
+
+
+def repo_slug_from_git():
+    """owner/name from the origin remote (so GITHUB_REPOSITORY need not be set)."""
+    try:
+        url = subprocess.run(["git", "config", "--get", "remote.origin.url"],
+                             cwd=str(ROOT), capture_output=True, text=True,
+                             timeout=10).stdout.strip()
+        m = re.search(r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?$", url)
+        if m:
+            return f"{m.group(1)}/{m.group(2)}"
+    except Exception:
+        pass
+    return ""
 
 
 def load_accounts():
@@ -770,12 +814,22 @@ def run_server(port=8766):
     # only if you deliberately want other devices to reach the dashboard.
     host = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
     server = ThreadingHTTPServer((host, port), DashboardHandler)
-    # Factory manager: harvester auto-runs only while a watcher run is live
-    threading.Thread(target=factory_manager_loop, daemon=True).start()
-    _factory_log("dashboard up — factory manager watching for live watcher runs")
+    # Harvester auto-start is OPT-IN. The work runs on GitHub runners; a
+    # dashboard that silently started gold_factory on this PC as soon as it
+    # was opened ran a harvest on the operator's machine and drained the local
+    # rack (rule: no system runs on the PC). Set DASHBOARD_AUTOSTART_HARVEST=1
+    # to restore the old behaviour deliberately.
+    autostart = os.environ.get("DASHBOARD_AUTOSTART_HARVEST", "0") == "1"
+    if autostart:
+        threading.Thread(target=factory_manager_loop, daemon=True).start()
+        _factory_log("dashboard up — factory manager watching for live watcher runs")
+    else:
+        _factory_log("dashboard up — local harvester auto-start DISABLED "
+                     "(DASHBOARD_AUTOSTART_HARVEST=1 to enable)")
     print(f"============================================================")
     print(f"[*] GHOST RUNNER DASHBOARD LIVE: http://{host}:{port}")
-    print(f"[*] FACTORY MANAGER: harvester auto-starts while a watch is live")
+    print(f"[*] cloud runs are controlled here; local harvester auto-start "
+          f"{'ON' if autostart else 'OFF'}")
     if host == "0.0.0.0":
         print("[!] WARNING: dashboard is exposed to the network with NO auth.")
     print(f"============================================================")
@@ -784,4 +838,19 @@ def run_server(port=8766):
 
 if __name__ == "__main__":
     port = int(os.environ.get("DASHBOARD_PORT", 8766))
+    # The dashboard is the control panel for cloud runs: resolve a token and
+    # the repo slug up front so /api/run_control, /api/ci_live and dispatch
+    # all work without hand-exporting env vars.
+    if not os.environ.get("GITHUB_TOKEN"):
+        tok = resolve_github_token()
+        if tok:
+            os.environ["GITHUB_TOKEN"] = tok
+            print(f"[*] GITHUB_TOKEN resolved (len {len(tok)}) — run control enabled")
+        else:
+            print("[!] no GITHUB_TOKEN found (env, git credential store, "
+                  "data/.gh_token) — run control disabled")
+    if not os.environ.get("GITHUB_REPOSITORY"):
+        slug = repo_slug_from_git()
+        if slug:
+            os.environ["GITHUB_REPOSITORY"] = slug
     run_server(port)

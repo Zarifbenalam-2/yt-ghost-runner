@@ -158,6 +158,8 @@ jobs:
           LIVE_DECK_SEC: "150"
           REFRESH_SEC: "300"     # re-fold gold-stream into the live pool mid-run
           PARK_MAX_SEC: "900"    # park a tab waiting for a live exit (direct = captcha)
+          TAB_STAGGER_SEC: "90"  # spread tab starts over ~90s (burst = bot signal)
+          PICK_REGATE: "1"       # re-check the drawn exit right before using it
         run: |
           mkdir -p data
           nohup python relay.py --port 8899 > relay.log 2>&1 &

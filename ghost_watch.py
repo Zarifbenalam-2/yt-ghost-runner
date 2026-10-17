@@ -265,6 +265,40 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             live_deck.mark(tab_idx, "fail", ip="parked", error="no_live_exit")
             return {"tabId": tab_idx, "ok": False, "ip": "parked", "cc": "--",
                     "video": url, "error": "no_live_exit"}
+
+    # Last-mile re-gate: the pool was validated once at run start, and free
+    # proxies die in minutes, so the address a tab is about to commit to is
+    # re-checked here (one cheap request). If it is dead, burn and re-draw —
+    # a tab must never be spent on an exit that already stopped responding.
+    if entry and not direct and os.environ.get("PICK_REGATE", "1") == "1":
+        tries = int(os.environ.get("PICK_REGATE_TRIES", "2"))
+        for _ in range(tries):
+            try:
+                from ipshelf.core import gate
+                g = gate.quick_gold_check(entry["addr"], entry.get("proto", "HTTP"))
+            except Exception:
+                g = {"ok": False}
+            if g.get("ok"):
+                break
+            with _FEEDBACK_LOCK:
+                _DEAD.add(entry["addr"])
+                _USED.pop(entry["addr"], None)      # free the cap slot
+            _burn(entry)
+            log.info("tab %d: drawn exit %s failed last-mile re-gate — re-drawing",
+                     tab_idx, entry["addr"])
+            entry = draw_gold_ip(use_proxy=True, used=used, pool=pool)
+            if entry is None:
+                live_deck.mark(tab_idx, "parked", note="re-gate drained the pool")
+                return {"tabId": tab_idx, "ok": False, "ip": "parked", "cc": "--",
+                        "video": url, "error": "no_live_exit"}
+
+    # Stagger: 24 tabs all opening YouTube in the same second is a burst —
+    # both a bot signal and CPU contention on a 4-vCPU runner. Each tab waits
+    # a random slice of TAB_STAGGER_SEC before it starts.
+    stagger = int(os.environ.get("TAB_STAGGER_SEC", "0"))
+    if stagger > 0:
+        time.sleep(random.uniform(0, stagger))
+
     if entry:
         with _FEEDBACK_LOCK:
             _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
@@ -308,9 +342,21 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             page.goto(url, wait_until="domcontentloaded", timeout=60000)
             page.wait_for_timeout(3000)
 
-            # Check if captcha wall hit
+            # Check if captcha wall hit. Per the operator's rule an IP that
+            # cannot serve a YouTube page is NOT gold, and the gold gate
+            # cannot see this: it is a curl playabilityStatus check, not a
+            # browser session. So a captcha'd exit is burned (deleted from
+            # the rack) instead of being handed to the next tab.
             if "google.com/sorry" in (page.url or ""):
                 res["error"] = "Captcha on IP"
+                if entry and not direct:
+                    with _FEEDBACK_LOCK:
+                        _BURNED.add(entry["addr"])
+                        _DEAD.add(entry["addr"])
+                        _RIDING.pop(entry["addr"], None)
+                    _burn(entry)
+                    log.info("tab %d: captcha on %s — burning it as not-gold",
+                             tab_idx, entry["addr"])
                 streamer.push_frame(page, {"tabId": tab_idx, "status": "captcha_error"}, min_interval=0)
                 return res
 
@@ -325,9 +371,20 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
 
             if not dur:
                 dur = 120  # fallback target duration
+            # YouTube reports duration=NaN until metadata loads, and NaN is
+            # TRUTHY: an unsanitised NaN target made `ct >= target` always
+            # false and `now - start > target*3+120` always false too, so the
+            # tab watched until the run deadline (#65: 227 of 432 tabs cut at
+            # the wall, many stuck exactly like this).
+            if dur != dur or dur in (float("inf"), float("-inf")) or dur < 5:
+                log.warning("tab %d: unusable duration %r — using 120s fallback",
+                            tab_idx, dur)
+                dur = 120.0
 
             depth_pct = random.uniform(depth_lo, depth_hi) / 100.0
-            target_seconds = min(dur * depth_pct, dur - 3)
+            target_seconds = min(dur * depth_pct, max(dur - 3, 5))
+            if target_seconds != target_seconds or target_seconds <= 0:
+                target_seconds = 60.0      # absolute floor: never a NaN/<0 watch
 
             r = watch_with_live_stream(
                 page,
