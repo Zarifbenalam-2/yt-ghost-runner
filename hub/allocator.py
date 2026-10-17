@@ -123,17 +123,40 @@ def _policy_cap(default):
         return int(default)
 
 
+def owner_of(addr, n_runners):
+    """THE canonical owner of an address: runner index in [0, n_runners).
+
+    One ownership rule for the whole system, stable across files and runs
+    (hash of the address, never its position in some file). Two schemes
+    previously coexisted — round-robin position in the slice builder, md5 in
+    the watcher's mid-run refresh — and they disagreed: an IP in runner 12's
+    slice could also pass runner 15's refresh filter, so one exit entered
+    three pools and collected 3 x cap tabs (watch #78: 12 tabs on one IP with
+    cap 4, seen as 4+4+4). One rule, or the per-IP cap is decorative.
+    """
+    import hashlib
+    n = max(1, int(n_runners))
+    h = int(hashlib.md5(addr.encode("utf-8")).hexdigest()[:8], 16)
+    return h % n
+
+
 def build_slices_from_file(n_runners, snapshot_path=None, out_prefix=None,
                            cap=None, reach=1):
-    """Slice a snapshot FILE round-robin into n_runners per-runner files.
+    """Slice a snapshot FILE into n_runners per-runner files.
 
-    Deterministic: same file + same n_runners -> same slices on every runner.
+    Ownership is hash-based (owner_of) so every exit lands in exactly ONE
+    slice, agreeing with every other component that asks whose IP this is.
+    reach>1 is still honoured for callers that deliberately want an address
+    visible to more runners (that multiplies the effective per-IP cap).
+
+    Deterministic: same pool + same n_runners -> same slices on every runner.
     Returns {"runners", "exits", "slices": [...], "reach"}.
     """
     snapshot_path = Path(snapshot_path or config.SNAPSHOT_FILE)
     out_prefix = Path(out_prefix or (config.DATA_DIR / "snapshot_shard"))
     cap = int(cap if cap is not None else _policy_cap(config.CAP_PER_IP))
     reach = max(1, int(reach))
+    n_runners = max(1, int(n_runners))
 
     try:
         exits = json.loads(snapshot_path.read_text(encoding="utf-8")).get("exits", [])
@@ -142,10 +165,10 @@ def build_slices_from_file(n_runners, snapshot_path=None, out_prefix=None,
         exits = []
 
     slices = [[] for _ in range(n_runners)]
-    for i, e in enumerate(exits):
+    for e in exits:
         if not e.get("addr"):
             continue
-        start = i % n_runners
+        start = owner_of(e["addr"], n_runners)
         for k in range(reach):
             slices[(start + k) % n_runners].append(e)
 

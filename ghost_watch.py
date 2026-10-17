@@ -418,18 +418,20 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
 
 
 def _owns(addr, idx, n):
-    """Does runner `idx` of `n` own this address? (one IP, one runner)
+    """Does runner `idx` of `n` own this address?
 
-    The run-start partition uses reach=1, so an address belongs to exactly one
-    runner and policy cap_per_ip is a TRUE global cap. The mid-run refresh
-    broke that: every runner materialised the whole gold-stream dir, so a
-    freshly streamed IP entered all 18 pools at once and got cap x 18 rides
-    (#70: 9 tabs on one IP with cap 5). Routing stream additions through the
-    same stable hash keeps the global cap honest while every runner still
-    drinks fresh gold.
+    Delegates to the ONE canonical rule (hub.allocator.owner_of) so the pool a
+    runner is handed and the addresses it may add mid-run agree. They used to
+    disagree (round-robin positions vs md5), which put a single exit into
+    several pools and multiplied the per-IP cap by that number: watch #78 put
+    12 tabs on one IP (4+4+4 in runners 15/12/13) with cap 4.
     """
-    h = int(hashlib.md5(addr.encode("utf-8")).hexdigest()[:8], 16)
-    return h % max(1, n) == idx
+    try:
+        from hub import allocator
+        return allocator.owner_of(addr, n) == idx
+    except Exception:
+        h = int(hashlib.md5(addr.encode("utf-8")).hexdigest()[:8], 16)
+        return h % max(1, n) == idx
 
 
 def _pool_refresher(pool, stop_evt):
