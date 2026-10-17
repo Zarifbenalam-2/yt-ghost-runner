@@ -30,15 +30,15 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792247500.1421714,
-      "addr": "103.132.52.20:8080",
+      "gated_at": 1792250925.357333,
+      "addr": "112.169.99.71:8018",
       "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
+      "cc": "??",
+      "tier": "T3",
       "kind": "unknown",
-      "score": 48.2,
-      "egress_ip": "103.132.53.205",
-      "latency_ms": 2298
+      "score": 54.2,
+      "egress_ip": "211.229.136.246",
+      "latency_ms": 811
     },
     {
       "status": "gold",
@@ -54,27 +54,39 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792247500.136991,
-      "addr": "117.244.80.76:8080",
+      "gated_at": 1792250925.3548987,
+      "addr": "103.246.79.146:3125",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 12655
+      "latency_ms": 18179
     },
     {
       "status": "gold",
-      "gated_at": 1792247500.1384425,
-      "addr": "113.161.59.136:8080",
+      "gated_at": 1792250925.3552186,
+      "addr": "112.169.99.71:8040",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "61.77.187.108",
+      "latency_ms": 6442
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792250925.3598561,
+      "addr": "103.173.162.95:8818",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 10383
+      "latency_ms": 6751
     },
     {
       "status": "gold",
@@ -99,6 +111,18 @@
       "score": 37.0,
       "egress_ip": "43.229.79.231",
       "latency_ms": 15178
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792250925.3562148,
+      "addr": "103.191.218.119:69",
+      "proto": "SOCKS",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "103.191.218.119",
+      "latency_ms": 8630
     },
     {
       "status": "gold",
