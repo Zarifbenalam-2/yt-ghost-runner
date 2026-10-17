@@ -133,6 +133,7 @@ def main():
     deadline_tabs = 0
     burned = set()
     moves = collections.Counter()
+    events = {}          # ip -> [(t, +1/-1)] for concurrency
     resources = {}
     for a in reports:
         rid = a["name"].rsplit("-", 1)[-1]
@@ -163,6 +164,17 @@ def main():
         tabs_req += req_n
         usage = r.get("ip_usage", {}) or {}
         ip_tabs.update({k: v for k, v in usage.items() if isinstance(v, int)})
+        # concurrency per IP (a swept count of overlapping tab intervals),
+        # because with tab-level IP reuse a lifetime total says nothing about
+        # how many tabs rode one exit at once
+        for x in r.get("results", []):
+            ipd = x.get("ip")
+            if not ipd or ipd in ("direct", "parked", "cut"):
+                continue
+            a, b = x.get("started_at"), x.get("ended_at")
+            if a and b:
+                events.setdefault(ipd, []).append((a, 1))
+                events.setdefault(ipd, []).append((b, -1))
         direct_tabs += sum(1 for x in r.get("results", []) if x.get("ip") == "direct")
         # a parked tab was never sent anywhere: it waited for a live exit and
         # gave up (no_live_exit). Counting it as "on proxies" would overstate
@@ -186,6 +198,15 @@ def main():
     worst_ip, worst_n = ("", 0)
     if ip_tabs:
         worst_ip, worst_n = ip_tabs.most_common(1)[0]
+    # max CONCURRENT tabs on one address (the number the cap actually governs)
+    peak_ip, peak_n = ("", 0)
+    for ipd, evs in events.items():
+        cur = peak = 0
+        for _t, d in sorted(evs, key=lambda e: (e[0], e[1])):
+            cur += d
+            peak = max(peak, cur)
+        if peak > peak_n:
+            peak_ip, peak_n = ipd, peak
     verdict = {
         "run_id": int(args.run_id),
         "runners_reporting": len(per_runner),
@@ -199,8 +220,10 @@ def main():
         "distinct_ips_ridden": len(ip_tabs),
         "max_tabs_one_ip": worst_n,
         "max_tabs_one_ip_addr": worst_ip,
+        "max_concurrent_tabs_one_ip": peak_n,
+        "max_concurrent_tabs_one_ip_addr": peak_ip,
         "cap": args.cap,
-        "cap_respected": worst_n <= args.cap,
+        "cap_respected": (peak_n or worst_n) <= args.cap,
         "burned_by_runners": len(burned),
     }
     print("\n=== VERDICT ===")

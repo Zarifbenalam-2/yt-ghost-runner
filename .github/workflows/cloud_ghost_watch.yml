@@ -41,6 +41,10 @@ on:
         description: 'Gold-factory shards harvesting ALONGSIDE the watch (water-pile: fresh gold streams in mid-run; 18 watch + 2 harvest = steady state)'
         required: false
         default: '2'
+      unique_ips:
+        description: 'One IP per tab at a time (tabs never share an exit concurrently; an IP is reused only after its tab finishes)'
+        required: false
+        default: 'true'
       harvest_par:
         description: 'Parallel gold checks per harvest shard (200 = honest verdicts)'
         required: false
@@ -161,6 +165,7 @@ jobs:
           TAB_STAGGER_SEC: "90"  # spread tab starts over ~90s (burst = bot signal)
           PICK_REGATE: "1"       # re-check the drawn exit right before using it
           IP_MAX_AGE_SEC: "3600" # only IPs gated within the last hour are in use
+          UNIQUE_IP_PER_TAB: ${{ github.event.inputs.unique_ips == 'false' && '0' || '1' }}
         run: |
           mkdir -p data
           nohup python relay.py --port 8899 > relay.log 2>&1 &

@@ -139,9 +139,15 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
         pass
 
     # ---- fast path: pre-validated pool ------------------------------------
+    # UNIQUE_IP_PER_TAB: never let two tabs share an exit at the same time.
+    # Each tab already runs in its OWN Chromium process with its own
+    # --proxy-server, so separation is real; this makes it strict (cap 1
+    # concurrent) instead of polite (cap N).
+    unique = os.environ.get("UNIQUE_IP_PER_TAB", "0") == "1"
+    eff_cap = 1 if unique else cap
     if pool:
         avail = [e for e in pool
-                 if used.get(e["addr"], 0) < cap and e["addr"] not in _DEAD]
+                 if used.get(e["addr"], 0) < eff_cap and e["addr"] not in _DEAD]
         if avail:
             avail.sort(key=lambda e: used.get(e["addr"], 0))
             pick = avail[0]
@@ -168,7 +174,7 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
                 break
             if e["addr"] in _DEAD:
                 continue
-            if used.get(e["addr"], 0) >= cap:
+            if used.get(e["addr"], 0) >= eff_cap:
                 continue                    # this runner is at cap for this IP
             checked += 1
             g = gate.quick_gold_check(e["addr"], e.get("proto"))
@@ -188,6 +194,24 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
     except Exception:
         pass
     return None
+
+
+def _release(addr):
+    """Free this runner's slot on an exit when a tab stops riding it.
+
+    The cap is a CONCURRENT limit: an IP that served its tab is available to
+    the next one (one at a time, never several at once). Without this, _USED
+    was a lifetime quota, so a healthy exit served `cap` tabs for the whole
+    run and then sat idle while other tabs parked.
+    """
+    if not addr:
+        return
+    with _FEEDBACK_LOCK:
+        if _USED.get(addr):
+            _USED[addr] -= 1
+            if _USED[addr] <= 0:
+                _USED.pop(addr, None)
+        _RIDING[addr] = max(0, _RIDING.get(addr, 1) - 1)
 
 
 def _burn(entry):
@@ -226,8 +250,13 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
     live_deck.mark(tab_idx, "starting", attempts=attempts)
     last_res = None
     for attempt in range(attempts):
+        t0 = time.time()
         last_res = _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target,
                                 headful, direct, used, pool)
+        # intervals let the audit measure how many tabs shared an exit AT THE
+        # SAME TIME (the cap is concurrency, not a lifetime quota)
+        last_res["started_at"] = round(t0, 1)
+        last_res["ended_at"] = round(time.time(), 1)
         if last_res.get("ok"):
             live_deck.mark(tab_idx, "ok", ip=last_res.get("ip"),
                            cc=last_res.get("cc"),
@@ -283,7 +312,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
                 break
             with _FEEDBACK_LOCK:
                 _DEAD.add(entry["addr"])
-                _USED.pop(entry["addr"], None)      # free the cap slot
+            _release(entry["addr"])                 # free the concurrent slot
             _burn(entry)
             log.info("tab %d: drawn exit %s failed last-mile re-gate — re-drawing",
                      tab_idx, entry["addr"])
@@ -356,6 +385,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
                         _DEAD.add(entry["addr"])
                         _RIDING.pop(entry["addr"], None)
                     _burn(entry)
+                    _release(entry["addr"])
                     log.info("tab %d: captcha on %s — burning it as not-gold",
                              tab_idx, entry["addr"])
                 streamer.push_frame(page, {"tabId": tab_idx, "status": "captcha_error"}, min_interval=0)
@@ -398,6 +428,8 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             res["ok"] = bool(r.get("reached"))
             res["currentTime"] = r.get("currentTime")
             res["duration"] = r.get("duration")
+            if entry and not direct:
+                _release(entry["addr"])       # this exit is free again
             return res
         except Exception as e:
             res["error"] = f"{type(e).__name__}: {str(e)[:100]}"
@@ -406,7 +438,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
                 with _FEEDBACK_LOCK:
                     _BURNED.add(entry["addr"])
                     _DEAD.add(entry["addr"])      # re-draw skips it
-                    _RIDING.pop(entry["addr"], None)
+                _release(entry["addr"])
             return res
         finally:
             try:
