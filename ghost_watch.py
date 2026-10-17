@@ -5,6 +5,7 @@ live visual frames and playback progress directly to the dashboard.
 """
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import os
 import random
@@ -416,6 +417,21 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             shutil.rmtree(profile_dir, ignore_errors=True)
 
 
+def _owns(addr, idx, n):
+    """Does runner `idx` of `n` own this address? (one IP, one runner)
+
+    The run-start partition uses reach=1, so an address belongs to exactly one
+    runner and policy cap_per_ip is a TRUE global cap. The mid-run refresh
+    broke that: every runner materialised the whole gold-stream dir, so a
+    freshly streamed IP entered all 18 pools at once and got cap x 18 rides
+    (#70: 9 tabs on one IP with cap 5). Routing stream additions through the
+    same stable hash keeps the global cap honest while every runner still
+    drinks fresh gold.
+    """
+    h = int(hashlib.md5(addr.encode("utf-8")).hexdigest()[:8], 16)
+    return h % max(1, n) == idx
+
+
 def _pool_refresher(pool, stop_evt):
     """Water-pile tail: fold gold-stream gold into the LIVE pool mid-run.
 
@@ -451,10 +467,14 @@ def _pool_refresher(pool, stop_evt):
             if not merged.is_file():
                 continue
             entries = json.loads(merged.read_text(encoding="utf-8")).get("exits", [])
+            my_idx = int(os.environ.get("MATRIX_RUNNER_INDEX",
+                                        os.environ.get("RUNNER_ID", "1"))) - 1
+            n_run = int(os.environ.get("TOTAL_RUNNERS", "1"))
             with _FEEDBACK_LOCK:
                 fresh = [e for e in entries
                          if e.get("addr") and e["addr"] not in known
-                         and e["addr"] not in _DEAD]
+                         and e["addr"] not in _DEAD
+                         and _owns(e["addr"], max(0, my_idx), n_run)]
             if not fresh:
                 continue
             live = validate_candidates(
