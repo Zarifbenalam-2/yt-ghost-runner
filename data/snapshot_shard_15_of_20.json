@@ -5,74 +5,84 @@
   "cap_per_ip": 4,
   "exits": [
     {
-      "addr": "43.99.60.244:8089",
+      "addr": "149.248.18.106:1081",
+      "proto": "SOCKS",
+      "cc": "CA",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 61.5,
+      "egress_ip": "149.22.81.208",
+      "latency_ms": 368
+    },
+    {
+      "addr": "152.69.211.50:40001",
+      "proto": "HTTP",
+      "cc": "SG",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 61.4,
+      "egress_ip": "104.28.222.43",
+      "latency_ms": 14001
+    },
+    {
+      "addr": "176.111.37.5:39811",
       "proto": "HTTP",
       "cc": "HK",
       "tier": "T1",
       "kind": "unknown",
-      "score": 60.5,
-      "egress_ip": "43.99.60.244",
-      "latency_ms": 498
+      "score": 61.2,
+      "egress_ip": "176.111.37.5",
+      "latency_ms": 675
     },
     {
-      "addr": "112.169.99.71:8083",
+      "addr": "38.147.187.49:8080",
       "proto": "HTTP",
-      "cc": "KR",
+      "cc": "HK",
       "tier": "T1",
       "kind": "unknown",
-      "score": 59.9,
-      "egress_ip": "61.77.25.30",
-      "latency_ms": 849
+      "score": 60.8,
+      "egress_ip": "38.147.187.49",
+      "latency_ms": 727
     },
     {
-      "addr": "78.110.197.210:7080",
+      "addr": "128.199.116.219:9090",
       "proto": "HTTP",
-      "cc": "BE",
+      "cc": "SG",
       "tier": "T1",
       "kind": "unknown",
-      "score": 59.7,
-      "egress_ip": "78.110.197.210",
-      "latency_ms": 877
+      "score": 58.0,
+      "egress_ip": "128.199.116.219",
+      "latency_ms": 836
     },
     {
-      "addr": "107.161.178.244:3128",
+      "addr": "128.199.113.85:9090",
       "proto": "HTTP",
-      "cc": "US",
+      "cc": "SG",
       "tier": "T1",
       "kind": "unknown",
-      "score": 59.6,
-      "egress_ip": "107.161.178.244",
-      "latency_ms": 624
+      "score": 57.7,
+      "egress_ip": "128.199.113.85",
+      "latency_ms": 886
     },
     {
-      "addr": "136.226.118.196:9480",
+      "addr": "18.157.123.132:3128",
       "proto": "HTTP",
-      "cc": "US",
+      "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
-      "score": 54.1,
-      "egress_ip": "136.226.118.196",
-      "latency_ms": 1360
+      "score": 57.3,
+      "egress_ip": "3.68.36.133",
+      "latency_ms": 932
     },
     {
-      "addr": "174.138.165.211:37328",
-      "proto": "HTTP",
-      "cc": "US",
+      "addr": "101.32.213.44:1080",
+      "proto": "SOCKS",
+      "cc": "HK",
       "tier": "T1",
       "kind": "unknown",
-      "score": 54.1,
-      "egress_ip": "73.171.98.110",
-      "latency_ms": 2446
-    },
-    {
-      "addr": "136.226.118.194:9480",
-      "proto": "HTTP",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 54.0,
-      "egress_ip": "136.226.118.194",
-      "latency_ms": 1384
+      "score": 57.2,
+      "egress_ip": "101.32.213.44",
+      "latency_ms": 944
     },
     {
       "addr": "136.226.118.198:9480",
@@ -85,14 +95,34 @@
       "latency_ms": 1410
     },
     {
-      "addr": "174.138.162.38:65387",
+      "addr": "148.153.56.51:80",
       "proto": "HTTP",
-      "cc": "GB",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
-      "score": 50.0,
-      "egress_ip": "86.25.122.201",
-      "latency_ms": null
+      "score": 53.8,
+      "egress_ip": "148.153.56.51",
+      "latency_ms": 1406
+    },
+    {
+      "addr": "136.226.118.199:9480",
+      "proto": "HTTP",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 53.8,
+      "egress_ip": "136.226.118.199",
+      "latency_ms": 1407
+    },
+    {
+      "addr": "43.164.131.231:7777",
+      "proto": "SOCKS",
+      "cc": "KR",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 53.4,
+      "egress_ip": "43.164.131.231",
+      "latency_ms": 1458
     },
     {
       "addr": "174.138.162.34:39752",
@@ -125,14 +155,14 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:39777",
+      "addr": "174.138.162.35:39759",
       "proto": "HTTP",
       "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 50.0,
-      "egress_ip": "84.133.33.96",
-      "latency_ms": 28878
+      "egress_ip": "79.217.39.136",
+      "latency_ms": 28168
     },
     {
       "addr": "174.138.162.37:39790",
@@ -165,14 +195,14 @@
       "latency_ms": 34292
     },
     {
-      "addr": "174.138.162.35:39904",
+      "addr": "174.138.162.37:39850",
       "proto": "HTTP",
       "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 50.0,
-      "egress_ip": "77.176.181.91",
-      "latency_ms": 30010
+      "egress_ip": "188.103.184.191",
+      "latency_ms": 32763
     },
     {
       "addr": "174.138.162.38:39848",
@@ -205,14 +235,14 @@
       "latency_ms": 26706
     },
     {
-      "addr": "174.138.162.34:39751",
+      "addr": "174.138.162.36:63621",
       "proto": "HTTP",
       "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 50.0,
-      "egress_ip": "217.73.155.101",
-      "latency_ms": 33393
+      "egress_ip": "77.183.157.16",
+      "latency_ms": 25881
     },
     {
       "addr": "174.138.162.35:20998",
@@ -245,14 +275,14 @@
       "latency_ms": 27472
     },
     {
-      "addr": "131.153.1.46:54935",
+      "addr": "193.227.129.195:30493",
       "proto": "HTTP",
-      "cc": "GB",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 50.0,
-      "egress_ip": "92.234.90.242",
-      "latency_ms": 6567
+      "egress_ip": "75.164.83.123",
+      "latency_ms": null
     },
     {
       "addr": "174.138.161.146:57643",
@@ -285,14 +315,14 @@
       "latency_ms": 29958
     },
     {
-      "addr": "174.138.161.146:34775",
+      "addr": "174.138.162.34:39860",
       "proto": "HTTP",
-      "cc": "US",
+      "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 50.0,
-      "egress_ip": "73.137.202.207",
-      "latency_ms": null
+      "egress_ip": "88.71.233.86",
+      "latency_ms": 28080
     },
     {
       "addr": "174.138.165.211:31987",
@@ -325,34 +355,14 @@
       "latency_ms": null
     },
     {
-      "addr": "193.227.129.196:32301",
+      "addr": "174.138.165.214:56883",
       "proto": "HTTP",
-      "cc": "US",
+      "cc": "IE",
       "tier": "T1",
       "kind": "unknown",
-      "score": 48.0,
-      "egress_ip": "172.56.108.124",
-      "latency_ms": 16768
-    },
-    {
-      "addr": "174.138.161.189:55680",
-      "proto": "SOCKS5",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 48.0,
-      "egress_ip": "172.56.91.249",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.161.146:38239",
-      "proto": "HTTP",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 48.0,
-      "egress_ip": "97.188.105.122",
-      "latency_ms": null
+      "score": 50.0,
+      "egress_ip": "86.43.189.137",
+      "latency_ms": 27317
     },
     {
       "addr": "174.138.162.38:39976",
@@ -365,24 +375,34 @@
       "latency_ms": 28869
     },
     {
-      "addr": "103.1.50.129:3125",
-      "proto": "HTTP",
-      "cc": "HK",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 44.0,
-      "egress_ip": "103.1.50.129",
-      "latency_ms": 9876
-    },
-    {
-      "addr": "45.130.127.14:3128",
+      "addr": "131.153.1.46:20034",
       "proto": "HTTP",
       "cc": "US",
       "tier": "T1",
       "kind": "unknown",
-      "score": 44.0,
-      "egress_ip": "45.130.127.14",
-      "latency_ms": 6209
+      "score": 48.0,
+      "egress_ip": "172.59.36.213",
+      "latency_ms": 24696
+    },
+    {
+      "addr": "174.138.162.236:55657",
+      "proto": "HTTP",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 48.0,
+      "egress_ip": "172.56.14.60",
+      "latency_ms": 20954
+    },
+    {
+      "addr": "45.74.31.42:8985",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 47.7,
+      "egress_ip": "162.214.79.109",
+      "latency_ms": 2237
     },
     {
       "addr": "207.180.29.28:3128",
@@ -395,67 +415,67 @@
       "latency_ms": 15240
     },
     {
-      "addr": "173.205.202.209:8181",
-      "proto": "HTTP",
-      "cc": "US",
+      "addr": "45.142.195.110:995",
+      "proto": "SOCKS",
+      "cc": "CA",
       "tier": "T1",
       "kind": "unknown",
       "score": 44.0,
-      "egress_ip": "23.185.192.66",
-      "latency_ms": 6305
+      "egress_ip": "86.107.168.253",
+      "latency_ms": 18493
     },
     {
-      "addr": "152.32.172.3:3128",
-      "proto": "HTTP",
-      "cc": "HK",
+      "addr": "45.61.129.165:9050",
+      "proto": "SOCKS",
+      "cc": "NL",
       "tier": "T1",
       "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "152.32.172.3",
-      "latency_ms": null
+      "score": 44.0,
+      "egress_ip": "192.42.116.99",
+      "latency_ms": 4136
     },
     {
-      "addr": "174.138.162.35:63002",
+      "addr": "112.169.99.71:8061",
       "proto": "HTTP",
-      "cc": "AU",
+      "cc": "KR",
       "tier": "T1",
       "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "187.15.120.156",
-      "latency_ms": 33023
+      "score": 44.0,
+      "egress_ip": "175.196.197.81",
+      "latency_ms": 22495
     },
     {
-      "addr": "192.9.241.51:26568",
+      "addr": "45.74.31.41:26880",
       "proto": "SOCKS",
       "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "192.9.241.51",
-      "latency_ms": 17781
+      "egress_ip": "64.182.46.134",
+      "latency_ms": 8282
     },
     {
-      "addr": "3.1.100.245:3128",
-      "proto": "HTTP",
-      "cc": "SG",
+      "addr": "45.74.31.50:30285",
+      "proto": "SOCKS",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "3.1.100.245",
-      "latency_ms": 14745
+      "egress_ip": "64.182.46.134",
+      "latency_ms": 11457
     },
     {
-      "addr": "118.193.37.78:3128",
+      "addr": "174.138.162.38:39851",
       "proto": "HTTP",
-      "cc": "HK",
+      "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "118.193.37.78",
-      "latency_ms": 11212
+      "egress_ip": "87.122.18.226",
+      "latency_ms": null
     },
     {
-      "addr": "45.74.31.42:12084",
+      "addr": "45.74.31.50:40108",
       "proto": "SOCKS",
       "cc": "US",
       "tier": "T1",
@@ -465,27 +485,37 @@
       "latency_ms": null
     },
     {
-      "addr": "164.92.253.229:3128",
+      "addr": "174.138.162.34:39944",
       "proto": "HTTP",
       "cc": "DE",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "164.92.253.229",
-      "latency_ms": 9306
+      "egress_ip": "89.0.2.56",
+      "latency_ms": 26722
     },
     {
-      "addr": "5.255.99.75:1080",
+      "addr": "45.74.31.42:4916",
       "proto": "SOCKS",
-      "cc": "NL",
+      "cc": "CA",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "5.255.99.75",
-      "latency_ms": 5418
+      "egress_ip": "67.215.3.146",
+      "latency_ms": 3156
     },
     {
-      "addr": "45.74.31.41:13645",
+      "addr": "45.74.31.50:10777",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 5640
+    },
+    {
+      "addr": "45.74.31.50:12274",
       "proto": "SOCKS",
       "cc": "US",
       "tier": "T1",
@@ -495,36 +525,6 @@
       "latency_ms": null
     },
     {
-      "addr": "89.58.32.131:3128",
-      "proto": "HTTP",
-      "cc": "DE",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "89.58.32.131",
-      "latency_ms": 12353
-    },
-    {
-      "addr": "38.242.158.117:9050",
-      "proto": "SOCKS",
-      "cc": "LU",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "104.244.74.51",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.42:8048",
-      "proto": "SOCKS",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "129.121.112.81",
-      "latency_ms": 5039
-    },
-    {
       "addr": "43.164.129.36:3128",
       "proto": "HTTP",
       "cc": "KR",
@@ -532,26 +532,6 @@
       "kind": "unknown",
       "score": 42.0,
       "egress_ip": "43.164.129.36",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.42:7917",
-      "proto": "SOCKS",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "104.219.251.77",
-      "latency_ms": 13471
-    },
-    {
-      "addr": "18.230.23.72:40381",
-      "proto": "HTTP",
-      "cc": "DE",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "185.220.101.50",
       "latency_ms": null
     },
     {
@@ -565,94 +545,224 @@
       "latency_ms": 11860
     },
     {
-      "addr": "45.74.31.40:10872",
+      "addr": "45.74.31.50:32865",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 11146
+    },
+    {
+      "addr": "45.74.31.42:8698",
+      "proto": "SOCKS",
+      "cc": "SG",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "97.74.94.121",
+      "latency_ms": 5462
+    },
+    {
+      "addr": "38.76.212.39:8181",
+      "proto": "SOCKS",
+      "cc": "HK",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "38.76.212.39",
+      "latency_ms": 7967
+    },
+    {
+      "addr": "45.74.31.40:15926",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 4696
+    },
+    {
+      "addr": "45.74.31.40:4978",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 15092
+    },
+    {
+      "addr": "45.74.31.41:14585",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 9515
+    },
+    {
+      "addr": "45.74.31.40:9665",
+      "proto": "SOCKS",
+      "cc": "GB",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "209.42.18.223",
+      "latency_ms": 15443
+    },
+    {
+      "addr": "45.74.31.42:12752",
       "proto": "SOCKS",
       "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
       "egress_ip": "162.214.79.109",
-      "latency_ms": 7985
+      "latency_ms": 10290
     },
     {
-      "addr": "45.74.31.40:5858",
+      "addr": "45.74.31.42:15747",
       "proto": "SOCKS",
       "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "159.198.47.56",
-      "latency_ms": 6733
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 6300
     },
     {
-      "addr": "157.173.123.247:3128",
-      "proto": "HTTP",
-      "cc": "FR",
+      "addr": "45.74.31.42:26443",
+      "proto": "SOCKS",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "157.173.123.247",
-      "latency_ms": 12951
+      "egress_ip": "162.214.79.109",
+      "latency_ms": 3384
     },
     {
-      "addr": "167.99.74.174:9090",
+      "addr": "45.33.16.186:3128",
+      "proto": "HTTP",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "45.33.16.186",
+      "latency_ms": 28180
+    },
+    {
+      "addr": "45.74.31.41:11683",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "162.214.79.109",
+      "latency_ms": 4467
+    },
+    {
+      "addr": "45.74.31.41:6830",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 10906
+    },
+    {
+      "addr": "45.74.31.42:14884",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "162.241.71.143",
+      "latency_ms": 3408
+    },
+    {
+      "addr": "45.74.31.41:8610",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 15509
+    },
+    {
+      "addr": "45.74.31.42:14322",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "162.214.79.109",
+      "latency_ms": 19319
+    },
+    {
+      "addr": "43.130.38.45:51029",
+      "proto": "SOCKS",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "43.130.38.45",
+      "latency_ms": 7525
+    },
+    {
+      "addr": "45.32.127.81:3128",
       "proto": "HTTP",
       "cc": "SG",
       "tier": "T1",
       "kind": "unknown",
       "score": 42.0,
-      "egress_ip": "167.99.74.174",
-      "latency_ms": 13425
+      "egress_ip": "45.32.127.81",
+      "latency_ms": 30487
     },
     {
-      "addr": "43.155.215.149:20000",
+      "addr": "45.74.31.40:13306",
       "proto": "SOCKS",
-      "cc": "KR",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
-      "score": 30.0,
-      "egress_ip": "43.155.215.149",
-      "latency_ms": 1052
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 6244
     },
     {
-      "addr": "109.199.107.68:1080",
+      "addr": "45.74.31.42:16091",
       "proto": "SOCKS",
-      "cc": "FR",
+      "cc": "US",
       "tier": "T1",
       "kind": "unknown",
-      "score": 5.5,
-      "egress_ip": "",
-      "latency_ms": 1451
+      "score": 42.0,
+      "egress_ip": "50.6.207.27",
+      "latency_ms": 5679
     },
     {
-      "addr": "128.90.145.98:8118",
-      "proto": "HTTP",
-      "cc": "BE",
+      "addr": "132.226.7.23:30277",
+      "proto": "SOCKS",
+      "cc": "JP",
       "tier": "T1",
       "kind": "unknown",
-      "score": 5.0,
-      "egress_ip": "",
-      "latency_ms": 1114
+      "score": 42.0,
+      "egress_ip": "132.226.7.23",
+      "latency_ms": 14458
     },
     {
-      "addr": "5.75.133.113:10808",
+      "addr": "45.74.31.41:13296",
       "proto": "SOCKS",
-      "cc": "PL",
-      "tier": "T2",
+      "cc": "US",
+      "tier": "T1",
       "kind": "unknown",
-      "score": 69.7,
-      "egress_ip": "45.148.5.2",
-      "latency_ms": 2908
-    },
-    {
-      "addr": "45.194.33.12:30002",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 55.9,
-      "egress_ip": "45.194.33.12",
-      "latency_ms": 583
+      "score": 42.0,
+      "egress_ip": "50.87.182.201",
+      "latency_ms": 4184
     },
     {
       "addr": "181.78.74.253:999",
@@ -665,14 +775,14 @@
       "latency_ms": 1856
     },
     {
-      "addr": "171.232.51.177:5000",
-      "proto": "SOCKS",
-      "cc": "VN",
+      "addr": "103.144.54.71:8082",
+      "proto": "HTTP",
+      "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 55.7,
-      "egress_ip": "115.79.238.74",
-      "latency_ms": 1282
+      "egress_ip": "103.144.54.71",
+      "latency_ms": 1286
     },
     {
       "addr": "195.154.84.121:10801",
@@ -685,253 +795,253 @@
       "latency_ms": 639
     },
     {
-      "addr": "165.99.71.201:3125",
+      "addr": "190.0.246.213:4040",
       "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 53.8,
-      "egress_ip": "",
-      "latency_ms": 871
-    },
-    {
-      "addr": "67.207.78.208:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 53.7,
-      "egress_ip": "167.99.243.9",
-      "latency_ms": 887
-    },
-    {
-      "addr": "91.134.141.4:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 53.6,
-      "egress_ip": "91.134.141.4",
-      "latency_ms": 893
-    },
-    {
-      "addr": "103.218.122.183:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 53.6,
-      "egress_ip": "103.218.122.183",
-      "latency_ms": 898
-    },
-    {
-      "addr": "173.212.252.150:1080",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 51.6,
-      "egress_ip": "",
-      "latency_ms": 1166
-    },
-    {
-      "addr": "86.53.189.84:1080",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 51.6,
-      "egress_ip": "86.53.189.84",
-      "latency_ms": 1162
-    },
-    {
-      "addr": "103.132.54.42:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 51.3,
-      "egress_ip": "103.132.54.42",
-      "latency_ms": 1198
-    },
-    {
-      "addr": "45.74.31.30:12342",
-      "proto": "SOCKS",
-      "cc": "IL",
+      "cc": "CO",
       "tier": "T2",
       "kind": "unknown",
-      "score": 51.0,
-      "egress_ip": "62.219.91.13",
-      "latency_ms": 1916
+      "score": 55.4,
+      "egress_ip": "190.0.246.210",
+      "latency_ms": 520
     },
     {
-      "addr": "103.53.79.106:8080",
+      "addr": "146.59.115.142:443",
       "proto": "HTTP",
-      "cc": "ID",
+      "cc": "PL",
       "tier": "T2",
       "kind": "unknown",
-      "score": 49.1,
-      "egress_ip": "103.53.79.106",
-      "latency_ms": 2181
+      "score": 53.3,
+      "egress_ip": "146.59.115.142",
+      "latency_ms": 534
     },
     {
-      "addr": "49.13.22.249:10814",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 49.0,
-      "egress_ip": "192.159.101.166",
-      "latency_ms": 1521
-    },
-    {
-      "addr": "103.166.33.51:3125",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 48.9,
-      "egress_ip": "103.166.33.51",
-      "latency_ms": 1525
-    },
-    {
-      "addr": "116.104.251.199:1043",
+      "addr": "42.114.62.28:20001",
       "proto": "SOCKS",
       "cc": "VN",
       "tier": "T2",
       "kind": "unknown",
-      "score": 48.8,
-      "egress_ip": "117.1.209.15",
-      "latency_ms": 2211
+      "score": 53.0,
+      "egress_ip": "42.113.41.164",
+      "latency_ms": 1656
     },
     {
-      "addr": "156.200.116.78:8080",
+      "addr": "130.17.12.137:3128",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
-      "score": 46.1,
-      "egress_ip": "",
-      "latency_ms": 1907
+      "score": 52.8,
+      "egress_ip": "130.17.12.137",
+      "latency_ms": 1003
     },
     {
-      "addr": "45.74.31.40:12109",
+      "addr": "45.74.31.47:5948",
       "proto": "SOCKS",
       "cc": "IL",
       "tier": "T2",
       "kind": "unknown",
-      "score": 46.0,
+      "score": 52.7,
       "egress_ip": "62.219.91.13",
-      "latency_ms": 1787
+      "latency_ms": 1691
     },
     {
-      "addr": "121.169.46.116:1090",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 45.9,
-      "egress_ip": "121.169.46.116",
-      "latency_ms": 1927
-    },
-    {
-      "addr": "18.163.182.106:9122",
+      "addr": "95.3.69.222:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
-      "score": 45.7,
+      "score": 50.7,
       "egress_ip": "",
-      "latency_ms": 1955
+      "latency_ms": 1292
     },
     {
-      "addr": "190.97.236.129:999",
-      "proto": "HTTP",
-      "cc": "VE",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 43.1,
-      "egress_ip": "161.22.39.56",
-      "latency_ms": 2315
-    },
-    {
-      "addr": "125.24.145.164:8080",
-      "proto": "HTTP",
-      "cc": "TH",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "125.24.145.164",
-      "latency_ms": 6513
-    },
-    {
-      "addr": "45.74.31.50:4371",
-      "proto": "SOCKS",
-      "cc": "VN",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "14.225.205.62",
-      "latency_ms": 14679
-    },
-    {
-      "addr": "121.101.130.226:8090",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "121.101.130.226",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.236:8254",
-      "proto": "HTTP",
-      "cc": "MX",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "177.245.123.53",
-      "latency_ms": 9219
-    },
-    {
-      "addr": "160.22.206.154:8082",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "160.22.207.197",
-      "latency_ms": 3752
-    },
-    {
-      "addr": "202.47.185.1:8080",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "38.226.243.66",
-      "latency_ms": null
-    },
-    {
-      "addr": "58.136.4.57:8080",
-      "proto": "HTTP",
-      "cc": "TH",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "58.136.4.57",
-      "latency_ms": 7583
-    },
-    {
-      "addr": "103.250.151.22:1111",
+      "addr": "167.71.233.240:3129",
       "proto": "HTTP",
       "cc": "IN",
       "tier": "T2",
       "kind": "unknown",
+      "score": 50.6,
+      "egress_ip": "167.71.233.240",
+      "latency_ms": 899
+    },
+    {
+      "addr": "64.227.162.18:3129",
+      "proto": "HTTP",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 50.6,
+      "egress_ip": "64.227.162.18",
+      "latency_ms": 900
+    },
+    {
+      "addr": "5.175.192.43:1080",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 50.6,
+      "egress_ip": "5.175.192.43",
+      "latency_ms": 1295
+    },
+    {
+      "addr": "113.22.224.63:1083",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 48.5,
+      "egress_ip": "104.28.222.73",
+      "latency_ms": 1174
+    },
+    {
+      "addr": "186.246.12.110:1080",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 48.2,
+      "egress_ip": "186.246.12.110",
+      "latency_ms": 1625
+    },
+    {
+      "addr": "213.131.85.29:1976",
+      "proto": "HTTP",
+      "cc": "EG",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 48.1,
+      "egress_ip": "213.131.85.29",
+      "latency_ms": 829
+    },
+    {
+      "addr": "87.251.78.206:3128",
+      "proto": "HTTP",
+      "cc": "RU",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 47.9,
+      "egress_ip": "87.251.78.206",
+      "latency_ms": 1261
+    },
+    {
+      "addr": "102.244.78.61:8090",
+      "proto": "HTTP",
+      "cc": "CM",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 46.4,
+      "egress_ip": "102.244.78.57",
+      "latency_ms": 1596
+    },
+    {
+      "addr": "116.104.251.199:1031",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 46.1,
+      "egress_ip": "42.118.180.40",
+      "latency_ms": 2586
+    },
+    {
+      "addr": "105.156.189.227:30001",
+      "proto": "HTTP",
+      "cc": "MA",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 46.1,
+      "egress_ip": "160.179.143.235",
+      "latency_ms": 1906
+    },
+    {
+      "addr": "171.232.51.177:5000",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 46.0,
+      "egress_ip": "171.233.31.167",
+      "latency_ms": 2596
+    },
+    {
+      "addr": "153.51.201.35:999",
+      "proto": "HTTP",
+      "cc": "VE",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 44.4,
+      "egress_ip": "161.22.39.56",
+      "latency_ms": 2135
+    },
+    {
+      "addr": "42.96.12.16:55555",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 44.2,
+      "egress_ip": "",
+      "latency_ms": 2158
+    },
+    {
+      "addr": "38.55.134.32:8888",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 44.0,
+      "egress_ip": "",
+      "latency_ms": 2195
+    },
+    {
+      "addr": "45.74.31.41:11082",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 44.0,
+      "egress_ip": "",
+      "latency_ms": 2196
+    },
+    {
+      "addr": "103.194.46.26:8082",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "103.250.151.22",
+      "egress_ip": "103.194.46.26",
+      "latency_ms": 9129
+    },
+    {
+      "addr": "49.147.56.84:8082",
+      "proto": "HTTP",
+      "cc": "PH",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "49.147.56.84",
+      "latency_ms": null
+    },
+    {
+      "addr": "45.74.31.50:5243",
+      "proto": "SOCKS",
+      "cc": "BG",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "78.128.76.254",
+      "latency_ms": 11546
+    },
+    {
+      "addr": "103.84.231.178:8080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.84.231.178",
       "latency_ms": null
     },
     {
@@ -945,174 +1055,234 @@
       "latency_ms": null
     },
     {
-      "addr": "103.191.218.214:8080",
+      "addr": "103.165.155.254:2016",
       "proto": "HTTP",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "103.191.218.214",
-      "latency_ms": null
+      "egress_ip": "103.165.155.10",
+      "latency_ms": 9113
     },
     {
-      "addr": "151.242.156.85:3125",
+      "addr": "103.150.218.238:3125",
       "proto": "HTTP",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "151.242.156.85",
+      "egress_ip": "103.150.218.238",
+      "latency_ms": 8932
+    },
+    {
+      "addr": "163.61.244.34:3125",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "163.61.244.34",
+      "latency_ms": 32008
+    },
+    {
+      "addr": "45.74.31.42:5011",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.56.162.156",
       "latency_ms": 13936
     },
     {
-      "addr": "200.41.149.66:12323",
+      "addr": "103.189.254.16:8080",
       "proto": "HTTP",
-      "cc": "AR",
+      "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "200.41.149.66",
-      "latency_ms": 5894
+      "egress_ip": "103.189.254.16",
+      "latency_ms": 17545
     },
     {
-      "addr": "45.74.31.40:12111",
+      "addr": "213.139.210.13:1088",
+      "proto": "SOCKS",
+      "cc": "RU",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "213.139.210.13",
+      "latency_ms": 7837
+    },
+    {
+      "addr": "45.74.31.40:11138",
       "proto": "SOCKS",
       "cc": "VN",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
       "egress_ip": "103.77.208.9",
-      "latency_ms": 11616
+      "latency_ms": 16735
     },
     {
-      "addr": "45.74.31.40:6447",
+      "addr": "45.74.31.41:9021",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.56.162.156",
+      "latency_ms": 10675
+    },
+    {
+      "addr": "45.74.31.42:15388",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.77.208.9",
+      "latency_ms": 10378
+    },
+    {
+      "addr": "45.74.31.42:24022",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.77.208.9",
+      "latency_ms": 10967
+    },
+    {
+      "addr": "45.74.31.40:17798",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.77.208.9",
+      "latency_ms": 21627
+    },
+    {
+      "addr": "45.74.31.41:13529",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.56.162.156",
+      "latency_ms": 7912
+    },
+    {
+      "addr": "45.74.31.41:5234",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.56.162.156",
+      "latency_ms": 3113
+    },
+    {
+      "addr": "45.74.31.42:17339",
       "proto": "SOCKS",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
       "egress_ip": "194.34.255.103",
-      "latency_ms": 9061
+      "latency_ms": 11978
     },
     {
-      "addr": "103.147.134.79:8082",
-      "proto": "HTTP",
+      "addr": "45.74.31.46:4379",
+      "proto": "SOCKS",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "103.147.134.79",
-      "latency_ms": 9850
+      "egress_ip": "194.34.255.103",
+      "latency_ms": 4400
     },
     {
-      "addr": "45.74.31.40:4592",
+      "addr": "45.74.31.41:10458",
       "proto": "SOCKS",
       "cc": "VN",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
       "egress_ip": "103.77.208.9",
-      "latency_ms": 13184
+      "latency_ms": 31453
     },
     {
-      "addr": "115.85.88.18:8080",
+      "addr": "116.104.251.199:1090",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "42.118.180.40",
+      "latency_ms": 15292
+    },
+    {
+      "addr": "45.74.31.46:5105",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.77.208.9",
+      "latency_ms": 9460
+    },
+    {
+      "addr": "210.87.92.157:3125",
       "proto": "HTTP",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 43.0,
-      "egress_ip": "115.85.88.74",
-      "latency_ms": 16902
+      "egress_ip": "210.87.92.157",
+      "latency_ms": 9739
     },
     {
-      "addr": "163.61.245.70:8080",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "163.61.245.70",
-      "latency_ms": 24981
-    },
-    {
-      "addr": "160.19.41.37:80",
-      "proto": "HTTP",
-      "cc": "IN",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "122.165.123.35",
-      "latency_ms": 22755
-    },
-    {
-      "addr": "103.156.17.71:8818",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 41.7,
-      "egress_ip": "103.156.17.71",
-      "latency_ms": 2368
-    },
-    {
-      "addr": "5.75.133.113:10812",
+      "addr": "45.74.31.42:37844",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
-      "score": 41.6,
-      "egress_ip": "45.133.180.2",
-      "latency_ms": 2510
+      "score": 41.2,
+      "egress_ip": "109.234.160.91",
+      "latency_ms": 2572
     },
     {
-      "addr": "152.67.191.232:6800",
+      "addr": "195.19.217.200:3128",
       "proto": "HTTP",
-      "cc": "IN",
+      "cc": "RU",
       "tier": "T2",
       "kind": "unknown",
-      "score": 41.4,
-      "egress_ip": "152.67.191.232",
-      "latency_ms": 2132
+      "score": 41.0,
+      "egress_ip": "195.19.217.200",
+      "latency_ms": 13898
     },
     {
-      "addr": "103.134.1.14:8080",
-      "proto": "HTTP",
+      "addr": "45.74.31.41:47529",
+      "proto": "SOCKS",
+      "cc": "IL",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 40.8,
+      "egress_ip": "62.219.91.13",
+      "latency_ms": 2483
+    },
+    {
+      "addr": "45.74.31.41:10993",
+      "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
-      "score": 41.4,
+      "score": 40.7,
       "egress_ip": "",
-      "latency_ms": 2541
-    },
-    {
-      "addr": "181.94.197.37:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.8,
-      "egress_ip": "",
-      "latency_ms": 2895
-    },
-    {
-      "addr": "174.138.161.146:57244",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.6,
-      "egress_ip": "",
-      "latency_ms": 2925
-    },
-    {
-      "addr": "123.200.8.170:10000",
-      "proto": "HTTP",
-      "cc": "BD",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.5,
-      "egress_ip": "123.200.8.170",
-      "latency_ms": 2121
+      "latency_ms": 2634
     },
     {
       "addr": "116.12.47.82:9595",
@@ -1125,7 +1295,37 @@
       "latency_ms": 2940
     },
     {
-      "addr": "84.36.141.180:1981",
+      "addr": "45.74.31.40:15916",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.4,
+      "egress_ip": "",
+      "latency_ms": 2941
+    },
+    {
+      "addr": "177.234.217.46:999",
+      "proto": "HTTP",
+      "cc": "EC",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.2,
+      "egress_ip": "177.234.217.42",
+      "latency_ms": 2157
+    },
+    {
+      "addr": "45.74.31.40:14235",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 13253
+    },
+    {
+      "addr": "185.100.196.188:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1135,7 +1335,7 @@
       "latency_ms": null
     },
     {
-      "addr": "117.18.127.238:1452",
+      "addr": "174.138.165.211:38636",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1145,37 +1345,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.242.104.103:3125",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "119.110.233.202:3129",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 29956
-    },
-    {
-      "addr": "174.138.165.211:32983",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.42:4516",
+      "addr": "45.74.31.42:5211",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
@@ -1185,7 +1355,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.161.187:8622",
+      "addr": "35.78.212.217:31101",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1195,7 +1365,7 @@
       "latency_ms": null
     },
     {
-      "addr": "192.203.0.142:999",
+      "addr": "103.104.99.12:80",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1205,7 +1375,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:36074",
+      "addr": "54.180.117.151:32592",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1215,44 +1385,24 @@
       "latency_ms": null
     },
     {
-      "addr": "185.99.3.100:995",
+      "addr": "49.151.64.103:5050",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 3887
+    },
+    {
+      "addr": "45.74.31.40:15479",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.50:9816",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.34:39807",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "180.191.32.67:5050",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
+      "latency_ms": 9461
     },
     {
       "addr": "190.97.228.66:999",
@@ -1275,37 +1425,17 @@
       "latency_ms": null
     },
     {
-      "addr": "41.65.55.27:1981",
-      "proto": "HTTP",
+      "addr": "45.74.31.42:37714",
+      "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 6896
+      "latency_ms": 4104
     },
     {
-      "addr": "131.153.1.46:37129",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "110.38.234.74:1256",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 15502
-    },
-    {
-      "addr": "171.4.176.16:8080",
+      "addr": "174.138.162.37:39758",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1315,7 +1445,7 @@
       "latency_ms": null
     },
     {
-      "addr": "131.153.1.46:33587",
+      "addr": "174.138.162.38:39772",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1325,7 +1455,17 @@
       "latency_ms": null
     },
     {
-      "addr": "212.200.223.89:8080",
+      "addr": "94.43.164.242:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "94.43.164.242",
+      "latency_ms": null
+    },
+    {
+      "addr": "174.138.161.146:31037",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1335,7 +1475,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.153.202.201:8181",
+      "addr": "174.138.161.146:32046",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1345,27 +1485,7 @@
       "latency_ms": null
     },
     {
-      "addr": "120.28.167.251:8082",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 8189
-    },
-    {
-      "addr": "91.224.77.229:8090",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 7802
-    },
-    {
-      "addr": "161.248.206.196:8080",
+      "addr": "210.79.141.173:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1375,37 +1495,27 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:32158",
+      "addr": "85.117.63.207:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 6927
+      "latency_ms": 21568
     },
     {
-      "addr": "174.138.162.38:39782",
+      "addr": "38.172.179.192:999",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": null
+      "latency_ms": 27930
     },
     {
-      "addr": "43.229.254.221:8181",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "103.104.99.51:80",
+      "addr": "174.138.161.146:53321",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1415,17 +1525,7 @@
       "latency_ms": null
     },
     {
-      "addr": "92.5.8.178:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 19471
-    },
-    {
-      "addr": "103.169.41.33:3125",
+      "addr": "174.138.162.34:39931",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1435,7 +1535,47 @@
       "latency_ms": null
     },
     {
-      "addr": "193.227.129.196:34349",
+      "addr": "131.153.1.43:8254",
+      "proto": "HTTP",
+      "cc": "VE",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "190.8.164.108",
+      "latency_ms": 15550
+    },
+    {
+      "addr": "193.227.129.195:35265",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 29664
+    },
+    {
+      "addr": "193.227.129.195:33229",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 24109
+    },
+    {
+      "addr": "174.138.165.211:38429",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "82.86.112.48:999",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1457,36 +1597,6 @@
     {
       "addr": "45.74.31.41:37723",
       "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "69.164.244.200:1080",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "69.164.244.200",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.38:39947",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "94.31.113.6",
-      "latency_ms": 26925
-    },
-    {
-      "addr": "174.138.162.37:36001",
-      "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
@@ -1525,34 +1635,14 @@
       "latency_ms": null
     },
     {
-      "addr": "45.74.31.42:6548",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3519
-    },
-    {
-      "addr": "192.163.200.93:17071",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 20829
-    },
-    {
-      "addr": "38.225.117.1:999",
+      "addr": "174.138.162.37:39826",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
+      "egress_ip": "188.102.44.176",
+      "latency_ms": 16017
     },
     {
       "addr": "174.138.162.37:39973",
@@ -1565,7 +1655,17 @@
       "latency_ms": 30040
     },
     {
-      "addr": "174.138.165.213:55435",
+      "addr": "103.162.16.60:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 8606
+    },
+    {
+      "addr": "174.138.162.238:51802",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1575,27 +1675,17 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:39896",
+      "addr": "174.138.162.37:30031",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 33927
+      "latency_ms": null
     },
     {
-      "addr": "146.56.110.131:8118",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3399
-    },
-    {
-      "addr": "66.59.197.62:4000",
+      "addr": "45.74.31.42:4258",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
@@ -1605,17 +1695,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.161.190:8254",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 25692
-    },
-    {
-      "addr": "131.153.1.46:51025",
+      "addr": "174.138.162.37:33157",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1625,7 +1705,7 @@
       "latency_ms": null
     },
     {
-      "addr": "56.112.93.245:4906",
+      "addr": "174.138.165.213:34794",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1635,7 +1715,17 @@
       "latency_ms": null
     },
     {
-      "addr": "13.53.139.178:17625",
+      "addr": "174.138.162.35:39884",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 20218
+    },
+    {
+      "addr": "43.208.134.144:53357",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1645,17 +1735,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:39848",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "92.209.186.11",
-      "latency_ms": null
-    },
-    {
-      "addr": "43.203.140.58:22640",
+      "addr": "103.13.235.150:3125",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1665,7 +1745,17 @@
       "latency_ms": null
     },
     {
-      "addr": "15.223.187.219:33248",
+      "addr": "41.216.190.176:1080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 17946
+    },
+    {
+      "addr": "157.66.16.77:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1675,54 +1765,64 @@
       "latency_ms": null
     },
     {
-      "addr": "103.191.254.1:7777",
+      "addr": "174.138.162.238:22699",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "69.171.215.69",
+      "latency_ms": null
+    },
+    {
+      "addr": "174.138.162.37:39889",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 8342
-    },
-    {
-      "addr": "174.138.162.38:39860",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "84.163.63.126",
       "latency_ms": null
     },
     {
-      "addr": "160.22.223.37:3125",
+      "addr": "174.138.162.34:39979",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "160.22.223.37",
-      "latency_ms": 10780
+      "egress_ip": "80.187.64.126",
+      "latency_ms": 5272
     },
     {
-      "addr": "174.138.162.35:39845",
-      "proto": "HTTP",
+      "addr": "91.206.92.212:9050",
+      "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "188.103.184.191",
-      "latency_ms": null
+      "egress_ip": "23.191.200.90",
+      "latency_ms": 14267
     },
     {
-      "addr": "150.107.244.239:8080",
+      "addr": "59.153.30.1:8888",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 12607
+      "latency_ms": null
+    },
+    {
+      "addr": "91.210.108.19:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
     },
     {
       "addr": "79.106.79.154:8989",
@@ -1735,16 +1835,6 @@
       "latency_ms": null
     },
     {
-      "addr": "103.180.118.109:8090",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "103.180.118.109",
-      "latency_ms": 3474
-    },
-    {
       "addr": "103.176.97.44:8082",
       "proto": "HTTP",
       "cc": "??",
@@ -1753,16 +1843,6 @@
       "score": 38.0,
       "egress_ip": "103.176.97.44",
       "latency_ms": 3559
-    },
-    {
-      "addr": "103.74.144.4:83",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 17723
     },
     {
       "addr": "92.249.62.120:8080",
@@ -1785,16 +1865,6 @@
       "latency_ms": 16828
     },
     {
-      "addr": "174.138.161.187:36814",
-      "proto": "SOCKS5",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
       "addr": "174.138.162.37:39851",
       "proto": "HTTP",
       "cc": "??",
@@ -1805,97 +1875,7 @@
       "latency_ms": 23356
     },
     {
-      "addr": "124.105.69.124:8081",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "41.209.57.199:80",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.35:39941",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "101.255.137.2:80",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.165.211:37219",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 10750
-    },
-    {
-      "addr": "174.138.162.35:39785",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "16.51.53.116:4341",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 5447
-    },
-    {
-      "addr": "62.210.189.192:10818",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 4885
-    },
-    {
-      "addr": "43.203.140.58:28992",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.42:11488",
+      "addr": "45.74.31.41:14851",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
@@ -1905,17 +1885,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.176.97.192:8082",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 8179
-    },
-    {
-      "addr": "49.147.125.164:5050",
+      "addr": "174.138.162.34:39853",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1925,7 +1895,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.188.169.160:7777",
+      "addr": "174.138.162.38:39945",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1935,47 +1905,137 @@
       "latency_ms": null
     },
     {
-      "addr": "129.151.128.225:1080",
+      "addr": "89.43.133.156:8080",
+      "proto": "HTTP",
+      "cc": "SY",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "89.43.133.156",
+      "latency_ms": null
+    },
+    {
+      "addr": "45.32.69.101:9000",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "174.138.165.211:30073",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "174.138.162.37:39845",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 31356
+    },
+    {
+      "addr": "174.138.165.211:37963",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "174.138.162.35:39891",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 33756
+    },
+    {
+      "addr": "174.138.162.38:39813",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 32346
+    },
+    {
+      "addr": "174.138.165.211:32470",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "103.247.23.27:1111",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "222.127.55.155:8082",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": null
+    },
+    {
+      "addr": "101.255.151.245:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "101.255.151.245",
+      "latency_ms": 15553
+    },
+    {
+      "addr": "45.74.31.50:8714",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "129.151.128.225",
+      "egress_ip": "",
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.38:39890",
+      "addr": "172.239.117.103:3128",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 32362
+      "latency_ms": 27880
     },
     {
-      "addr": "174.138.162.38:39944",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "185.68.185.4:8888",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "185.68.185.4",
-      "latency_ms": 3264
-    },
-    {
-      "addr": "206.84.118.110:3128",
+      "addr": "50.110.229.125:8118",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -1985,67 +2045,37 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.35:39783",
+      "addr": "174.138.162.35:39843",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "93.133.37.16",
-      "latency_ms": 31968
+      "egress_ip": "79.196.191.56",
+      "latency_ms": null
     },
     {
-      "addr": "131.153.1.46:35809",
+      "addr": "174.138.162.34:39875",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": null
+      "latency_ms": 33629
     },
     {
-      "addr": "45.74.31.42:7957",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 4661
-    },
-    {
-      "addr": "41.139.160.219:8103",
+      "addr": "54.20.46.218:1080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "41.139.160.219",
+      "egress_ip": "192.42.116.51",
       "latency_ms": null
     },
     {
-      "addr": "160.22.206.21:8082",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "193.227.129.196:33397",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.234:51392",
+      "addr": "65.109.65.238:28080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2085,7 +2115,17 @@
       "latency_ms": null
     },
     {
-      "addr": "193.227.129.195:51137",
+      "addr": "131.153.1.46:37368",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 23013
+    },
+    {
+      "addr": "131.153.1.46:54969",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2095,7 +2135,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.165.211:32751",
+      "addr": "131.153.1.46:36819",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2105,7 +2145,7 @@
       "latency_ms": null
     },
     {
-      "addr": "45.231.101.97:9999",
+      "addr": "142.147.119.181:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2115,37 +2155,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.191.154.62:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 13206
-    },
-    {
-      "addr": "103.177.8.111:1111",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 7425
-    },
-    {
-      "addr": "159.112.179.52:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 16781
-    },
-    {
-      "addr": "62.210.189.192:15759",
+      "addr": "174.138.165.211:32614",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2155,7 +2165,37 @@
       "latency_ms": null
     },
     {
-      "addr": "103.172.42.115:1111",
+      "addr": "103.138.123.196:8090",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 4411
+    },
+    {
+      "addr": "131.153.1.46:30314",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "71.229.111.28",
+      "latency_ms": 6147
+    },
+    {
+      "addr": "174.138.161.146:34440",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "174.180.24.201",
+      "latency_ms": null
+    },
+    {
+      "addr": "131.153.1.46:35631",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2165,27 +2205,7 @@
       "latency_ms": null
     },
     {
-      "addr": "209.38.115.253:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "138.68.94.126",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.151.69.56:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "45.151.69.56",
-      "latency_ms": 6278
-    },
-    {
-      "addr": "45.43.60.220:8080",
+      "addr": "18.170.25.193:9080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2195,7 +2215,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.165.211:8849",
+      "addr": "174.138.162.235:50314",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2205,57 +2225,27 @@
       "latency_ms": null
     },
     {
-      "addr": "45.74.31.47:45920",
-      "proto": "SOCKS",
+      "addr": "174.138.165.211:8022",
+      "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "",
+      "egress_ip": "179.42.199.215",
       "latency_ms": null
     },
     {
-      "addr": "103.173.162.91:8818",
+      "addr": "203.175.102.175:3125",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "",
+      "egress_ip": "203.175.102.175",
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.238:9443",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "216.131.76.191",
-      "latency_ms": 5024
-    },
-    {
-      "addr": "174.138.162.38:39902",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "83.135.186.81",
-      "latency_ms": 19145
-    },
-    {
-      "addr": "178.250.159.127:80",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 16103
-    },
-    {
-      "addr": "174.138.165.213:36618",
+      "addr": "131.153.1.45:37385",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2265,7 +2255,27 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.165.211:36218",
+      "addr": "88.247.49.47:19053",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "88.247.49.47",
+      "latency_ms": 11528
+    },
+    {
+      "addr": "174.138.165.213:38226",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "45.86.208.113",
+      "latency_ms": 12399
+    },
+    {
+      "addr": "174.138.162.38:35741",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2275,14 +2285,24 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.35:39892",
+      "addr": "193.227.129.196:53246",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "",
+      "egress_ip": "69.9.130.17",
       "latency_ms": null
+    },
+    {
+      "addr": "174.138.162.35:39927",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "87.164.88.31",
+      "latency_ms": 26198
     },
     {
       "addr": "5.181.178.61:3125",
@@ -2302,26 +2322,6 @@
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "103.166.159.97",
-      "latency_ms": null
-    },
-    {
-      "addr": "131.153.1.46:30687",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "187.19.128.76:3131",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "187.19.128.76",
       "latency_ms": null
     },
     {
@@ -2355,17 +2355,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.106.79.253:2233",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "144.79.180.37:8080",
+      "addr": "186.180.66.138:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2405,7 +2395,7 @@
       "latency_ms": null
     },
     {
-      "addr": "185.225.41.170:8080",
+      "addr": "103.54.169.83:3125",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2425,16 +2415,6 @@
       "latency_ms": null
     },
     {
-      "addr": "103.164.229.149:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
       "addr": "174.138.162.37:39878",
       "proto": "HTTP",
       "cc": "??",
@@ -2445,7 +2425,7 @@
       "latency_ms": 28258
     },
     {
-      "addr": "49.148.17.137:9999",
+      "addr": "124.158.184.21:64999",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2455,27 +2435,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.161.146:57392",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 16261
-    },
-    {
-      "addr": "187.102.219.64:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 7394
-    },
-    {
-      "addr": "174.138.162.37:32464",
+      "addr": "202.165.232.238:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2485,7 +2445,17 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.37:9051",
+      "addr": "103.178.176.14:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 17466
+    },
+    {
+      "addr": "174.138.162.38:39931",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2495,7 +2465,7 @@
       "latency_ms": null
     },
     {
-      "addr": "131.153.1.46:36856",
+      "addr": "83.143.24.66:80",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2505,7 +2475,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.161.190:35997",
+      "addr": "170.245.132.85:999",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2515,7 +2485,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.165.213:36018",
+      "addr": "174.138.165.213:33733",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2525,7 +2495,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.35:39896",
+      "addr": "193.227.129.196:50736",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2535,27 +2505,17 @@
       "latency_ms": null
     },
     {
-      "addr": "103.24.214.190:8082",
+      "addr": "174.138.162.34:39836",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
-      "egress_ip": "103.24.214.190",
-      "latency_ms": null
+      "egress_ip": "",
+      "latency_ms": 31007
     },
     {
-      "addr": "174.138.165.210:9661",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "81.106.248.85",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.37:39827",
+      "addr": "174.138.162.37:39888",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2565,27 +2525,7 @@
       "latency_ms": null
     },
     {
-      "addr": "89.208.96.190:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 17086
-    },
-    {
-      "addr": "58.69.124.137:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3787
-    },
-    {
-      "addr": "174.138.165.211:31869",
+      "addr": "174.138.165.213:36252",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2595,17 +2535,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.161.146:39915",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "199.172.241.190",
-      "latency_ms": 24133
-    },
-    {
-      "addr": "182.52.149.68:8080",
+      "addr": "160.22.206.83:8082",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2615,7 +2545,17 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.35:39770",
+      "addr": "174.138.162.35:39814",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "80.241.200.66",
+      "latency_ms": 15798
+    },
+    {
+      "addr": "174.138.162.35:30980",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2625,7 +2565,7 @@
       "latency_ms": null
     },
     {
-      "addr": "103.155.197.183:3125",
+      "addr": "212.237.219.81:3128",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2635,7 +2575,57 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.165.211:33675",
+      "addr": "174.138.162.38:39915",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "93.128.36.196",
+      "latency_ms": 27863
+    },
+    {
+      "addr": "174.138.162.38:39911",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 17214
+    },
+    {
+      "addr": "45.74.31.50:4884",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 5405
+    },
+    {
+      "addr": "174.138.162.38:39901",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "83.135.186.81",
+      "latency_ms": null
+    },
+    {
+      "addr": "176.12.73.250:3128",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "176.12.73.250",
+      "latency_ms": 30284
+    },
+    {
+      "addr": "174.138.165.213:34383",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2645,7 +2635,7 @@
       "latency_ms": null
     },
     {
-      "addr": "174.138.162.35:39812",
+      "addr": "174.138.165.213:36529",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2655,37 +2645,17 @@
       "latency_ms": null
     },
     {
-      "addr": "181.119.190.196:999",
+      "addr": "27.147.138.166:8158",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": null
+      "latency_ms": 3279
     },
     {
-      "addr": "122.116.180.77:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "174.138.162.38:39927",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "185.42.254.86",
-      "latency_ms": 32423
-    },
-    {
-      "addr": "103.251.153.75:8282",
+      "addr": "174.138.162.37:32475",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2703,16 +2673,6 @@
       "score": 38.0,
       "egress_ip": "",
       "latency_ms": null
-    },
-    {
-      "addr": "116.90.224.50:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 9257
     },
     {
       "addr": "212.175.50.78:8085",
@@ -2805,7 +2765,7 @@
       "latency_ms": null
     },
     {
-      "addr": "160.19.146.221:2022",
+      "addr": "34.229.190.39:41890",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2815,17 +2775,7 @@
       "latency_ms": null
     },
     {
-      "addr": "160.191.47.102:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "160.191.47.102",
-      "latency_ms": 3994
-    },
-    {
-      "addr": "175.136.209.251:8080",
+      "addr": "101.255.166.134:1111",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2835,67 +2785,17 @@
       "latency_ms": null
     },
     {
-      "addr": "190.167.38.11:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "190.167.38.11",
-      "latency_ms": null
-    },
-    {
-      "addr": "103.1.50.117:3125",
+      "addr": "202.51.121.59:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 15642
+      "latency_ms": 12285
     },
     {
-      "addr": "119.73.109.210:1080",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "163.227.248.71:8181",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3318
-    },
-    {
-      "addr": "177.93.52.67:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "177.93.52.65",
-      "latency_ms": null
-    },
-    {
-      "addr": "206.135.47.107:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3779
-    },
-    {
-      "addr": "38.19.36.107:999",
+      "addr": "179.1.127.90:999",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
@@ -2905,94 +2805,14 @@
       "latency_ms": null
     },
     {
-      "addr": "103.139.200.230:8080",
+      "addr": "103.147.134.116:8082",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": null
-    },
-    {
-      "addr": "103.148.216.121:8080",
-      "proto": "HTTP",
-      "cc": "BD",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "103.148.216.119",
-      "latency_ms": null
-    },
-    {
-      "addr": "178.115.230.100:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 11911
-    },
-    {
-      "addr": "38.58.130.128:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 9145
-    },
-    {
-      "addr": "209.146.107.119:8888",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3842
-    },
-    {
-      "addr": "45.74.31.40:4615",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 28926
-    },
-    {
-      "addr": "112.137.128.108:80",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 21601
-    },
-    {
-      "addr": "45.167.124.136:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 4983
-    },
-    {
-      "addr": "101.109.119.24:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 10242
+      "latency_ms": 13241
     },
     {
       "addr": "187.190.114.40:999",
@@ -3005,154 +2825,334 @@
       "latency_ms": 5188
     },
     {
-      "addr": "38.194.253.115:999",
+      "addr": "157.66.192.114:8080",
       "proto": "HTTP",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 10442
+      "latency_ms": 10885
     },
     {
-      "addr": "45.74.31.40:15094",
+      "addr": "203.201.190.31:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 24842
+    },
+    {
+      "addr": "45.74.31.40:15761",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 13825
+      "latency_ms": 4552
     },
     {
-      "addr": "177.234.221.200:999",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 3873
-    },
-    {
-      "addr": "45.74.31.40:7127",
+      "addr": "45.74.31.40:6660",
       "proto": "SOCKS",
       "cc": "??",
       "tier": "T3",
       "kind": "unknown",
       "score": 38.0,
       "egress_ip": "",
-      "latency_ms": 9805
+      "latency_ms": 5122
     },
     {
-      "addr": "103.233.152.18:8080",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 23577
-    },
-    {
-      "addr": "197.164.101.13:1981",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 11504
-    },
-    {
-      "addr": "103.4.76.237:1111",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 9444
-    },
-    {
-      "addr": "201.144.20.238:3128",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 14793
-    },
-    {
-      "addr": "45.74.31.42:21439",
+      "addr": "45.74.31.40:7623",
       "proto": "SOCKS",
-      "cc": "CO",
-      "tier": "T2",
+      "cc": "??",
+      "tier": "T3",
       "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "190.6.176.90",
-      "latency_ms": 4032
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 4602
     },
     {
-      "addr": "157.20.128.49:8080",
+      "addr": "45.74.31.41:10469",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 6396
+    },
+    {
+      "addr": "45.74.31.41:5951",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 3940
+    },
+    {
+      "addr": "45.74.31.42:12580",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 8682
+    },
+    {
+      "addr": "45.74.31.42:16083",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 7620
+    },
+    {
+      "addr": "45.74.31.40:14377",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 18116
+    },
+    {
+      "addr": "45.74.31.41:7203",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 6892
+    },
+    {
+      "addr": "45.74.31.42:16935",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 8383
+    },
+    {
+      "addr": "45.74.31.42:16992",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 6803
+    },
+    {
+      "addr": "45.74.31.46:10276",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 3164
+    },
+    {
+      "addr": "45.74.31.42:17571",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 4311
+    },
+    {
+      "addr": "103.150.166.160:8090",
+      "proto": "HTTP",
+      "cc": "BD",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "103.150.166.238",
+      "latency_ms": 13755
+    },
+    {
+      "addr": "103.212.239.51:3125",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 9124
+    },
+    {
+      "addr": "45.74.31.41:9874",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 8197
+    },
+    {
+      "addr": "45.74.31.46:17592",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 14072
+    },
+    {
+      "addr": "45.74.31.40:8517",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 5558
+    },
+    {
+      "addr": "45.74.31.41:8923",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 5482
+    },
+    {
+      "addr": "45.74.31.42:14582",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 6186
+    },
+    {
+      "addr": "138.186.201.77:8082",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 23090
+    },
+    {
+      "addr": "45.74.31.41:37378",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 5704
+    },
+    {
+      "addr": "45.74.31.42:16657",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 6216
+    },
+    {
+      "addr": "45.74.31.46:10313",
+      "proto": "SOCKS",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 5046
+    },
+    {
+      "addr": "103.39.51.130:1080",
       "proto": "HTTP",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 37.0,
-      "egress_ip": "157.20.128.193",
-      "latency_ms": 17077
+      "egress_ip": "103.39.51.130",
+      "latency_ms": 13252
     },
     {
-      "addr": "45.74.31.42:30776",
+      "addr": "45.74.31.42:30211",
       "proto": "SOCKS",
       "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 37.0,
       "egress_ip": "112.78.134.58",
-      "latency_ms": 21095
+      "latency_ms": 6489
     },
     {
-      "addr": "103.153.247.74:8080",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "103.153.247.74",
-      "latency_ms": 5467
-    },
-    {
-      "addr": "188.132.249.141:8080",
-      "proto": "HTTP",
-      "cc": "TR",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "188.132.249.141",
-      "latency_ms": null
-    },
-    {
-      "addr": "103.187.162.75:8085",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "103.187.162.75",
-      "latency_ms": 16414
-    },
-    {
-      "addr": "45.74.31.42:4623",
+      "addr": "45.74.31.42:5443",
       "proto": "SOCKS",
       "cc": "CO",
       "tier": "T2",
       "kind": "unknown",
       "score": 37.0,
       "egress_ip": "190.6.176.90",
-      "latency_ms": 8615
+      "latency_ms": 5759
+    },
+    {
+      "addr": "160.22.64.16:8097",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "160.22.64.16",
+      "latency_ms": null
+    },
+    {
+      "addr": "195.226.213.251:8888",
+      "proto": "HTTP",
+      "cc": "UA",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "195.226.213.254",
+      "latency_ms": 4312
+    },
+    {
+      "addr": "103.81.64.89:3125",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "103.81.65.54",
+      "latency_ms": 15850
+    },
+    {
+      "addr": "206.1.97.133:3128",
+      "proto": "HTTP",
+      "cc": "TR",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "206.1.97.133",
+      "latency_ms": 12802
     },
     {
       "addr": "103.159.194.169:8085",
@@ -3165,46 +3165,6 @@
       "latency_ms": 15811
     },
     {
-      "addr": "45.74.31.40:4721",
-      "proto": "SOCKS",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "112.78.134.58",
-      "latency_ms": 12272
-    },
-    {
-      "addr": "45.74.31.40:5082",
-      "proto": "SOCKS",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "112.78.134.58",
-      "latency_ms": 7307
-    },
-    {
-      "addr": "103.247.23.244:1111",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "103.247.23.244",
-      "latency_ms": 4676
-    },
-    {
-      "addr": "223.25.110.77:8090",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "223.25.110.77",
-      "latency_ms": 3705
-    },
-    {
       "addr": "103.146.38.53:1080",
       "proto": "HTTP",
       "cc": "ID",
@@ -3213,26 +3173,6 @@
       "score": 37.0,
       "egress_ip": "103.146.38.53",
       "latency_ms": 6417
-    },
-    {
-      "addr": "103.68.213.3:8080",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "103.68.213.3",
-      "latency_ms": 14213
-    },
-    {
-      "addr": "103.112.139.162:8080",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 37.0,
-      "egress_ip": "103.112.139.162",
-      "latency_ms": 5954
     },
     {
       "addr": "103.195.142.250:8180",
@@ -3245,64 +3185,74 @@
       "latency_ms": 10158
     },
     {
-      "addr": "45.86.229.39:11000",
-      "proto": "SOCKS",
-      "cc": "ES",
+      "addr": "36.94.27.65:8080",
+      "proto": "HTTP",
+      "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
-      "score": 35.0,
-      "egress_ip": "104.28.192.78",
-      "latency_ms": 23246
+      "score": 37.0,
+      "egress_ip": "36.94.27.65",
+      "latency_ms": 18553
     },
     {
-      "addr": "209.14.113.106:999",
+      "addr": "103.97.140.151:3125",
       "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "103.97.140.151",
+      "latency_ms": 13741
+    },
+    {
+      "addr": "154.19.39.111:8080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "154.19.39.111",
+      "latency_ms": 27322
+    },
+    {
+      "addr": "45.174.108.141:999",
+      "proto": "HTTP",
+      "cc": "MX",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "45.174.108.141",
+      "latency_ms": 16878
+    },
+    {
+      "addr": "45.74.31.42:21040",
+      "proto": "SOCKS",
+      "cc": "IL",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "62.219.91.13",
+      "latency_ms": 3583
+    },
+    {
+      "addr": "45.74.31.42:5120",
+      "proto": "SOCKS",
       "cc": "CO",
       "tier": "T2",
       "kind": "unknown",
-      "score": 35.0,
-      "egress_ip": "201.46.124.123",
-      "latency_ms": null
+      "score": 37.0,
+      "egress_ip": "190.6.176.90",
+      "latency_ms": 12584
     },
     {
-      "addr": "200.229.76.160:3128",
+      "addr": "165.101.230.77:8080",
       "proto": "HTTP",
-      "cc": "BR",
+      "cc": "ID",
       "tier": "T2",
       "kind": "unknown",
       "score": 35.0,
-      "egress_ip": "200.229.76.160",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.42:4063",
-      "proto": "SOCKS",
-      "cc": "ZA",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 35.0,
-      "egress_ip": "196.22.132.17",
-      "latency_ms": null
-    },
-    {
-      "addr": "45.74.31.40:5444",
-      "proto": "SOCKS",
-      "cc": "IN",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 35.0,
-      "egress_ip": "72.61.237.85",
-      "latency_ms": 11750
-    },
-    {
-      "addr": "45.74.31.40:11933",
-      "proto": "SOCKS",
-      "cc": "IN",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 35.0,
-      "egress_ip": "187.126.118.91",
-      "latency_ms": 5824
+      "egress_ip": "165.101.230.77",
+      "latency_ms": 9560
     },
     {
       "addr": "45.74.31.40:6838",
@@ -3315,54 +3265,144 @@
       "latency_ms": 12937
     },
     {
-      "addr": "45.74.31.40:5189",
+      "addr": "45.74.31.40:12193",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "72.61.237.85",
+      "latency_ms": 7745
+    },
+    {
+      "addr": "45.74.31.40:11607",
       "proto": "SOCKS",
       "cc": "IN",
       "tier": "T2",
       "kind": "unknown",
       "score": 35.0,
       "egress_ip": "187.126.118.91",
-      "latency_ms": 11457
+      "latency_ms": 11094
     },
     {
-      "addr": "188.132.150.254:8080",
+      "addr": "45.74.31.42:4401",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "66.116.251.167",
+      "latency_ms": 5694
+    },
+    {
+      "addr": "45.74.31.42:6393",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "187.126.118.91",
+      "latency_ms": 3707
+    },
+    {
+      "addr": "45.74.31.42:13803",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "193.202.44.12",
+      "latency_ms": 4268
+    },
+    {
+      "addr": "45.74.31.41:16300",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "72.61.237.85",
+      "latency_ms": 5367
+    },
+    {
+      "addr": "45.74.31.40:15526",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "72.61.237.85",
+      "latency_ms": 4693
+    },
+    {
+      "addr": "45.74.31.41:5994",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "187.126.118.91",
+      "latency_ms": 5139
+    },
+    {
+      "addr": "45.74.31.42:10632",
+      "proto": "SOCKS",
+      "cc": "MY",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "101.99.94.106",
+      "latency_ms": 10829
+    },
+    {
+      "addr": "45.74.31.41:5613",
+      "proto": "SOCKS",
+      "cc": "IN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "187.126.118.91",
+      "latency_ms": 12467
+    },
+    {
+      "addr": "181.78.44.63:999",
       "proto": "HTTP",
-      "cc": "SY",
+      "cc": "HN",
       "tier": "T3",
       "kind": "unknown",
       "score": 32.0,
-      "egress_ip": "201.4.69.125",
-      "latency_ms": 8925
+      "egress_ip": "181.78.44.63",
+      "latency_ms": 6196
     },
     {
-      "addr": "177.234.221.195:999",
+      "addr": "177.234.217.45:999",
       "proto": "HTTP",
       "cc": "EC",
       "tier": "T3",
       "kind": "unknown",
       "score": 32.0,
-      "egress_ip": "177.234.221.194",
-      "latency_ms": 21472
+      "egress_ip": "177.234.217.42",
+      "latency_ms": 13188
     },
     {
-      "addr": "182.50.65.169:8080",
+      "addr": "45.71.186.214:999",
       "proto": "HTTP",
-      "cc": "NP",
+      "cc": "EC",
       "tier": "T3",
       "kind": "unknown",
       "score": 32.0,
-      "egress_ip": "103.232.228.138",
-      "latency_ms": 5404
+      "egress_ip": "181.78.194.249",
+      "latency_ms": 7039
     },
     {
-      "addr": "118.179.45.194:81",
+      "addr": "154.64.211.145:999",
       "proto": "HTTP",
-      "cc": "BD",
+      "cc": "PR",
       "tier": "T3",
       "kind": "unknown",
-      "score": 32.0,
-      "egress_ip": "118.179.45.194",
-      "latency_ms": 3344
+      "score": 30.0,
+      "egress_ip": "198.52.241.102",
+      "latency_ms": 10800
     }
   ]
 }
