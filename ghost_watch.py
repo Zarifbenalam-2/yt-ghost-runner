@@ -40,6 +40,10 @@ _RIDING = {}
 _BURNED = set()
 _USED = {}          # addr -> tab count on THIS runner (cap enforcement)
 _DEAD = set()       # addrs that failed a live gate on THIS runner
+_LIFETIME = {}      # addr -> tabs EVER ridden (the report's lifetime usage;
+                    # _RIDING is the CONCURRENT count and reads ~0 by the time
+                    # the report is written, which made the audit's
+                    # distinct-IP/lifetime numbers meaningless)
 _FEEDBACK_LOCK = threading.Lock()
 
 
@@ -143,15 +147,26 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
     # Each tab already runs in its OWN Chromium process with its own
     # --proxy-server, so separation is real; this makes it strict (cap 1
     # concurrent) instead of polite (cap N).
+    #
+    # The claim must be ATOMIC. Check-then-increment with no lock let every
+    # tab thread that drew in the same instant pass the cap test on the same
+    # address before any of them incremented the counter (28 tabs are
+    # submitted at once, so the run-start draw IS a thundering herd) —
+    # watch #81's audit measured 3 tabs riding 102.244.78.61:8080 at the same
+    # time with UNIQUE_IP_PER_TAB=1, all intervals starting at the burst.
     unique = os.environ.get("UNIQUE_IP_PER_TAB", "0") == "1"
     eff_cap = 1 if unique else cap
     if pool:
-        avail = [e for e in pool
-                 if used.get(e["addr"], 0) < eff_cap and e["addr"] not in _DEAD]
-        if avail:
-            avail.sort(key=lambda e: used.get(e["addr"], 0))
-            pick = avail[0]
-            used[pick["addr"]] = used.get(pick["addr"], 0) + 1
+        pick = None
+        with _FEEDBACK_LOCK:          # check + claim is one atomic step
+            avail = [e for e in pool
+                     if used.get(e["addr"], 0) < eff_cap
+                     and e["addr"] not in _DEAD]
+            if avail:
+                avail.sort(key=lambda e: used.get(e["addr"], 0))
+                pick = avail[0]
+                used[pick["addr"]] = used.get(pick["addr"], 0) + 1
+        if pick:
             try:
                 from hub import db
                 db.register_tabs_riding([pick["addr"]], 1)
@@ -185,12 +200,19 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
                     _DEAD.add(e["addr"])
                 _burn(e)
         if ok_entries:
-            # prefer the least-used survivors so the cap spreads evenly
+            # prefer the least-used survivors so the cap spreads evenly.
+            # Same atomic claim as the fast path: the gate ran outside the
+            # lock (slow network), but check+increment must be one step.
             ok_entries.sort(key=lambda e: used.get(e["addr"], 0))
-            pick = random.choice(ok_entries[:max(1, top_pick // 2)])
-            used[pick["addr"]] = used.get(pick["addr"], 0) + 1
-            _register(pick)
-            return pick
+            with _FEEDBACK_LOCK:
+                fresh = [e for e in ok_entries[:max(1, top_pick // 2)]
+                         if used.get(e["addr"], 0) < eff_cap]
+                pick = random.choice(fresh) if fresh else None
+                if pick:
+                    used[pick["addr"]] = used.get(pick["addr"], 0) + 1
+            if pick:
+                _register(pick)
+                return pick
     except Exception:
         pass
     return None
@@ -253,10 +275,12 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
         t0 = time.time()
         last_res = _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target,
                                 headful, direct, used, pool)
-        # intervals let the audit measure how many tabs shared an exit AT THE
-        # SAME TIME (the cap is concurrency, not a lifetime quota)
-        last_res["started_at"] = round(t0, 1)
-        last_res["ended_at"] = round(time.time(), 1)
+        # Intervals let the audit measure how many tabs shared an exit AT THE
+        # SAME TIME (the cap is concurrency, not a lifetime quota). _tab_attempt
+        # stamps the true RIDE window (stagger/park excluded); these fallbacks
+        # only fill in for attempts that never drew an exit (parked/failed).
+        last_res.setdefault("started_at", round(t0, 1))
+        last_res.setdefault("ended_at", round(time.time(), 1))
         if last_res.get("ok"):
             live_deck.mark(tab_idx, "ok", ip=last_res.get("ip"),
                            cc=last_res.get("cc"),
@@ -332,6 +356,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
     if entry:
         with _FEEDBACK_LOCK:
             _RIDING[entry["addr"]] = _RIDING.get(entry["addr"], 0) + 1
+            _LIFETIME[entry["addr"]] = _LIFETIME.get(entry["addr"], 0) + 1
     
     proxy_url = None
     if entry:
@@ -348,6 +373,11 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
         "cc": entry.get("cc") if entry else "LOCAL",
         "video": url,
     }
+    # Ride window: from HERE (stagger + re-gate done, browser about to claim
+    # the exit) to the release below. Recording the attempt start instead made
+    # the audit measure stagger/park waits as rides and overstate concurrency.
+    if entry:
+        res["started_at"] = round(time.time(), 1)
     live_deck.mark(tab_idx, "watching", ip=res["ip"], cc=res["cc"])
 
     with sync_playwright() as p:
@@ -380,6 +410,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             if "google.com/sorry" in (page.url or ""):
                 res["error"] = "Captcha on IP"
                 if entry and not direct:
+                    res["ended_at"] = round(time.time(), 1)
                     with _FEEDBACK_LOCK:
                         _BURNED.add(entry["addr"])
                         _DEAD.add(entry["addr"])
@@ -429,12 +460,14 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
             res["currentTime"] = r.get("currentTime")
             res["duration"] = r.get("duration")
             if entry and not direct:
+                res["ended_at"] = round(time.time(), 1)
                 _release(entry["addr"])       # this exit is free again
             return res
         except Exception as e:
             res["error"] = f"{type(e).__name__}: {str(e)[:100]}"
             # runner -> rack feedback: this proxy failed for a real browser
             if entry and not direct:
+                res["ended_at"] = round(time.time(), 1)
                 with _FEEDBACK_LOCK:
                     _BURNED.add(entry["addr"])
                     _DEAD.add(entry["addr"])      # re-draw skips it
@@ -544,6 +577,7 @@ def main():
     _BURNED.clear()
     _USED.clear()
     _DEAD.clear()
+    _LIFETIME.clear()
 
     # ── validate this runner's slice ONCE, in parallel ──
     # 25 tabs each gating the top of the same list re-tested the same corpses
@@ -646,7 +680,11 @@ def main():
             "results": results,
             "resources": snapshot_resources(),
             # ── runner -> rack feedback ──
-            "ip_usage": {addr: n for addr, n in _RIDING.items()},
+            # _LIFETIME is the honest usage map (an IP may serve several tabs
+            # sequentially); _RIDING is the concurrent view and is ~empty by
+            # report time, which used to blank this feedback entirely.
+            "ip_usage": {addr: n for addr, n in _LIFETIME.items()},
+            "concurrent_ip_usage": {addr: n for addr, n in _RIDING.items()},
             "burned_ips": sorted(_BURNED),
             "pool": pool_stats,
             "dead_in_slice": sorted(_DEAD),
