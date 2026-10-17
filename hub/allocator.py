@@ -31,49 +31,24 @@ log = get_logger("hub.allocator")
 
 
 def build_sharded_snapshot(n_runners, path_prefix=None, cap=None):
-    """Partition gold gold into n_runners slices, capping each IP's reach.
+    """Commit-time slices — delegates to build_slices_from_file (one rule).
 
-    Returns {"runners": n, "slices": [...counts...], "unique_ips": n, "capped_ips": n}
+    This used to place each IP round-robin into up to `cap` slices, while the
+    runners sliced by hash ownership (`owner_of`). Two schemes, two answers:
+    an IP could sit in `cap` slices here AND pass a different runner's refresh
+    filter, so one exit collected cap x cap tabs (watch #78: 12 on one IP with
+    cap 4, seen as 4+4+4). The committed `data/snapshot_shard_*` files are
+    meant to be exactly what a runner would rebuild, so they now come from the
+    same code path — reach=1, hash ownership, one IP in one slice.
+
+    The snapshot file must already be written (both call sites run this right
+    after broker.write_snapshot()); nothing is read from the registry.
     """
-    cap = cap or db.get_policy("cap_per_ip", config.CAP_PER_IP)
-    gold = db.fetch_gold(limit=100000)
-    if not gold:
-        return {"runners": n_runners, "slices": [], "unique_ips": 0, "capped_ips": 0}
-
-    # round-robin assignment: each IP lands in at most `cap` slices
-    slices = [[] for _ in range(n_runners)]
-    capped = 0
-    for i, ip in enumerate(gold):
-        start = i % n_runners
-        placed = 0
-        for k in range(n_runners):
-            if placed >= cap:
-                capped += 1
-                break
-            slices[(start + k) % n_runners].append(ip)
-            placed += 1
-
     prefix = Path(path_prefix) if path_prefix else (config.DATA_DIR / "snapshot_shard")
-    written = []
-    for idx, sl in enumerate(slices):
-        p = Path(f"{prefix}_{idx}_of_{n_runners}.json")
-        p.parent.mkdir(parents=True, exist_ok=True)
-        payload = {"snapshotted_at": db.now_iso() if hasattr(db, "now_iso") else "",
-                   "runner_index": idx, "of_runners": n_runners,
-                   "cap_per_ip": cap, "exits": [
-                       {k: e[k] for k in ("addr", "proto", "cc", "tier", "kind",
-                                          "score", "egress_ip", "latency_ms")
-                        if k in e} for e in sl]}
-        if hasattr(db, "now_iso"):
-            payload["snapshotted_at"] = db.now_iso()
-        p.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        written.append(len(sl))
-
-    res = {"runners": n_runners, "slices": written, "unique_ips": len(gold),
-           "capped_ips": capped}
-    log.info("allocator: %d IPs -> %d slices (each IP in <=%d slices): %s",
-             len(gold), n_runners, cap, written)
-    return res
+    res = build_slices_from_file(n_runners, snapshot_path=config.SNAPSHOT_FILE,
+                                out_prefix=prefix, cap=cap, reach=1)
+    return {"runners": res["runners"], "slices": res["slices"],
+            "unique_ips": res["exits"], "capped_ips": 0}
 
 
 def load_my_slice(runner_index, n_runners, base=None):

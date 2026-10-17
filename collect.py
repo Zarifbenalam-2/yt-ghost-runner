@@ -316,6 +316,13 @@ def main():
             json.dumps(summary, indent=2), encoding="utf-8")
         log.info("collect summary: %s", summary)
         print("COLLECT_SUMMARY=" + json.dumps(summary), flush=True)
+        # A snapshot that never reached origin is worthless to the next watch,
+        # and this exact silence hid a rejected push for hours (the collector
+        # logged 394 gold, uploaded a green summary, and the shelf stayed
+        # empty). The job must go red so the failure is unmissable.
+        if not args.no_push and not pushed:
+            log.error("snapshot NOT pushed — failing the job (shelf unchanged)")
+            return 2
         return 0
 
     golds, burns = fetch_run_artifacts(args.repo, token, args.run_id)
@@ -391,6 +398,9 @@ def main():
         json.dumps(summary, indent=2), encoding="utf-8")
     log.info("collect summary: %s", summary)
     print("COLLECT_SUMMARY=" + json.dumps(summary), flush=True)
+    if not args.no_push and not pushed:
+        log.error("snapshot NOT pushed — failing the job (shelf unchanged)")
+        return 2
     return 0
 
 
