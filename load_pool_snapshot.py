@@ -35,7 +35,7 @@ STREAM_DIR = ROOT / "data" / "stream"
 #: 1-3h); older entries still land in the merged file, after the fresh ones,
 #: but only while the merged pool would otherwise be thin.
 STREAM_FRESH_SEC = 45 * 60
-STREAM_MAX_AGE_SEC = 2 * 3600
+STREAM_MAX_AGE_SEC = 3600
 #: keep old entries ONLY when nothing fresh exists at all. The operator's
 #: rule is "only freshly harvested IPs in use": a small fresh pool is correct,
 #: a big stale one is not. Scarcity is handled by tabs PARKING and waiting for

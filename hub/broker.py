@@ -151,7 +151,7 @@ def write_snapshot(path=None):
     pool, the freshest entries are kept rather than starving the runners.
     """
     path = path or config.SNAPSHOT_FILE
-    max_age = float(os.environ.get("IP_MAX_AGE_SEC", 3 * 3600))
+    max_age = float(os.environ.get("IP_MAX_AGE_SEC", 3600))
     cutoff = time.time() - max_age
     gold = db.fetch_gold(limit=100000)
     fresh = [g for g in gold if (g.get("last_gold_ok") or 0) >= cutoff]

@@ -114,6 +114,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: "true"
+          IP_MAX_AGE_SEC: "3600"
         run: |
           python3 collect.py --repo "${{ github.repository }}" \
             --run-id "${{ github.run_id }}"
