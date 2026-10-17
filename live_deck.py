@@ -42,6 +42,15 @@ _DIRTY = {"flag": False}
 _STOP = threading.Event()
 _THREAD = {"obj": None}
 _PUSHED = {"count": 0, "last_ok": None, "last_err": None}
+#: ghost_watch registers a callback returning live run counters ({"ip_usage",
+#: "burned", "dead"}). They ride the deck payload so the global per-IP cap and
+#: the burn count are readable from the branch alone — the artifact/API path
+#: can be rate-limited or mid-run unavailable exactly when you want them.
+_PROVIDER = {"fn": None}
+
+
+def set_provider(fn):
+    _PROVIDER["fn"] = fn
 
 
 def enabled():
@@ -124,11 +133,20 @@ def _push_once():
     push it. Retry on ref races (siblings pushing concurrently)."""
     rid = _runner_id()
     rel = f"{REL_PREFIX}/live_r{rid}.json"
+    counters = {}
+    try:
+        if _PROVIDER["fn"]:
+            counters = _PROVIDER["fn"]() or {}
+    except Exception:
+        counters = {}
     with _LOCK:
         payload = {
             "runner_id": rid,
             "meta": dict(_META),
             "tabs": [dict(_STATE[k]) for k in sorted(_STATE)],
+            "ip_usage": counters.get("ip_usage") or {},
+            "burned": counters.get("burned") or [],
+            "dead": counters.get("dead") or 0,
             "pushed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
         _DIRTY["flag"] = False

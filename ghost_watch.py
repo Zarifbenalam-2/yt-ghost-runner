@@ -496,8 +496,8 @@ def main():
     ap = argparse.ArgumentParser(description="Multi-tab Ghost Watcher with live screen feed.")
     ap.add_argument("--url", required=True, help="YouTube video URL to watch")
     ap.add_argument("--tabs", type=int, default=2, help="Number of concurrent tabs on this runner")
-    ap.add_argument("--depth-lo", type=int, default=50, help="Min watch percentage (0-100)")
-    ap.add_argument("--depth-hi", type=int, default=90, help="Max watch percentage (0-100)")
+    ap.add_argument("--depth-lo", type=int, default=20, help="Min watch percentage (0-100)")
+    ap.add_argument("--depth-hi", type=int, default=45, help="Max watch percentage (0-100)")
     ap.add_argument("--stream-target", help="Dashboard URL to stream live frames to (e.g. http://ip:8766)")
     ap.add_argument("--headful", action="store_true", help="Launch visible browser")
     ap.add_argument("--direct", action="store_true", help="Bypass IP shelf proxies and connect direct")
@@ -529,6 +529,14 @@ def main():
     live_deck.set_meta(url=args.url, tabs=args.tabs,
                        pool_live=pool_stats.get("live"),
                        pool_candidates=pool_stats.get("candidates"))
+    # ride the cap + burn counters on the deck so cap compliance can be
+    # verified from the branch alone (the artifacts API can be rate-limited
+    # or unavailable mid-run exactly when you want to know)
+    live_deck.set_provider(lambda: {
+        "ip_usage": dict(_RIDING),
+        "burned": sorted(_BURNED)[:500],
+        "dead": len(_DEAD),
+    })
     live_deck.start()
 
     # water-pile tail: keep folding gold-stream additions into the live pool

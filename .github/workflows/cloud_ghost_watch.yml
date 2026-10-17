@@ -32,11 +32,11 @@ on:
       depth_lo:
         description: 'Min watch percent'
         required: false
-        default: '60'
+        default: '20'
       depth_hi:
         description: 'Max watch percent'
         required: false
-        default: '95'
+        default: '45'
       harvest_shards:
         description: 'Gold-factory shards harvesting ALONGSIDE the watch (water-pile: fresh gold streams in mid-run; 18 watch + 2 harvest = steady state)'
         required: false
