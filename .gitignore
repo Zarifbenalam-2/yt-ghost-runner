@@ -27,5 +27,12 @@ data/*.db
 data/*.db-journal
 data/*.db-wal
 
+# The dashboard reads a PAT from here when the git credential store has none
+# (server.resolve_github_token). Its docstring claimed this path was ignored,
+# but .gitignore never listed it — a single `git add -A` would have committed
+# the operator's PAT.
+data/.gh_token
+.gh_token
+
 # NOTE: data/ip_pool_snapshot.json IS intentionally tracked — cloud runners
 # bootstrap their shelf from it (load_pool_snapshot.py).
