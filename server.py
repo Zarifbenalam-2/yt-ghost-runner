@@ -239,8 +239,34 @@ def load_accounts():
     return accounts
 
 
-def dispatch_workflow(repo, token, url, tabs, stream_target=""):
-    """POST workflow_dispatch to one repo. Returns (ok, message)."""
+def dispatch_workflow(repo, token, url, tabs, stream_target="", runners=None,
+                      harvest_shards=2, depth_lo=20, depth_hi=45,
+                      human_moves=True, unique_ips=True):
+    """POST workflow_dispatch to one repo. Returns (ok, message).
+
+    Sends the FULL fleet config, not just url+tabs. The watch matrix is
+    20-strong and every job above the `runners` input exits idle, so a
+    dispatch carrying only video_url/tabs_per_runner silently ran FOUR
+    runners (the workflow's default) — the dashboard could "start the
+    system" and get a quarter of the fleet.
+
+    `runners` defaults to the ceiling minus the harvest shards: 20 jobs is
+    the Free-plan concurrent maximum, and the water-pile needs the harvest
+    shards alive ALONGSIDE the watch (18 watch : 2 harvest).
+    """
+    try:
+        ceiling = int(os.environ.get("JOB_CEILING", "20"))
+    except ValueError:
+        ceiling = 20
+    hs = max(0, int(harvest_shards))
+    if runners is None:
+        runners = ceiling - hs
+        try:
+            runners = int(os.environ.get("DISPATCH_RUNNERS", str(runners)))
+        except ValueError:
+            pass
+    # never over-subscribe the ceiling: queued jobs starve the water-pile
+    runners = max(1, min(int(runners), ceiling - hs))
     dispatch_url = (
         f"https://api.github.com/repos/{repo}/actions/workflows/"
         f"cloud_ghost_watch.yml/dispatches"
@@ -256,13 +282,21 @@ def dispatch_workflow(repo, token, url, tabs, stream_target=""):
         "inputs": {
             "video_url": url,
             "tabs_per_runner": str(tabs),
+            "runners": str(runners),
             "stream_target": stream_target,
+            "harvest_shards": str(hs),
+            "harvest_par": "200",
+            "depth_lo": str(depth_lo),
+            "depth_hi": str(depth_hi),
+            "human_moves": "true" if human_moves else "false",
+            "unique_ips": "true" if unique_ips else "false",
+            "use_ip_pool": "true",
         },
     }).encode("utf-8")
     try:
         req = urllib.request.Request(dispatch_url, data=body, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=10):
-            return True, f"{repo}: dispatched"
+            return True, f"{repo}: dispatched {runners} runners x {tabs} tabs (+{hs} harvest)"
     except Exception as e:
         return False, f"{repo}: {e}"
 
@@ -735,6 +769,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Missing video URL"}, 400)
                 return
 
+            # Optional control-plane overrides; defaults give the full fleet
+            # (18 watch : 2 harvest = the 20-job ceiling, with unique IPs and
+            # 20-45% watch depth). The old call path sent only url+tabs, so a
+            # dashboard click silently ran 4 runners instead of the fleet.
+            d_runners = payload.get("runners")
+            d_shards = payload.get("harvestShards", 2)
+            d_lo = payload.get("depthLo", 20)
+            d_hi = payload.get("depthHi", 45)
+            d_human = payload.get("humanMoves") not in ("false", False, "0")
+            d_unique = payload.get("uniqueIps") not in ("false", False, "0")
+
             # Explicit single target (prompt flow) or fan-out to all accounts
             targets = []
             if payload.get("ghToken") and payload.get("repo"):
@@ -759,7 +804,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 }, 400)
                 return
 
-            results = [dispatch_workflow(t["repo"], t["pat"], url, tabs, stream_target)
+            results = [dispatch_workflow(
+                           t["repo"], t["pat"], url, tabs, stream_target,
+                           runners=d_runners, harvest_shards=d_shards,
+                           depth_lo=d_lo, depth_hi=d_hi,
+                           human_moves=d_human, unique_ips=d_unique)
                        for t in targets]
             ok_all = all(r[0] for r in results)
             if ok_all or any(r[0] for r in results):
