@@ -176,6 +176,22 @@ def apply_burns(burns, exclude=None):
     return n
 
 
+def _committed_snapshot_count():
+    """Size of the currently committed snapshot (the shelf we must not wipe)."""
+    try:
+        r = subprocess.run(["git", "show", f"HEAD:{config.SNAPSHOT_FILE.name}"],
+                           cwd=str(ROOT), capture_output=True, text=True, timeout=60)
+        if r.returncode == 0:
+            return len(json.loads(r.stdout or "{}").get("exits", []))
+    except Exception:
+        pass
+    try:
+        return len(json.loads(Path(config.SNAPSHOT_FILE).read_text(encoding="utf-8"))
+                   .get("exits", []))
+    except Exception:
+        return 0
+
+
 def commit_snapshot(push=True):
     """Commit + push the freshly written snapshot so the next watch has it."""
     subprocess.run(["git", "add", str(config.SNAPSHOT_FILE)], cwd=str(ROOT), check=False)
@@ -261,9 +277,29 @@ def main():
         log.info("watch feedback: %d burn reports + %d ip_usage maps",
                  len(watch_burns), len(ip_usage))
         applied = apply_burns(watch_burns, exclude=set())
-        pruned = db.prune_old()      # no exit is stored past its useful life
-        watch_burns = [b for b in watch_burns]      # (kept for the summary)
+        # Snapshot BEFORE pruning: write_snapshot's own age policy already
+        # decides what is usable, and it keeps a floor of the freshest rows
+        # when nothing is inside the freshness window. Pruning first destroyed
+        # the rack outright whenever every exit was older than the window
+        # (2026-10-17: an empty snapshot was committed and every later watch
+        # started from an empty shelf).
         n = broker.write_snapshot()
+        pruned = db.prune_old()      # then drop what is past its useful life
+        # ── SAFETY: never destroy the shelf with an empty snapshot ──
+        # (the fleet path always had this guard; the watch path did not, so a
+        #  burn-heavy or all-too-old cycle could commit 0 exits)
+        prev = _committed_snapshot_count()
+        if n < max(25, int(prev * 0.25)):
+            log.error("snapshot would shrink to %d (was %d) — refusing to "
+                      "commit an empty/near-empty shelf", n, prev)
+            summary = {"burn_reports": len(watch_burns), "burned": applied,
+                       "pruned_old": pruned, "snapshot": n, "prev_snapshot": prev,
+                       "pushed": False, "skipped": "shelf_guard"}
+            Path(config.DATA_DIR).mkdir(parents=True, exist_ok=True)
+            Path(config.DATA_DIR / "collect_summary.json").write_text(
+                json.dumps(summary, indent=2), encoding="utf-8")
+            print("COLLECT_SUMMARY=" + json.dumps(summary), flush=True)
+            return 0
         try:
             from hub import allocator
             runners = int(os.environ.get("SLICE_RUNNERS", "20"))

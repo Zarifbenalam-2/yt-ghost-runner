@@ -14,6 +14,12 @@ name: Gold Factory Fleet
 # means a fleet run uses the account's harvest allocation.
 
 on:
+  # SUSTAINED SUPPLY: the shelf's rule is "only freshly harvested IPs", so a
+  # harvest that only runs when a human remembers starves every watch that
+  # follows (2026-10-17: an hour-long gap left the shelf empty and a watch ran
+  # against nothing). An hourly refill keeps the water-pile topped up.
+  schedule:
+    - cron: '15 * * * *'
   workflow_dispatch:
     inputs:
       shards:

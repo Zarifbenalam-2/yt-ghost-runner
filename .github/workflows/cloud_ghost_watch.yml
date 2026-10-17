@@ -40,7 +40,7 @@ on:
       harvest_shards:
         description: 'Gold-factory shards harvesting ALONGSIDE the watch (water-pile: fresh gold streams in mid-run; 18 watch + 2 harvest = steady state)'
         required: false
-        default: '0'
+        default: '2'
       harvest_par:
         description: 'Parallel gold checks per harvest shard (200 = honest verdicts)'
         required: false
