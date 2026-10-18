@@ -46,6 +46,19 @@ SEEN_FILE = DATA / "factory_seen.json"
 GOLD_LOG = DATA / "factory_gold_log.jsonl"
 SNAPSHOT = DATA / "ip_pool_snapshot.json"
 
+#: how long a tested verdict stays "fresh" before the raw engine re-tests
+#: the address (free proxies die AND revive; sources refresh on their own
+#: schedules, so within the TTL nothing is re-tested, across it a known-but-
+#: dead address gets another chance cheaply). Sources refresh hourly at most
+#: (monosans) or per-minute (proxyscrape v4) — 1h keeps the balance.
+SEEN_TTL_SEC = 3600
+#: on-branch inventory path (gold-stream branch): CI runners have no local
+#: memory (factory_seen.json is gitignored + every job is a fresh checkout),
+#: so the seen state lives in the repo and rides the same plumbing pushes as
+#: the gold itself. The CENTRAL hub (your PC) is the ultimate owner of it.
+SEEN_BRANCH = "gold-stream"
+SEEN_BRANCH_REL = "data/state/factory_seen.json"
+
 #: the live shelf channel: shards push certified gold here CYCLE BY CYCLE so
 #: the pile is topped while tabs work, instead of everything waiting for the
 #: batch-end collector (where gold dies in the queue)
@@ -61,6 +74,12 @@ _log = get_logger("gold_factory")
 #: consecutive watch-check API failures (module state for the idle gate,
 #: so a GitHub outage cannot leave the factory harvesting forever)
 _WATCH_CHECK_FAILS = 0
+
+#: per-source consecutive-failure tracker. A source that errors out this many
+#: times in a row is likely dead (404, renamed repo) and is skipped until it
+#: succeeds once. Module state only: a future run re-enables it naturally.
+_SOURCE_FAILS = {}
+_SOURCE_FAIL_LIMIT = 3
 
 # (url, default proto) — same sources as proxy_hunt.sh
 SOURCES = [
@@ -97,6 +116,44 @@ SOURCES = [
     ("https://raw.githubusercontent.com/mauricegift/free-proxies/master/files/http.json", "HTTP"),
     ("https://raw.githubusercontent.com/ebrasha/abdal-proxy-hub/main/http-proxy-list-by-EbraSha.txt", "HTTP"),
     ("https://raw.githubusercontent.com/ebrasha/abdal-proxy-hub/main/socks5-proxy-list-by-EbraSha.txt", "SOCKS"),
+    # ── v2 sources (added after 33-source research pass) ──────────────
+    # zevtyardt: curated, updated often (React app scrapes hourly)
+    ("https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/zevtyardt/proxy-list/main/socks5.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/zevtyardt/proxy-list/main/all.txt", "HTTP"),
+    # roosterkid / openproxylist - big RAW mega lists
+    ("https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS4_RAW.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS5_RAW.txt", "SOCKS"),
+    # ShiftyTR - updated ~hourly
+    ("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/https.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks4.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt", "SOCKS"),
+    # monosans extras (socks4 + all.txt) — the checker'd list, fastest-first
+    ("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt", "HTTP"),
+    # hideip.me — updates every 10 minutes
+    ("https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/zloi-user/hideip.me/main/socks4.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/zloi-user/hideip.me/main/socks5.txt", "SOCKS"),
+    # ProxyScrape's own github mirror (separate from their API, in repos)
+    ("https://raw.githubusercontent.com/ProxyScrape/free-proxy-list/main/proxies/protocols/http/data.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/ProxyScrape/free-proxy-list/main/proxies/protocols/https/data.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/ProxyScrape/free-proxy-list/main/proxies/protocols/socks4/data.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/ProxyScrape/free-proxy-list/main/proxies/protocols/socks5/data.txt", "SOCKS"),
+    ("https://raw.githubusercontent.com/ProxyScrape/free-proxy-list/main/proxies/all/data.txt", "HTTP"),
+    # proxyscrape v4 API — freshest in the fleet (refreshes every ~1 min)
+    ("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=http&proxy_format=ipport&format=text&timeout=10000", "HTTP"),
+    ("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=socks5&proxy_format=ipport&format=text&timeout=10000", "SOCKS"),
+    # TheSpeedX extra protocol files (socks4)
+    ("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt", "SOCKS"),
+    # more, from the research pass — frequently-updated feed-style repos
+    ("https://raw.githubusercontent.com/vmheaven/VMHeaven.io-Free-Proxy-List/main/http.txt", "HTTP"),
+    ("https://raw.githubusercontent.com/vmheaven/VMHeaven.io-Free-Proxy-List/main/socks5.txt", "SOCKS"),
+    # additional checked lists from research (dedupe handles overlaps)
+    ("https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks4_proxies.txt", "SOCKS"),
 ]
 
 ADDR_RE = re.compile(r"(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})")
@@ -124,15 +181,27 @@ def _fetch(url, timeout=25):
 
 
 def scrape_sources():
-    """Download every source in parallel -> {(addr, proto): 1}."""
+    """Download every live source in parallel -> {(addr, proto): 1}.
+
+    Per-source retry counter: a source that fails _SOURCE_FAIL_LIMIT
+    consecutive times is presumed dead and skipped for the cycle (and the
+    next), so a renamed/404 repo stops burning a scrape worker. Success
+    resets the counter, so a recovering source comes back automatically.
+    """
     found = {}
     results_lock = threading.Lock()
 
     def _scrape_one(src):
         url, default_proto = src
+        if _SOURCE_FAILS.get(url, 0) >= _SOURCE_FAIL_LIMIT:
+            return 0
         body = _fetch(url)
         if not body:
+            with results_lock:
+                _SOURCE_FAILS[url] = _SOURCE_FAILS.get(url, 0) + 1
             return 0
+        with results_lock:
+            _SOURCE_FAILS[url] = 0
         n = 0
         for line in body.splitlines():
             m = ADDR_RE.search(line)
@@ -162,34 +231,114 @@ def scrape_sources():
 
 # ------------------------------------------------------------------- state
 
-def load_seen():
+def load_seen_branch():
+    """Best-effort: read data/state/factory_seen.json from gold-stream branch.
+
+    CI runners get a depth-1 checkout with no local state (factory_seen.json
+    is gitignored), so this is the ONLY durable memory across runs — the
+    branch is fetched via the explicit-refspec helper that works in shallow
+    clones. Falls back to {} on any failure (first run, missing branch).
+    """
     try:
-        return json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+        from hub import git_ops
+        if not git_ops.fetch_branch(ROOT, SEEN_BRANCH):
+            return {}
+        r = git_ops._run(["show", f"refs/remotes/origin/{SEEN_BRANCH}:{SEEN_BRANCH_REL}"], ROOT)
+        if r.returncode != 0:
+            return {}
+        return json.loads(r.stdout or "{}")
     except Exception:
         return {}
 
 
+def load_seen():
+    try:
+        return json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return load_seen_branch()
+
+
 def save_seen(seen):
-    # prune entries older than 7 days to bound growth
-    cutoff = time.time() - 7 * 86400
+    # prune entries older than SEEN_TTL to bound growth (within TTL nothing
+    # is retested, across it we want the chance to revisit a revived proxy)
+    cutoff = time.time() - SEEN_TTL_SEC
     pruned = {k: v for k, v in seen.items()
               if isinstance(v, dict) and v.get("ts", 0) > cutoff}
     DATA.mkdir(parents=True, exist_ok=True)
     tmp = SEEN_FILE.with_suffix(".tmp")
     tmp.write_text(json.dumps(pruned), encoding="utf-8")
     os.replace(tmp, SEEN_FILE)
+    if os.environ.get("GITHUB_TOKEN"):
+        push_seen_branch(pruned)
+
+
+def _merge_seen(a, b):
+    """Dict merge keeping the NEWEST verdict per addr across two seen stores."""
+    out = dict(a or {})
+    for k, v in (b or {}).items():
+        cur = out.get(k)
+        if cur is None:
+            out[k] = v
+        elif isinstance(cur, dict) and isinstance(v, dict) and (v.get("ts") or 0) > (cur.get("ts") or 0):
+            out[k] = v
+    return out
+
+
+def push_seen_branch(pruned):
+    """Merge our inventory with the remote copy and push to gold-stream.
+
+    Concurrent sibling shards push the same path from their own views; the
+    plumbing push rebases on the remote tip each retry, and _merge_seen keeps
+    the newest per-addr verdict, so a slower shard's gold cannot overwrite a
+    newer one's entry. Any failure is non-fatal — the seen state is
+    best-effort (worst case = next run re-tests a few addresses)."""
+    try:
+        from hub import git_ops
+        remote = load_seen_branch()
+        merged = _merge_seen(remote, pruned)
+        payload = json.dumps(merged)
+        git_ops.push_plumbing(
+            ROOT, SEEN_BRANCH, SEEN_BRANCH_REL, payload,
+            f"gold-factory: seen inventory +{len(merged)} entries [skip-ci]",
+            log=lambda m: log(f"[seen] {m}"))
+        return True
+    except Exception as e:
+        log(f"[seen] branch push failed: {e}")
+        return False
 
 
 # -------------------------------------------------------------------- test
 
-def test_candidates(cands, par):
-    """gate.quick_gold_check over candidates. Returns list of gold entries."""
+def test_candidates(cands, par, on_gold=None, batch_n=25, batch_sec=45.0,
+                    timeout=35):
+    """gate.quick_gold_check over candidates; returns list of gold entries.
+
+    Streams: `on_gold(batch)` is called every `batch_n` certified golds OR
+    every `batch_sec` seconds (whichever first), so certified gold reaches the
+    shelf channel within ~a minute of being tested instead of waiting for the
+    whole (potentially 10-minute) cycle to finish. Dead candidates still
+    early-exit ("000" unreachable returns fast), the batch/time flush keeps the
+    stream push cheap, and the full list is returned for enrichment/reports.
+    """
     golds = []
+    batch = []
+    lock = threading.Lock()
+    last_flush = [time.time()]
+
+    def _flush():
+        # caller holds `lock`; drains the batch under it
+        if not batch:
+            return
+        out = batch[:]
+        batch.clear()
+        last_flush[0] = time.time()
+        if on_gold:
+            on_gold(out)
 
     def _one(c):
         addr, proto = c
         try:
-            r = gate.quick_gold_check(addr, proto, timeout=35)
+            r = gate.quick_gold_check(addr, proto, timeout=timeout)
             if r.get("ok"):
                 return {"addr": addr, "proto": proto,
                         "latency_ms": r.get("latency_ms"),
@@ -202,9 +351,21 @@ def test_candidates(cands, par):
         return None
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=par) as ex:
-        for res in ex.map(_one, cands):
-            if res:
-                golds.append(res)
+        futs = {ex.submit(_one, c): c for c in cands}
+        for done in concurrent.futures.as_completed(futs):
+            try:
+                r = done.result()
+            except Exception:
+                r = None
+            if not r:
+                continue
+            with lock:
+                batch.append(r)
+                golds.append(r)
+                if len(batch) >= batch_n or (time.time() - last_flush[0]) >= batch_sec:
+                    _flush()
+    with lock:
+        _flush()
     return golds
 
 
@@ -375,12 +536,78 @@ def watcher_active(repo=None):
     return bool(active)
 
 
-# ------------------------------------------------------------------- cycle
+# ------------------------------------------------------- shelf re-validation
+
+def regate_snapshot(par=200, timeout=25):
+    """The shelf golden engine: re-gate every exit currently on the shelf.
+
+    Runs once per cycle (the user's 5-minute job). It reads the committed
+    snapshot, re-tests each gold exit with the SAME oracle that certified it,
+    and drops the ones that no longer pass — so a proxy that was certifiably
+    gold 40 minutes ago but died since is evicted before a tab wastes a ride
+    on it. Runs only on shard 0 (fleet) / the single local shard, because a
+    duplicate pass on every runner is a waste of the same gate calls.
+
+    Returns (named) counts while leaving a NEW snapshot file written; the
+    caller decides whether to push it (pushes are cheap and the snapshot is
+    the runner's bootstrap, so push when anything died OR age-bound changed).
+    """
+    if not SNAPSHOT.is_file():
+        return {"checked": 0, "alive": 0, "dead": 0}
+    try:
+        snap = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+        exits = snap.get("exits", [])
+    except (OSError, json.JSONDecodeError):
+        return {"checked": 0, "alive": 0, "dead": 0}
+    if not exits:
+        return {"checked": 0, "alive": 0, "dead": 0}
+
+    alive, dead = [], []
+
+    def _recheck(e):
+        try:
+            r = gate.quick_gold_check(e.get("addr"), e.get("proto", "HTTP"),
+                                      timeout=timeout)
+            if r.get("ok"):
+                # refresh the gate timestamp; keep the original geo/score
+                out = dict(e)
+                out["gated_at"] = time.time()
+                return out, True
+        except Exception:
+            pass
+        return e, False
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=par) as ex:
+        for e, ok in ex.map(_recheck, exits):
+            (alive if ok else dead).append(e)
+
+    log(f"[shelf] re-gated {len(exits)} -> alive {len(alive)} / dead {len(dead)}")
+    if dead:
+        snap["exits"] = alive
+        snap["snapshotted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        DATA.mkdir(parents=True, exist_ok=True)
+        tmp = SNAPSHOT.with_suffix(".tmp")
+        tmp.write_text(json.dumps(snap, indent=2), encoding="utf-8")
+        os.replace(tmp, SNAPSHOT)
+    return {"checked": len(exits), "alive": len(alive), "dead": len(dead)}
+
+
 
 def run_cycle(args, seen):
     if args.require_watch and not watcher_active():
         log("no active watcher run — factory idle (--require-watch)")
         return -1
+
+    do_sweep = args.shards == 1 or args.shard == 0
+    if do_sweep:
+        impure = regate_snapshot(par=args.par, timeout=getattr(args, "gate_timeout", 35))
+        if impure["dead"]:
+            from hub.git_ops import robust_snapshot_push
+            if robust_snapshot_push(ROOT, "data/ip_pool_snapshot.json",
+                                   log=lambda m: log(f"[shelf] {m}")):
+                log(f"[shelf] repushed purified snapshot "
+                    f"({impure['alive']} alive) after {impure['dead']} dead")
+
     log("== CYCLE: scrape ==")
     found = scrape_sources()
     log(f"scraped {len(found)} unique (addr,proto) from {len(SOURCES)} sources")
@@ -406,17 +633,34 @@ def run_cycle(args, seen):
 
     t0 = time.time()
     log(f"== CYCLE: testing {len(fresh)} at par={args.par} ==")
-    golds = test_candidates(fresh, args.par)
+
+    # Streams: every ~25 golds or ~45s the callback pushes to the shelf
+    # channel mid-test, so certified gold reaches the shelf in minutes,
+    # not at the end of a 10-minute cycle.
+    produced = []
+
+    def _on_gold(batch):
+        batch = enrich(batch)
+        produced.extend(batch)
+        for g in batch:
+            log(f"  GOLD {g['addr']:24s} {g.get('cc','??'):3s} "
+                f"T{g.get('tier','-')[1] if g.get('tier') else '?'} "
+                f"score={g.get('score')} {g.get('type','?')}")
+        if args.shards > 1:
+            stream_push(args, batch)
+
+    golds = test_candidates(fresh, args.par, on_gold=_on_gold,
+                            timeout=getattr(args, "gate_timeout", 35))
     dt = round(time.time() - t0, 1)
-    log(f"tested {len(fresh)} in {dt}s -> {len(golds)} GOLD")
+    log(f"tested {len(fresh)} in {dt}s -> {len(golds)} GOLD (streamed {len(produced)})")
 
-    golds = enrich(golds)
-    for g in golds:
-        log(f"  GOLD {g['addr']:24s} {g.get('cc','??'):3s} T{g.get('tier','-')[1] if g.get('tier') else '?'} "
-            f"score={g.get('score')} {g.get('type','?')}")
+    # `produced` already carries the enrichment (done in the stream callback);
+    # use it as the canonical gold list so nothing is geo-looked-up twice.
+    golds = produced or golds
 
-    # record seen regardless of outcome (dead now = seen; lists re-add later
-    # only if pruned after 7 days — a retest pass can revisit)
+    # record seen regardless of outcome (dead now = seen; within the TTL
+    # nothing is re-tested, across it a possibly-revived proxy gets another
+    # chance — this is the 'don't waste time, don't starve' balance)
     now = time.time()
     for addr, proto in fresh:
         seen[addr] = {"ts": now, "proto": proto}
@@ -469,7 +713,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cycle", type=int, default=300, help="seconds between cycles")
     ap.add_argument("--par", type=int, default=500, help="parallel gold checks")
+    ap.add_argument("--gate-timeout", type=int, default=35,
+                    help="seconds cap per gold-check step (default 35 — the "
+                         "same oracle YouTube trust; we keep the check honest "
+                         "and buy cycle speed with PARALLELISM instead of a "
+                         "shorter verdict that would kill slow-but-alive "
+                         "proxies)")
     ap.add_argument("--max-test", type=int, default=8000, help="max new IPs tested per cycle")
+    ap.add_argument("--run-minutes", type=float, default=0,
+                    help="stop the daemon after this many minutes (0 = run "
+                         "forever; CI harvest jobs use a bounded loop so a "
+                         "ghost run cannot hold a 20-slot fleet for days)")
     ap.add_argument("--ship", action="store_true", help="auto commit+push snapshot on new gold")
     ap.add_argument("--dispatch", type=int, default=0, help="auto-fire watcher with N tabs/runner after ship")
     ap.add_argument("--once", action="store_true", help="single cycle then exit")
@@ -489,6 +743,7 @@ def main():
         f"ship={args.ship} require_watch={args.require_watch} "
         f"shard={args.shard}/{args.shards} seen={len(seen)}")
 
+    start = time.time()
     while True:
         try:
             r = run_cycle(args, seen)
@@ -497,6 +752,9 @@ def main():
             r = 0
         save_seen(seen)
         if args.once:
+            break
+        if args.run_minutes and (time.time() - start) >= args.run_minutes * 60:
+            log(f"daemon hit --run-minutes {args.run_minutes} — stopping")
             break
         # idle gate: poll every 60s instead of the full cycle sleep
         time.sleep(60 if r == -1 else args.cycle)

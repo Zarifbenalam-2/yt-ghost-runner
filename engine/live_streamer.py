@@ -79,11 +79,11 @@ class LiveStreamer:
             try:
                 endpoint = self.stream_target_url.rstrip("/") + "/api/feed/update"
                 data = json.dumps(payload).encode("utf-8")
-                req = urllib.request.Request(
-                    endpoint,
-                    data=data,
-                    headers={"Content-Type": "application/json"},
-                )
+                headers = {"Content-Type": "application/json"}
+                tok = os.environ.get("RELAY_TOKEN", "")
+                if tok:
+                    headers["Authorization"] = f"Token {tok}"
+                req = urllib.request.Request(endpoint, data=data, headers=headers)
                 with urllib.request.urlopen(req, timeout=3) as resp:
                     pass
             except Exception:

@@ -46,6 +46,28 @@ _LIFETIME = {}      # addr -> tabs EVER ridden (the report's lifetime usage;
                     # distinct-IP/lifetime numbers meaningless)
 _FEEDBACK_LOCK = threading.Lock()
 
+#: tab_idx -> claim token for the central-relay lease, set while a tab waits
+#: (see draw_gold_ip claim path). Used to return leases on ride completion.
+_CLAIM_OWNER = {}
+
+
+def _release_claim(addr, claim_owner):
+    """Best-effort: tell the hub this lease is returned; TTL is the backstop.
+
+    Only meaningful when CLAIM_URL is set. Failure is never fatal — the relay
+    drops stale leases on its own (CLAIM_TTL).
+    """
+    if not (addr and claim_owner):
+        return
+    claim_url = os.environ.get("CLAIM_URL", "")
+    if not claim_url:
+        return
+    try:
+        from engine import claim_client
+        claim_client.release(claim_url, addr, claim_owner)
+    except Exception:
+        pass
+
 
 def extract_video_id(url):
     m = re.search(r"(?:[?&]v=|youtu\.be/|/shorts/|/embed/)([A-Za-z0-9_-]{11})", url or "")
@@ -124,7 +146,7 @@ def validate_candidates(entries, workers=32, limit=None):
 
 
 def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
-                 used=None, pool=None):
+                 used=None, pool=None, claim_owner=None):
     """Select a live exit for one tab, honouring the per-IP cap.
 
     `pool` (from validate_candidates) is already gated: pick from it with no
@@ -134,8 +156,38 @@ def draw_gold_ip(use_proxy=True, max_candidates=12, top_pick=8, region=None,
     """
     if not use_proxy:
         return None
-    used = used if used is not None else {}
-    cap = 5
+    try:
+        from hub import db
+        cap = int(db.get_policy("cap_per_ip", 5))
+    except Exception:
+        cap = 5
+
+    # ---- central claim path (optional, via relay): all fleet runners claim
+    # from ONE pool on the hub (your PC) instead of slicing hashes locally.
+    # When the relay is unreachable the claim is skipped and the local slicing
+    # below runs untouched — the central cap is an enhancement, never a new
+    # point of failure.
+    claim_url = os.environ.get("CLAIM_URL", "")
+    if claim_url:
+        unique = os.environ.get("UNIQUE_IP_PER_TAB", "0") == "1"
+        eff_cap = 1 if unique else cap
+        from engine import claim_client
+        # The claim owner is (runner, tab): each tab's live claim is its own
+        # lease, so two tabs in the same runner never get the same IP AND a re-draw
+        # after mid-ride death re-leases under the same identity.
+        owner = claim_owner or claim_client.owner_tag()
+        lease = claim_client.try_claim(claim_url, owner, cap_per_ip=eff_cap)
+        if lease:
+            try:
+                from hub import db
+                db.register_tabs_riding([lease["addr"]], 1)
+            except Exception:
+                pass
+            return lease
+        # fall through to local slicing if the hub could not lease (off/pool
+        # drained) — do NOT double-claim: the local path draws from the local
+        # snapshot with its own cap, so a hub-less run degrades, not breaks.
+
     try:
         from hub import db
         cap = int(db.get_policy("cap_per_ip", cap))
@@ -299,7 +351,15 @@ def run_tab_session(tab_idx, url, depth_lo, depth_hi, stream_target, headful=Fal
 def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direct, used, pool):
     """One attempt of a tab session on one freshly drawn IP."""
     streamer = LiveStreamer(tab_id=tab_idx, stream_target_url=stream_target)
-    entry = draw_gold_ip(use_proxy=not direct, used=used, pool=pool)
+    claim_owner = None
+    if os.environ.get("CLAIM_URL"):
+        try:
+            from engine import claim_client
+            claim_owner = f"{claim_client.owner_tag()}:tab{tab_idx}"
+        except Exception:
+            pass
+    entry = draw_gold_ip(use_proxy=not direct, used=used, pool=pool,
+                         claim_owner=claim_owner)
     if entry is None and not direct:
         # No usable exit right now. Going direct is a GUARANTEED loss on
         # YouTube — the deck from watch #65 showed every direct tab dying
@@ -312,7 +372,8 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
         while time.time() < park_until:
             live_deck.mark(tab_idx, "parked", note="waiting for a live exit")
             time.sleep(poll)
-            entry = draw_gold_ip(use_proxy=True, used=used, pool=pool)
+            entry = draw_gold_ip(use_proxy=True, used=used, pool=pool,
+                                 claim_owner=claim_owner)
             if entry:
                 break
         if entry is None:
@@ -378,16 +439,29 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
     # the audit measure stagger/park waits as rides and overstate concurrency.
     if entry:
         res["started_at"] = round(time.time(), 1)
+    # fresh-start proof: every ride (including retries) loads the video at
+    # 0:00 and watches forward — never resumes mid-video. This field makes
+    # that requirement auditable in the run report.
+    res["from_start"] = True
     live_deck.mark(tab_idx, "watching", ip=res["ip"], cc=res["cc"])
 
     with sync_playwright() as p:
         ctx = None
         try:
+            # a persona per (tab,ip,cc): deterministic so a retry reuses the
+            # same identity instead of swapping mid-session (a platform would
+            # flag a fingerprint change on the same tab), and consistent with
+            # the proxy's geo so UA/timezone/locale all agree.
+            from engine.fingerprints import persona_for
+            rid_tag = os.environ.get("RUNNER_ID", os.environ.get("MATRIX_RUNNER_ID", "local"))
+            persona = None if res["ip"] == "direct" else persona_for(
+                tab_idx, res["ip"], res["cc"], rid_tag)
             ctx, page = open_ghost_context(
                 p,
                 proxy_server=proxy_url,
                 user_data_dir=profile_dir,
                 headless=not headful,
+                persona=persona,
             )
             
             # Initial status broadcast
@@ -454,14 +528,33 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
                 streamer=streamer,
                 tab_id=tab_idx,
                 ip_info=entry,
+                dead_check=(lambda a=entry: a and not direct and
+                            a["addr"] in (_DEAD | _BURNED)) if (entry and not direct) else None,
             )
 
             res["ok"] = bool(r.get("reached"))
             res["currentTime"] = r.get("currentTime")
             res["duration"] = r.get("duration")
+            if r.get("aborted") == "sibling_burn":
+                # another tab proved this exit dead mid-ride: burn + re-draw
+                # instead of letting the ride stall to max_wall. Not an
+                # exception, so it flows through the retry loop as a fresh
+                # start on a new IP.
+                res["error"] = "sibling_burn (IP died under another tab)"
+                if entry and not direct:
+                    res["ended_at"] = round(time.time(), 1)
+                    with _FEEDBACK_LOCK:
+                        _BURNED.add(entry["addr"])
+                        _DEAD.add(entry["addr"])
+                    _burn(entry)
+                    _release(entry["addr"])
+                    log.info("tab %d: sibling detected %s dead mid-ride — re-draw",
+                             tab_idx, entry["addr"])
+                return res
             if entry and not direct:
                 res["ended_at"] = round(time.time(), 1)
                 _release(entry["addr"])       # this exit is free again
+                _release_claim(entry["addr"], claim_owner)
             return res
         except Exception as e:
             res["error"] = f"{type(e).__name__}: {str(e)[:100]}"
@@ -472,6 +565,7 @@ def _tab_attempt(tab_idx, url, depth_lo, depth_hi, stream_target, headful, direc
                     _BURNED.add(entry["addr"])
                     _DEAD.add(entry["addr"])      # re-draw skips it
                 _release(entry["addr"])
+                _release_claim(entry["addr"], claim_owner)
             return res
         finally:
             try:

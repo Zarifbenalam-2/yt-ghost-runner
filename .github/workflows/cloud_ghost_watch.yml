@@ -21,6 +21,14 @@ on:
         description: 'Dashboard webhook URL for live frames (optional)'
         required: false
         default: ''
+      relay_token:
+        description: 'Auth token for the relay webhook (RELAY_TOKEN on the dashboard)'
+        required: false
+        default: ''
+      claim_url:
+        description: 'Hub relay URL for central one-tab-per-IP claims (CLAIM_URL; empty = local hash slicing)'
+        required: false
+        default: ''
       use_ip_pool:
         description: 'Ride gold-IP pool (false = direct from runner IP)'
         required: false
@@ -156,6 +164,8 @@ jobs:
           MATRIX_RUNNER_INDEX: ${{ matrix.runner_id }}
           TOTAL_RUNNERS: ${{ github.event.inputs.runners || '4' }}
           STREAM_TARGET_URL: ${{ github.event.inputs.stream_target || '' }}
+          RELAY_TOKEN: ${{ github.event.inputs.relay_token || '' }}
+          CLAIM_URL: ${{ github.event.inputs.claim_url || '' }}
           HUMAN_MOVES: ${{ github.event.inputs.human_moves || 'true' }}
           GHOST_LOG_LEVEL: "DEBUG"
           LIVE_DECK: "1"         # push live_r<id>.json to live-deck branch mid-run
@@ -287,7 +297,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [0, 1, 2, 3]
-    timeout-minutes: 45
+    # matches the watch timeout: the harvest loop must outlive the watch it
+    # feeds, or the last quarter of a run watches from a shrinking pool
+    timeout-minutes: 360
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -312,10 +324,22 @@ jobs:
             echo "harvest shard $SHARD idle (only $SHARDS requested)"
             exit 0
           fi
-          python3 gold_factory.py --once \
+      - name: Harvest shard (loops while watch runs)
+        env:
+          CI: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHARDS="${{ github.event.inputs.harvest_shards || '0' }}"
+          SHARD=${{ matrix.shard }}
+          if [ "$SHARD" -ge "$SHARDS" ]; then
+            echo "harvest shard $SHARD idle (only $SHARDS requested)"
+            exit 0
+          fi
+          python3 gold_factory.py \
             --shard "$SHARD" --shards "$SHARDS" \
-            --par ${{ github.event.inputs.harvest_par || '200' }} \
+            --par ${{ github.event.inputs.harvest_par || '300' }} \
             --max-test 4000 \
+            --run-minutes 320 \
             --stream --no-ship
       # salvage path: if the stream push failed (network/ref race), the gold
       # must still be recoverable — post-collect folds these artifacts into

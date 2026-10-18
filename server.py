@@ -241,7 +241,7 @@ def load_accounts():
 
 def dispatch_workflow(repo, token, url, tabs, stream_target="", runners=None,
                       harvest_shards=2, depth_lo=20, depth_hi=45,
-                      human_moves=True, unique_ips=True):
+                      human_moves=True, unique_ips=True, claim_url=None):
     """POST workflow_dispatch to one repo. Returns (ok, message).
 
     Sends the FULL fleet config, not just url+tabs. The watch matrix is
@@ -284,8 +284,9 @@ def dispatch_workflow(repo, token, url, tabs, stream_target="", runners=None,
             "tabs_per_runner": str(tabs),
             "runners": str(runners),
             "stream_target": stream_target,
-            "harvest_shards": str(hs),
-            "harvest_par": "200",
+            "relay_token": os.environ.get("RELAY_TOKEN", ""),
+            "claim_url": claim_url or os.environ.get("RELAY_URL", ""),            "harvest_shards": str(hs),
+            "harvest_par": "300",
             "depth_lo": str(depth_lo),
             "depth_hi": str(depth_hi),
             "human_moves": "true" if human_moves else "false",
@@ -389,6 +390,45 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(out)
             except Exception as e:
                 self._send_json({"error": f"run_control failed: {e}"}, 500)
+
+        elif self.path == "/api/actions_live":
+            # Boot/refresh detection of anything running across BOTH flows:
+            # gold_factory.yml (harvest) and cloud_ghost_watch.yml (watch) —
+            # the panel the dashboard polls on load and every 5-10s afterward.
+            repo = os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
+            token = os.environ.get("GITHUB_TOKEN", "")
+            if not (repo and token):
+                self._send_json({"error": "No GITHUB_REPOSITORY/GITHUB_TOKEN — "
+                                          "run the pip/gh credential setup or "
+                                          "export them. The dashboard cannot "
+                                          "see GitHub Actions without a token."}, 400)
+                return
+            try:
+                from hub import gh
+                out = {"workflows": {}}
+                for label, wf in (("watch", _cfg.WORKFLOW_WATCH),
+                                  ("harvest", _cfg.WORKFLOW_FACTORY)):
+                    try:
+                        runs = gh.get(f"/repos/{repo}/actions/workflows/{wf}/runs"
+                                      f"?per_page=5", token=token)
+                        items = runs.get("workflow_runs", [])
+                        live = [r for r in items
+                                if r.get("status") in ("in_progress", "queued")]
+                        out["workflows"][label] = {
+                            "latest": {k: r.get(k) for k in
+                                       ("id", "run_number", "status",
+                                        "conclusion", "created_at", "html_url")
+                                       for r in [items[0]] if items} if items else None,
+                            "live": [{k: r.get(k) for k in
+                                      ("id", "run_number", "created_at", "html_url")}
+                                     for r in live],
+                            "live_count": len(live),
+                        }
+                    except Exception as e:
+                        out["workflows"][label] = {"error": f"{type(e).__name__}: {e}"}
+                self._send_json(out)
+            except Exception as e:
+                self._send_json({"error": f"actions_live failed: {e}"}, 500)
 
         elif self.path == "/api/run_control/cancel":
             repo = os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
@@ -735,12 +775,73 @@ class DashboardHandler(BaseHTTPRequestHandler):
         except Exception:
             payload = {}
 
+        if self.path == "/api/run_control/cancel":
+            # The Stop Run button (ui POST /api/run_control/cancel) hit a 404
+            # because the cancel logic only lived on the GET branch. Same code,
+            # now reachable via POST (and still via GET for old callers).
+            repo = payload.get("repo") or os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
+            token = payload.get("ghToken") or os.environ.get("GITHUB_TOKEN", "")
+            try:
+                from hub import gh
+                run = gh.latest_run(repo, _cfg.WORKFLOW_WATCH, token)
+                if not run:
+                    self._send_json({"ok": False, "error": "no run found"}, 404)
+                elif run.get("status") not in ("in_progress", "queued"):
+                    self._send_json({"ok": False,
+                                     "error": f"run already {run.get('status')}"})
+                else:
+                    ok = gh.cancel_run(repo, run["id"], token)
+                    self._send_json({"ok": ok,
+                                     "message": f"cancel {'sent' if ok else 'failed'} "
+                                                f"for run #{run.get('run_number')}"})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, 500)
+
         if self.path == "/api/feed/update":
+            # Public relay URL (cloudflared) can hit this when the tunnel is up,
+            # so this endpoint is the one public surface: require a shared secret.
+            auth = self.headers.get("Authorization", "")
+            expected = os.environ.get("RELAY_TOKEN", "")
+            allowed = not expected or auth in (f"Bearer {expected}", f"Token {expected}")
+            if not allowed:
+                self._send_json({"error": "Unauthorized"}, 401)
+                return
             tab_id = str(payload.get("tabId", "1"))
             payload["_last_seen"] = time.time()
             with _LIVE_LOCK:
                 _LIVE_TABS[tab_id] = payload
             self._send_json({"ok": True})
+
+        elif self.path == "/api/claim":
+            # central one-tab-per-IP lease, served from the HUB (the public
+            # dashboard address is what fleet runners reach via the tunnel).
+            auth = self.headers.get("Authorization", "")
+            expected = os.environ.get("RELAY_TOKEN", "")
+            allowed = not expected or auth in (f"Bearer {expected}", f"Token {expected}")
+            if not allowed:
+                self._send_json({"error": "Unauthorized"}, 401)
+                return
+            owner = str(payload.get("owner", ""))
+            if not owner:
+                self._send_json({"error": "missing owner"}, 400)
+                return
+            from hub.claims import lease as _lease
+            cap = int(payload.get("cap_per_ip", "1"))
+            lease = _lease(owner, cap)
+            if not lease:
+                self._send_json({"ok": False, "error": "no_free_lease"}, 409)
+            else:
+                self._send_json({"ok": True, "exit": lease})
+
+        elif self.path == "/api/release":
+            auth = self.headers.get("Authorization", "")
+            expected = os.environ.get("RELAY_TOKEN", "")
+            allowed = not expected or auth in (f"Bearer {expected}", f"Token {expected}")
+            if not allowed:
+                self._send_json({"error": "Unauthorized"}, 401)
+                return
+            from hub.claims import release as _release
+            self._send_json({"ok": _release(payload.get("addr"), payload.get("owner"))})
 
         elif self.path == "/api/run_local":
             url = payload.get("url")
@@ -764,10 +865,20 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/spawn_cloud":
             url = payload.get("url")
             tabs = int(payload.get("tabs", 10))
-            stream_target = payload.get("streamTarget", "")
+            stream_target = payload.get("streamTarget", "") or \
+                os.environ.get("RELAY_URL", "")
             if not url:
                 self._send_json({"error": "Missing video URL"}, 400)
                 return
+
+            # The frame feed only reaches the dashboard when the runners get a
+            # reachable stream_target. In the old path stream_target defaulted
+            # to "" so cloud frames went to a local file nobody reads and the
+            # Live Browser Screen grid stayed empty. RELAY_URL (set when the
+            # relay+cloudflared tunnel is up) is now forwarded on dispatch;
+            # fall back to the relay's tunnel when RELAY_TOKEN is defined.
+            if stream_target and "http" not in stream_target:
+                stream_target = f"http://{stream_target}"
 
             # Optional control-plane overrides; defaults give the full fleet
             # (18 watch : 2 harvest = the 20-job ceiling, with unique IPs and
@@ -780,14 +891,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             d_human = payload.get("humanMoves") not in ("false", False, "0")
             d_unique = payload.get("uniqueIps") not in ("false", False, "0")
 
-            # Explicit single target (prompt flow) or fan-out to all accounts
+            # Explicit single target (prompt flow) OR the env/default target.
+            # Prefer the operator's saved token (data/.gh_token) so a fresh
+            # dashboard doesn't force the prompt dialog every dispatch.
+            d_token = payload.get("ghToken") or resolve_github_token()
+            d_repo = payload.get("repo") or os.environ.get("GITHUB_REPOSITORY", _cfg.REPO)
             targets = []
-            if payload.get("ghToken") and payload.get("repo"):
-                targets.append({
-                    "name": "manual",
-                    "repo": payload["repo"],
-                    "pat": payload["ghToken"],
-                })
+            if d_token and d_repo:
+                targets.append({"name": "manual", "repo": d_repo, "pat": d_token})
             elif payload.get("account"):
                 for a in load_accounts():
                     if a["name"] == payload["account"]:

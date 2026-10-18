@@ -382,6 +382,7 @@
 
   <div class="grid-header" style="margin-top: 28px;">
     <h2>GitHub Actions CI Monitor (<span id="ci-label">no runs</span>)</h2>
+    <span id="actions-live-banner" style="font-size:13px; color:#94a3b8; font-weight:400; margin-left:12px;"></span>
   </div>
   <div class="ci-panel" id="ci-panel">
     <div class="empty-state" style="grid-column: 1 / -1; padding: 24px;">
@@ -511,22 +512,26 @@
       const tabs = document.getElementById('tab-count').value;
       if (!url) return showToast('Enter a YouTube URL', true);
 
-      const ghToken = prompt("Enter your GitHub Personal Access Token (or configure GITHUB_TOKEN env):");
-      const repo = prompt("Enter your GitHub repo (owner/repo_name, e.g. user/yt-ghost-runner):");
-      if (!ghToken || !repo) return;
+      // Server auto-resolves the token (data/.gh_token / GITHUB_TOKEN env). The
+      // old two-prompt dialog was the flow that made dispatch annoying; the
+      // repo defaults to the origin remote. Still overridable if you want to.
+      const depthSel = document.getElementById('depth-range')?.value || '20-45';
+      let depthLo = 20, depthHi = 45;
+      const m = /(\d+)\s*-\s*(\d+)/.exec(depthSel);
+      if (m) { depthLo = parseInt(m[1]); depthHi = parseInt(m[2]); }
 
       showToast(`Dispatching ${tabs} cloud tabs to GitHub Actions...`);
       try {
         const res = await fetch('/api/spawn_cloud', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ url, tabs: parseInt(tabs), ghToken, repo })
+          body: JSON.stringify({ url, tabs: parseInt(tabs), depthLo, depthHi })
         });
         const d = await res.json();
         if (d.ok) {
-          showToast(`Dispatched ${tabs} tabs to GitHub Actions cloud runners!`);
+          showToast(`Dispatched ${tabs} tabs (${d.total ? d.details.join(', ') : 'see panel'})`);
         } else {
-          showToast('Error: ' + d.error, true);
+          showToast('Error: ' + (d.error || JSON.stringify(d)), true);
         }
       } catch (err) {
         showToast('Failed to spawn: ' + err.message, true);
@@ -604,6 +609,25 @@
         const res = await fetch('/api/ci_live');
         renderCi(await res.json());
       } catch (err) { /* CI panel is best-effort */ }
+    }
+
+    // ── Boot + live detection: what is running on GitHub RIGHT NOW ──
+    // Polled from the first page load, so the dashboard reflects any watch or
+    // harvest already in flight (not just actions started from this dashboard).
+    async function pollActionsLive() {
+      const el = document.getElementById('actions-live-banner');
+      try {
+        const d = await (await fetch('/api/actions_live')).json();
+        if (d.error) { el.textContent = '⚠ ' + d.error; return; }
+        const parts = [];
+        for (const [k, v] of Object.entries(d.workflows || {})) {
+          if (v.error) { parts.push(`${k}: ?`); continue; }
+          const n = (v.live_count || 0);
+          parts.push(`${k}: ${n > 0 ? `${n} ACTIVE` : 'idle'}`);
+        }
+        el.textContent = parts.join(' · ');
+        el.style.color = 'white';
+      } catch (err) { el.textContent = '⚠ actions check failed'; }
     }
 
     async function openLog(job) {
@@ -829,6 +853,8 @@
     pollDeck();
     setInterval(pollCloud, 5000);
     pollCloud();
+    setInterval(pollActionsLive, 10000);
+    pollActionsLive();
   </script>
 </body>
 </html>

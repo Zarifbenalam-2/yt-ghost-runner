@@ -17,23 +17,33 @@ on:
   # SUSTAINED SUPPLY: the shelf's rule is "only freshly harvested IPs", so a
   # harvest that only runs when a human remembers starves every watch that
   # follows (2026-10-17: an hour-long gap left the shelf empty and a watch ran
-  # against nothing). An hourly refill keeps the water-pile topped up.
+  # against nothing). Every 30 min a job group fires and LOOPS ~5 cycles (25
+  # min), streaming certified gold to gold-stream between cycles — continuous
+  # pump, not a batch one-shot. While a watch actually runs, its own
+  # gold-harvest jobs loop for the watch's duration (see cloud_ghost_watch.yml);
+  # this schedule is the always-on underlay that tops the water-pile between
+  # watches.
   schedule:
-    - cron: '15 * * * *'
+    # every 30 minutes, offset from the previous hourly :15 so fires interleave
+    - cron: '0,30 * * * *'
   workflow_dispatch:
     inputs:
       shards:
         description: 'How many shards (VMs) to actually run (max 20)'
         required: false
-        default: '10'
+        default: '4'
       par:
-        description: 'Parallel gold checks per VM (400+ inflates the verdict: a live proxy times out under self-contention)'
+        description: 'Parallel gold checks per VM (300-400 on a 4-core runner; past ~400 self-contention inflates the verdict)'
         required: false
-        default: '200'
+        default: '300'
       max_test:
         description: 'Max candidates tested per VM'
         required: false
         default: '4000'
+      run_minutes:
+        description: 'How long each shard job LOOPS (cycles) before exiting'
+        required: false
+        default: '25'
       collect:
         description: 'Run the collector afterwards (merge + commit snapshot)'
         required: false
@@ -67,21 +77,22 @@ jobs:
           sudo apt-get update && sudo apt-get install -y curl
           pip install -r requirements.txt 2>/dev/null || pip install PyYAML
 
-      - name: Harvest shard
+      - name: Harvest shard (loops until run_minutes)
         env:
           CI: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SHARDS="${{ github.event.inputs.shards || '10' }}"
+          SHARDS="${{ github.event.inputs.shards || '4' }}"
           SHARD=${{ matrix.shard }}
           if [ "$SHARD" -ge "$SHARDS" ]; then
             echo "shard $SHARD idle (only $SHARDS requested)"
             exit 0
           fi
-          python3 gold_factory.py --once \
+          python3 gold_factory.py \
             --shard "$SHARD" --shards "$SHARDS" \
-            --par ${{ github.event.inputs.par || '200' }} \
+            --par ${{ github.event.inputs.par || '300' }} \
             --max-test ${{ github.event.inputs.max_test || '4000' }} \
+            --run-minutes ${{ github.event.inputs.run_minutes || '25' }} \
             --stream --no-ship
 
       - name: Upload shard gold + burn report

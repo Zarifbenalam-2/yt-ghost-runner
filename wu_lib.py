@@ -161,7 +161,7 @@ def ensure_playing(page):
         pass
 
 
-def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capture_every=60):
+def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capture_every=60, dead_check=None):
     """Watch until video.currentTime >= target_seconds, with human-ish jitter.
 
     Returns dict with reached/currentTime/duration and humanMoves summary.
@@ -183,6 +183,11 @@ def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capt
                moves.summary().get("planned"), target_seconds)
     ensure_playing(page)
     while True:
+        if dead_check and dead_check():
+            _hlog.info("%s: IP burned by a sibling — aborting ride", label)
+            return {"reached": False, "currentTime": last_ct,
+                    "duration": (st or {}).get("duration"),
+                    "aborted": "sibling_burn", "humanMoves": moves.summary()}
         st = video_state(page)
         now = time.time()
         if st and st.get("currentTime") is not None:
@@ -219,13 +224,19 @@ def watch_until(page, target_seconds, label="watch", max_wall_seconds=None, capt
         page.wait_for_timeout(random.randint(1500, 3000))
 
 
-def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_info=None, max_wall_seconds=None):
+def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_info=None, max_wall_seconds=None, dead_check=None):
     """Watch video until currentTime >= target_seconds while pushing real-time screen frames.
 
     This is the ghost-runner's live-streaming variant of watch_until().
     Human-ish moves (pause/seek/volume/quality via the player's own controls)
     are planned once per watch and fired as their time comes — the same
     behaviour watch_until has; the streaming variant had silently dropped it.
+
+    dead_check: optional callable() -> bool. If it returns True mid-ride the
+    watch aborts with reached=False and reason="sibling_burn", so a tab whose
+    IP was just burned by ANOTHER tab (shared IP, cap>1) re-draws immediately
+    instead of stalling for minutes on a dead exit. The caller owns the
+    matching _release/_burn and must do the sibling notification here.
     """
     from human_moves import HumanMoves
     max_wall = max_wall_seconds or (target_seconds * 3 + 120)
@@ -250,6 +261,12 @@ def watch_with_live_stream(page, target_seconds, streamer=None, tab_id=0, ip_inf
     ensure_playing(page)
 
     while True:
+        if dead_check and dead_check():
+            _hlog.info("tab %s: IP burned by a sibling — aborting ride",
+                       tab_id)
+            return {"reached": False, "currentTime": last_ct,
+                    "duration": (st or {}).get("duration", 0),
+                    "aborted": "sibling_burn", "humanMoves": moves.summary()}
         st = video_state(page)
         now = time.time()
         title = get_video_title(page)
