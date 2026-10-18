@@ -6,18 +6,6 @@
   "exits": [
     {
       "status": "gold",
-      "gated_at": 1792283747.5397549,
-      "addr": "112.169.99.71:8063",
-      "proto": "HTTP",
-      "cc": "KR",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 50.0,
-      "egress_ip": "222.117.80.129",
-      "latency_ms": 5797
-    },
-    {
-      "status": "gold",
       "gated_at": 1792283747.522998,
       "addr": "158.179.58.126:3128",
       "proto": "HTTP",
@@ -66,7 +54,19 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792283747.534079,
+      "gated_at": 1792286795.5986085,
+      "addr": "116.104.251.199:2041",
+      "proto": "HTTP",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 48.4,
+      "egress_ip": "116.104.251.199",
+      "latency_ms": 2275
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792286795.5995822,
       "addr": "103.74.103.37:1080",
       "proto": "SOCKS",
       "cc": "VN",
@@ -74,19 +74,7 @@
       "kind": "unknown",
       "score": 43.0,
       "egress_ip": "103.74.103.37",
-      "latency_ms": 3001
-    },
-    {
-      "status": "gold",
-      "gated_at": 1792283747.5243971,
-      "addr": "103.74.103.37:1080",
-      "proto": "HTTP",
-      "cc": "VN",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "103.74.103.37",
-      "latency_ms": 4376
+      "latency_ms": 7357
     },
     {
       "status": "gold",
@@ -114,18 +102,6 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792283747.5279777,
-      "addr": "103.48.71.58:83",
-      "proto": "HTTP",
-      "cc": "??",
-      "tier": "T3",
-      "kind": "unknown",
-      "score": 38.0,
-      "egress_ip": "",
-      "latency_ms": 8819
-    },
-    {
-      "status": "gold",
       "gated_at": 1792283747.5374172,
       "addr": "45.74.31.40:12323",
       "proto": "SOCKS",
@@ -135,6 +111,18 @@
       "score": 38.0,
       "egress_ip": "",
       "latency_ms": 6818
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792286795.5966072,
+      "addr": "111.90.143.197:60808",
+      "proto": "HTTP",
+      "cc": "MY",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.0,
+      "egress_ip": "111.90.143.197",
+      "latency_ms": 13277
     },
     {
       "status": "gold",

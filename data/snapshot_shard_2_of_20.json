@@ -42,18 +42,6 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792283747.535392,
-      "addr": "103.172.42.105:1111",
-      "proto": "HTTP",
-      "cc": "ID",
-      "tier": "T2",
-      "kind": "unknown",
-      "score": 43.0,
-      "egress_ip": "150.107.104.86",
-      "latency_ms": 9079
-    },
-    {
-      "status": "gold",
       "gated_at": 1792283747.5389376,
       "addr": "42.114.62.206:20001",
       "proto": "SOCKS",
@@ -75,6 +63,30 @@
       "score": 43.0,
       "egress_ip": "194.34.255.103",
       "latency_ms": 9154
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792286795.5937366,
+      "addr": "103.126.86.124:1080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.126.86.114",
+      "latency_ms": 5945
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792286795.5993605,
+      "addr": "103.22.99.137:3125",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.22.99.130",
+      "latency_ms": 24968
     }
   ]
 }
