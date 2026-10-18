@@ -94,5 +94,101 @@
     "type": "proxy-flagged",
     "score": 37.0,
     "first_seen": "2026-10-18T23:33:46Z"
+  },
+  {
+    "addr": "172.82.64.79:3128",
+    "proto": "HTTP",
+    "latency_ms": 22585,
+    "egress_ip": "172.82.64.79",
+    "gated_at": 1792366442.974382,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "45.33.16.186:3128",
+    "proto": "HTTP",
+    "latency_ms": 21095,
+    "egress_ip": "45.33.16.186",
+    "gated_at": 1792366474.8303623,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "45.149.24.19:8088",
+    "proto": "HTTP",
+    "latency_ms": 1685,
+    "egress_ip": "",
+    "gated_at": 1792366470.580674,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 47.7,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "45.198.10.106:8080",
+    "proto": "HTTP",
+    "latency_ms": 3074,
+    "egress_ip": "45.198.10.106",
+    "gated_at": 1792366440.116545,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "36.89.90.97:3128",
+    "proto": "HTTP",
+    "latency_ms": 5910,
+    "egress_ip": "",
+    "gated_at": 1792366431.6474392,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "202.65.158.237:83",
+    "proto": "HTTP",
+    "latency_ms": 6002,
+    "egress_ip": "",
+    "gated_at": 1792366433.6746237,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "45.167.124.248:999",
+    "proto": "HTTP",
+    "latency_ms": 4069,
+    "egress_ip": "45.167.124.252",
+    "gated_at": 1792366427.5910196,
+    "cc": "CO",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-18T23:34:34Z"
+  },
+  {
+    "addr": "36.91.210.221:8989",
+    "proto": "HTTP",
+    "latency_ms": 15903,
+    "egress_ip": "36.91.210.221",
+    "gated_at": 1792366444.3337302,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-18T23:34:34Z"
   }
 ]
