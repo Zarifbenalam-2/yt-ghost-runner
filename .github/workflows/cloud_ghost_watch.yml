@@ -194,7 +194,7 @@ jobs:
           if [ "${{ github.event.inputs.use_ip_pool }}" = "false" ]; then DIRECT_FLAG="--direct"; fi
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python ghost_watch.py \
-              --url "${{ github.event.inputs.video_url }}" \
+              --url "${{ github.event.inputs.video_url || 'https://youtu.be/vgm306Ha0lw' }}" \
               --tabs ${{ github.event.inputs.tabs_per_runner || '5' }} \
               --depth-lo ${{ github.event.inputs.depth_lo || '60' }} \
               --depth-hi ${{ github.event.inputs.depth_hi || '95' }} $DIRECT_FLAG \
