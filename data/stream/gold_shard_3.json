@@ -850,5 +850,89 @@
     "type": "proxy-flagged",
     "score": 32.0,
     "first_seen": "2026-10-18T21:32:14Z"
+  },
+  {
+    "addr": "208.95.22.65:8282",
+    "proto": "HTTP",
+    "latency_ms": 8143,
+    "egress_ip": "208.95.20.14",
+    "gated_at": 1792359135.4120684,
+    "cc": "US",
+    "tier": "T1",
+    "type": "residential",
+    "score": 50.0,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "213.183.61.198:3128",
+    "proto": "HTTP",
+    "latency_ms": 15121,
+    "egress_ip": "213.183.61.198",
+    "gated_at": 1792359147.7890987,
+    "cc": "NL",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "206.135.66.86:999",
+    "proto": "HTTP",
+    "latency_ms": 2755,
+    "egress_ip": "",
+    "gated_at": 1792359138.262296,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 39.8,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "206.135.24.11:999",
+    "proto": "HTTP",
+    "latency_ms": 9623,
+    "egress_ip": "",
+    "gated_at": 1792359147.9928687,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "203.81.69.126:1248",
+    "proto": "HTTP",
+    "latency_ms": 8777,
+    "egress_ip": "",
+    "gated_at": 1792359161.1267858,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "207.57.123.131:9000",
+    "proto": "SOCKS",
+    "latency_ms": 29541,
+    "egress_ip": "",
+    "gated_at": 1792359173.0536377,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-18T21:33:14Z"
+  },
+  {
+    "addr": "202.10.34.182:3128",
+    "proto": "HTTP",
+    "latency_ms": 23040,
+    "egress_ip": "202.10.34.182",
+    "gated_at": 1792359137.1021283,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 35.0,
+    "first_seen": "2026-10-18T21:33:14Z"
   }
 ]
