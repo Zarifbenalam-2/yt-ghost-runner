@@ -194,6 +194,14 @@ def resolve_github_token():
             return f.read_text(encoding="utf-8").strip()
     except Exception:
         pass
+    try:
+        import json as _json
+        sf = ROOT / "data" / "secrets.json"
+        if sf.is_file():
+            store = _json.loads(sf.read_text(encoding="utf-8"))
+            return (store.get("tokens") or {}).get("github_pat", "")
+    except Exception:
+        pass
     return ""
 
 
