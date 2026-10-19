@@ -2602,5 +2602,29 @@
     "type": "datacenter",
     "score": 35.0,
     "first_seen": "2026-10-19T00:40:41Z"
+  },
+  {
+    "addr": "45.74.31.42:15922",
+    "proto": "SOCKS",
+    "latency_ms": 6671,
+    "egress_ip": "190.6.176.90",
+    "gated_at": 1792370449.6523452,
+    "cc": "CO",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-19T00:41:46Z"
+  },
+  {
+    "addr": "45.74.31.42:16263",
+    "proto": "SOCKS",
+    "latency_ms": 15399,
+    "egress_ip": "103.172.151.161",
+    "gated_at": 1792370466.0208168,
+    "cc": "IN",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 35.0,
+    "first_seen": "2026-10-19T00:41:46Z"
   }
 ]
