@@ -6,6 +6,18 @@
   "exits": [
     {
       "status": "gold",
+      "gated_at": 1792360430.4895182,
+      "addr": "161.22.39.103:999",
+      "proto": "HTTP",
+      "cc": "VE",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 55.4,
+      "egress_ip": "161.22.39.102",
+      "latency_ms": 649
+    },
+    {
+      "status": "gold",
       "gated_at": 1792360430.4910827,
       "addr": "213.160.158.70:8080",
       "proto": "HTTP",
@@ -15,6 +27,42 @@
       "score": 43.0,
       "egress_ip": "213.160.158.70",
       "latency_ms": 10165
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792359854.6923435,
+      "addr": "187.102.219.42:999",
+      "proto": "HTTP",
+      "cc": "AR",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 42.6,
+      "egress_ip": "187.102.219.42",
+      "latency_ms": 2245
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792359859.1549904,
+      "addr": "186.96.111.214:999",
+      "proto": "HTTP",
+      "cc": "CO",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 39.7,
+      "egress_ip": "147.75.122.107",
+      "latency_ms": 2360
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792359876.7124603,
+      "addr": "103.234.35.166:8080",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 38.0,
+      "egress_ip": "",
+      "latency_ms": 9490
     },
     {
       "status": "gold",
@@ -30,15 +78,27 @@
     },
     {
       "status": "gold",
-      "gated_at": 1792360430.4895182,
-      "addr": "161.22.39.103:999",
+      "gated_at": 1792359865.3109138,
+      "addr": "103.130.61.61:8081",
       "proto": "HTTP",
-      "cc": "VE",
-      "tier": "T3",
+      "cc": "ID",
+      "tier": "T2",
       "kind": "unknown",
-      "score": 55.4,
-      "egress_ip": "161.22.39.102",
-      "latency_ms": 649
+      "score": 37.0,
+      "egress_ip": "103.130.61.61",
+      "latency_ms": 3481
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792359856.307393,
+      "addr": "109.224.242.6:8080",
+      "proto": "HTTP",
+      "cc": "TR",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 37.0,
+      "egress_ip": "109.224.242.6",
+      "latency_ms": 5517
     },
     {
       "status": "gold",
