@@ -3190,5 +3190,89 @@
     "type": "proxy-flagged",
     "score": 32.0,
     "first_seen": "2026-10-19T01:12:35Z"
+  },
+  {
+    "addr": "45.74.31.42:14876",
+    "proto": "SOCKS",
+    "latency_ms": 7321,
+    "egress_ip": "129.121.112.81",
+    "gated_at": 1792372356.1784596,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.42:14741",
+    "proto": "SOCKS",
+    "latency_ms": 17608,
+    "egress_ip": "66.33.203.210",
+    "gated_at": 1792372382.0598223,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.46:12310",
+    "proto": "SOCKS",
+    "latency_ms": 6093,
+    "egress_ip": "50.6.109.131",
+    "gated_at": 1792372398.2038817,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.46:10164",
+    "proto": "SOCKS",
+    "latency_ms": 3571,
+    "egress_ip": "173.254.28.219",
+    "gated_at": 1792372400.3349383,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.42:8909",
+    "proto": "SOCKS",
+    "latency_ms": 15415,
+    "egress_ip": "190.6.176.90",
+    "gated_at": 1792372367.054208,
+    "cc": "CO",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.42:9090",
+    "proto": "SOCKS",
+    "latency_ms": 5491,
+    "egress_ip": "103.172.151.161",
+    "gated_at": 1792372359.7762496,
+    "cc": "IN",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 35.0,
+    "first_seen": "2026-10-19T01:13:20Z"
+  },
+  {
+    "addr": "45.74.31.42:9029",
+    "proto": "SOCKS",
+    "latency_ms": 7938,
+    "egress_ip": "101.99.94.106",
+    "gated_at": 1792372362.0278857,
+    "cc": "MY",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 35.0,
+    "first_seen": "2026-10-19T01:13:20Z"
   }
 ]
