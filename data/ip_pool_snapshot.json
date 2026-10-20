@@ -1,5 +1,5 @@
 {
-  "snapshotted_at": "2026-10-20T23:27:29Z",
+  "snapshotted_at": "2026-10-20T23:30:07Z",
   "exits": [
     {
       "status": "gold",
@@ -228,6 +228,18 @@
       "score": 62.0,
       "egress_ip": "104.28.201.162",
       "latency_ms": 270
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792539007.1568546,
+      "addr": "47.253.185.151:3128",
+      "proto": "HTTP",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 62.0,
+      "egress_ip": "47.253.185.151",
+      "latency_ms": 116
     },
     {
       "status": "gold",
@@ -924,6 +936,18 @@
       "score": 56.0,
       "egress_ip": "78.140.164.240",
       "latency_ms": 2193
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792539007.157569,
+      "addr": "37.140.67.59:10808",
+      "proto": "SOCKS5",
+      "cc": "FR",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 56.0,
+      "egress_ip": "37.49.230.132",
+      "latency_ms": 1107
     },
     {
       "status": "gold",
@@ -4551,6 +4575,18 @@
     },
     {
       "status": "gold",
+      "gated_at": 1792539007.157218,
+      "addr": "45.74.31.42:6705",
+      "proto": "SOCKS",
+      "cc": "AT",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 42.0,
+      "egress_ip": "185.164.5.134",
+      "latency_ms": 9828
+    },
+    {
+      "status": "gold",
       "gated_at": 1792511847.6954694,
       "addr": "45.172.223.185:999",
       "proto": "HTTP",
@@ -5571,6 +5607,18 @@
     },
     {
       "status": "gold",
+      "gated_at": 1792539007.1574051,
+      "addr": "217.52.247.67:1981",
+      "proto": "HTTP",
+      "cc": "??",
+      "tier": "T3",
+      "kind": "unknown",
+      "score": 52.8,
+      "egress_ip": "",
+      "latency_ms": 1004
+    },
+    {
+      "status": "gold",
       "gated_at": 1792537793.1537383,
       "addr": "148.251.68.232:8888",
       "proto": "SOCKS",
@@ -5712,6 +5760,18 @@
       "score": 51.9,
       "egress_ip": "148.224.57.58",
       "latency_ms": 1803
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792539007.1577494,
+      "addr": "171.245.71.217:1081",
+      "proto": "SOCKS",
+      "cc": "VN",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 51.9,
+      "egress_ip": "118.71.233.85",
+      "latency_ms": 1794
     },
     {
       "status": "gold",
