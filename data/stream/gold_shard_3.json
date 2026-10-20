@@ -250,5 +250,89 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-10-20T11:11:49Z"
+  },
+  {
+    "addr": "87.99.130.93:11080",
+    "proto": "HTTP",
+    "latency_ms": 153,
+    "egress_ip": "104.28.196.79",
+    "gated_at": 1792495018.4756176,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 62.0,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "45.74.31.47:17383",
+    "proto": "SOCKS",
+    "latency_ms": 6339,
+    "egress_ip": "50.6.2.155",
+    "gated_at": 1792495056.351207,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "201.163.14.195:999",
+    "proto": "HTTP",
+    "latency_ms": 621,
+    "egress_ip": "201.163.14.195",
+    "gated_at": 1792495024.771904,
+    "cc": "MX",
+    "tier": "T2",
+    "type": "residential",
+    "score": 60.6,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "171.245.71.236:1086",
+    "proto": "SOCKS",
+    "latency_ms": 1528,
+    "egress_ip": "171.245.71.217",
+    "gated_at": 1792495023.6575704,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 53.9,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "45.155.125.254:17391",
+    "proto": "HTTP",
+    "latency_ms": 680,
+    "egress_ip": "45.155.125.254",
+    "gated_at": 1792495020.4733202,
+    "cc": "TR",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 52.2,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "213.111.180.252:8888",
+    "proto": "HTTP",
+    "latency_ms": 972,
+    "egress_ip": "213.111.180.252",
+    "gated_at": 1792495020.828621,
+    "cc": "LV",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 52.0,
+    "first_seen": "2026-10-20T11:17:47Z"
+  },
+  {
+    "addr": "45.74.31.46:11833",
+    "proto": "SOCKS",
+    "latency_ms": 7465,
+    "egress_ip": "190.6.176.90",
+    "gated_at": 1792495067.3088174,
+    "cc": "CO",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-20T11:17:47Z"
   }
 ]
