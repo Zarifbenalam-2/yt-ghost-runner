@@ -3,30 +3,5 @@
   "of_runners": 20,
   "cap_per_ip": 4,
   "reach": 1,
-  "exits": [
-    {
-      "status": "gold",
-      "gated_at": 1792476845.2480743,
-      "addr": "45.74.31.46:29666",
-      "proto": "SOCKS",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 53.9,
-      "egress_ip": "129.121.112.81",
-      "latency_ms": 1389
-    },
-    {
-      "status": "gold",
-      "gated_at": 1792476845.2478106,
-      "addr": "45.74.31.42:35335",
-      "proto": "SOCKS",
-      "cc": "US",
-      "tier": "T1",
-      "kind": "unknown",
-      "score": 53.5,
-      "egress_ip": "129.121.112.81",
-      "latency_ms": 1451
-    }
-  ]
+  "exits": []
 }
