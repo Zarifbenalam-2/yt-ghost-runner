@@ -82,5 +82,29 @@
     "type": "proxy-flagged",
     "score": 32.0,
     "first_seen": "2026-10-20T23:00:22Z"
+  },
+  {
+    "addr": "171.241.27.51:13136",
+    "proto": "HTTP",
+    "latency_ms": 13261,
+    "egress_ip": "171.241.27.51",
+    "gated_at": 1792537224.4265368,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-10-20T23:00:33Z"
+  },
+  {
+    "addr": "171.241.21.204:11943",
+    "proto": "HTTP",
+    "latency_ms": 11515,
+    "egress_ip": "",
+    "gated_at": 1792537233.7982595,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-20T23:00:33Z"
   }
 ]
