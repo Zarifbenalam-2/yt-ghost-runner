@@ -610,5 +610,89 @@
     "type": "proxy-flagged",
     "score": 37.0,
     "first_seen": "2026-10-21T06:43:09Z"
+  },
+  {
+    "addr": "45.74.31.47:10288",
+    "proto": "SOCKS",
+    "latency_ms": 1381,
+    "egress_ip": "162.215.175.52",
+    "gated_at": 1792565314.044032,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 54.0,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "45.74.31.42:28344",
+    "proto": "SOCKS",
+    "latency_ms": 7354,
+    "egress_ip": "92.205.238.227",
+    "gated_at": 1792565321.4107947,
+    "cc": "FR",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "45.74.31.41:25305",
+    "proto": "SOCKS",
+    "latency_ms": 1182,
+    "egress_ip": "112.78.134.58",
+    "gated_at": 1792565303.2194834,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 50.5,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "42.114.69.81:20001",
+    "proto": "SOCKS",
+    "latency_ms": 5928,
+    "egress_ip": "42.117.52.40",
+    "gated_at": 1792565329.6910262,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "18.144.86.139:17424",
+    "proto": "HTTP",
+    "latency_ms": 2476,
+    "egress_ip": "",
+    "gated_at": 1792565307.141299,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 41.9,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "13.208.246.143:2020",
+    "proto": "HTTP",
+    "latency_ms": 3294,
+    "egress_ip": "",
+    "gated_at": 1792565314.114976,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-21T06:49:06Z"
+  },
+  {
+    "addr": "79.98.32.112:8080",
+    "proto": "HTTP",
+    "latency_ms": 5734,
+    "egress_ip": "",
+    "gated_at": 1792565346.2506473,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-21T06:49:06Z"
   }
 ]
