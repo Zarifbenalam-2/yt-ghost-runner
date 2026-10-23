@@ -190,5 +190,29 @@
     "type": "residential",
     "score": 40.8,
     "first_seen": "2026-10-23T21:28:01Z"
+  },
+  {
+    "addr": "45.74.31.42:27519",
+    "proto": "SOCKS",
+    "latency_ms": 9461,
+    "egress_ip": "",
+    "gated_at": 1792791351.3351305,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-23T21:35:51Z"
+  },
+  {
+    "addr": "45.74.31.41:13242",
+    "proto": "SOCKS",
+    "latency_ms": 3378,
+    "egress_ip": "197.155.134.251",
+    "gated_at": 1792791309.1203415,
+    "cc": "ML",
+    "tier": "T3",
+    "type": "proxy-flagged",
+    "score": 32.0,
+    "first_seen": "2026-10-23T21:35:51Z"
   }
 ]
