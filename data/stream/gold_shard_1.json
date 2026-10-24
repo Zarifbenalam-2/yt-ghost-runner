@@ -226,5 +226,89 @@
     "type": "residential",
     "score": 43.0,
     "first_seen": "2026-10-24T21:53:13Z"
+  },
+  {
+    "addr": "34.139.66.173:40001",
+    "proto": "SOCKS",
+    "latency_ms": 183,
+    "egress_ip": "104.28.240.187",
+    "gated_at": 1792879102.0316072,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 62.0,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "112.169.99.71:8082",
+    "proto": "HTTP",
+    "latency_ms": 2375,
+    "egress_ip": "222.117.4.212",
+    "gated_at": 1792879120.7455647,
+    "cc": "KR",
+    "tier": "T1",
+    "type": "residential",
+    "score": 54.6,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "172.233.20.31:3128",
+    "proto": "HTTP",
+    "latency_ms": 506,
+    "egress_ip": "172.233.20.31",
+    "gated_at": 1792879103.402447,
+    "cc": "BR",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 53.5,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "157.15.172.70:8080",
+    "proto": "HTTP",
+    "latency_ms": 1751,
+    "egress_ip": "153.76.66.102",
+    "gated_at": 1792879109.259562,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "residential",
+    "score": 52.3,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "117.0.76.112:1057",
+    "proto": "SOCKS",
+    "latency_ms": 2267,
+    "egress_ip": "",
+    "gated_at": 1792879114.5458574,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 43.4,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "103.182.22.198:9000",
+    "proto": "SOCKS",
+    "latency_ms": 3282,
+    "egress_ip": "103.182.22.198",
+    "gated_at": 1792879110.3089514,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-10-24T21:58:56Z"
+  },
+  {
+    "addr": "89.189.74.151:1080",
+    "proto": "SOCKS",
+    "latency_ms": 2855,
+    "egress_ip": "",
+    "gated_at": 1792879110.1525035,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 39.1,
+    "first_seen": "2026-10-24T21:58:56Z"
   }
 ]
