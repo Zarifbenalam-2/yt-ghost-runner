@@ -106,5 +106,89 @@
     "type": "datacenter",
     "score": 35.0,
     "first_seen": "2026-10-24T21:47:29Z"
+  },
+  {
+    "addr": "103.230.142.150:1080",
+    "proto": "SOCKS",
+    "latency_ms": 463,
+    "egress_ip": "103.230.142.150",
+    "gated_at": 1792878767.7138815,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 60.8,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "112.169.99.71:8090",
+    "proto": "HTTP",
+    "latency_ms": 1457,
+    "egress_ip": "61.84.22.219",
+    "gated_at": 1792878766.46875,
+    "cc": "KR",
+    "tier": "T1",
+    "type": "proxy-flagged",
+    "score": 55.4,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "45.74.31.40:10080",
+    "proto": "SOCKS",
+    "latency_ms": 3960,
+    "egress_ip": "162.215.175.52",
+    "gated_at": 1792878769.820382,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "45.74.31.41:31016",
+    "proto": "SOCKS",
+    "latency_ms": 9202,
+    "egress_ip": "172.168.194.20",
+    "gated_at": 1792878784.8104367,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "45.74.31.47:20477",
+    "proto": "SOCKS",
+    "latency_ms": 3979,
+    "egress_ip": "162.215.175.52",
+    "gated_at": 1792878794.2537832,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "117.0.76.112:2090",
+    "proto": "HTTP",
+    "latency_ms": 2209,
+    "egress_ip": "",
+    "gated_at": 1792878769.3002453,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 43.9,
+    "first_seen": "2026-10-24T21:53:14Z"
+  },
+  {
+    "addr": "45.74.31.40:6544",
+    "proto": "SOCKS",
+    "latency_ms": 3926,
+    "egress_ip": "217.64.102.75",
+    "gated_at": 1792878777.8070586,
+    "cc": "ML",
+    "tier": "T3",
+    "type": "mobile",
+    "score": 36.0,
+    "first_seen": "2026-10-24T21:53:14Z"
   }
 ]
