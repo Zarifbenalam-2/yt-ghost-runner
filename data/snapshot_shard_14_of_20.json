@@ -6,15 +6,27 @@
   "exits": [
     {
       "status": "gold",
-      "gated_at": 1792801655.1092253,
-      "addr": "45.74.31.41:17761",
-      "proto": "SOCKS",
-      "cc": "??",
-      "tier": "T3",
+      "gated_at": 1792815418.8394952,
+      "addr": "180.191.233.218:2020",
+      "proto": "HTTP",
+      "cc": "PH",
+      "tier": "T2",
       "kind": "unknown",
-      "score": 42.0,
-      "egress_ip": "",
-      "latency_ms": 2465
+      "score": 56.9,
+      "egress_ip": "180.191.233.218",
+      "latency_ms": 1118
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792815418.8392074,
+      "addr": "181.119.86.132:999",
+      "proto": "HTTP",
+      "cc": "CO",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "181.78.82.147",
+      "latency_ms": 7488
     }
   ]
 }
