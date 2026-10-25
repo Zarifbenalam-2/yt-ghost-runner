@@ -178,5 +178,29 @@
     "type": "mobile",
     "score": 36.0,
     "first_seen": "2026-10-25T14:42:57Z"
+  },
+  {
+    "addr": "161.97.138.117:3128",
+    "proto": "HTTP",
+    "latency_ms": 536,
+    "egress_ip": "161.97.138.117",
+    "gated_at": 1792939690.9340887,
+    "cc": "FR",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 60.3,
+    "first_seen": "2026-10-25T14:48:48Z"
+  },
+  {
+    "addr": "45.74.31.41:5730",
+    "proto": "SOCKS",
+    "latency_ms": 3588,
+    "egress_ip": "217.64.102.75",
+    "gated_at": 1792939728.4600122,
+    "cc": "ML",
+    "tier": "T3",
+    "type": "mobile",
+    "score": 36.0,
+    "first_seen": "2026-10-25T14:48:48Z"
   }
 ]
