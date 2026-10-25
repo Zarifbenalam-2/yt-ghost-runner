@@ -1,5 +1,5 @@
 {
-  "snapshotted_at": "2026-10-25T20:57:29Z",
+  "snapshotted_at": "2026-10-25T21:01:40Z",
   "exits": [
     {
       "status": "gold",
@@ -12723,6 +12723,18 @@
     },
     {
       "status": "gold",
+      "gated_at": 1792962100.552426,
+      "addr": "223.204.176.122:3128",
+      "proto": "HTTP",
+      "cc": "TH",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "223.204.176.122",
+      "latency_ms": 5350
+    },
+    {
+      "status": "gold",
       "gated_at": 1792257781.8034194,
       "addr": "27.73.208.37:2075",
       "proto": "HTTP",
@@ -13104,6 +13116,18 @@
       "score": 41.3,
       "egress_ip": "197.155.134.251",
       "latency_ms": 1746
+    },
+    {
+      "status": "gold",
+      "gated_at": 1792962100.552155,
+      "addr": "41.216.191.154:3128",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 41.3,
+      "egress_ip": "103.86.116.38",
+      "latency_ms": 2414
     },
     {
       "status": "gold",
