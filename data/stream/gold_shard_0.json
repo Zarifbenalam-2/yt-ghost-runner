@@ -358,5 +358,89 @@
     "type": "datacenter",
     "score": 35.0,
     "first_seen": "2026-10-25T05:20:56Z"
+  },
+  {
+    "addr": "45.74.31.41:14728",
+    "proto": "SOCKS",
+    "latency_ms": 822,
+    "egress_ip": "66.33.212.6",
+    "gated_at": 1792906077.5569565,
+    "cc": "NL",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 58.1,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "68.169.55.189:80",
+    "proto": "HTTP",
+    "latency_ms": 13032,
+    "egress_ip": "68.169.55.189",
+    "gated_at": 1792906116.1963217,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "145.236.157.197:8080",
+    "proto": "HTTP",
+    "latency_ms": 783,
+    "egress_ip": "145.236.157.197",
+    "gated_at": 1792906074.128665,
+    "cc": "HU",
+    "tier": "T2",
+    "type": "residential",
+    "score": 59.4,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "171.238.101.122:2033",
+    "proto": "HTTP",
+    "latency_ms": 1425,
+    "egress_ip": "171.245.71.144",
+    "gated_at": 1792906083.163749,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 54.7,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "190.43.92.191:999",
+    "proto": "HTTP",
+    "latency_ms": 1795,
+    "egress_ip": "190.43.92.191",
+    "gated_at": 1792906080.0452955,
+    "cc": "PE",
+    "tier": "T3",
+    "type": "residential",
+    "score": 46.9,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "45.74.31.47:7364",
+    "proto": "SOCKS",
+    "latency_ms": 1733,
+    "egress_ip": "197.155.134.251",
+    "gated_at": 1792906078.8547957,
+    "cc": "ML",
+    "tier": "T3",
+    "type": "proxy-flagged",
+    "score": 41.4,
+    "first_seen": "2026-10-25T05:28:36Z"
+  },
+  {
+    "addr": "102.213.228.136:8080",
+    "proto": "HTTP",
+    "latency_ms": 7809,
+    "egress_ip": "102.213.228.136",
+    "gated_at": 1792906096.931973,
+    "cc": "LY",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-25T05:28:36Z"
   }
 ]
