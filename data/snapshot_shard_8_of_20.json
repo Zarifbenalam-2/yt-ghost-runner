@@ -3,5 +3,18 @@
   "of_runners": 20,
   "cap_per_ip": 4,
   "reach": 1,
-  "exits": []
+  "exits": [
+    {
+      "status": "gold",
+      "gated_at": 1792999487.646932,
+      "addr": "103.156.74.231:8080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "103.156.75.133",
+      "latency_ms": 6804
+    }
+  ]
 }
