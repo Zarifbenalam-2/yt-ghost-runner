@@ -1,5 +1,5 @@
 {
-  "snapshotted_at": "2026-10-27T20:57:38Z",
+  "snapshotted_at": "2026-10-27T21:01:19Z",
   "exits": [
     {
       "status": "gold",
@@ -396,6 +396,18 @@
       "score": 62.0,
       "egress_ip": "54.198.195.106",
       "latency_ms": 232
+    },
+    {
+      "status": "gold",
+      "gated_at": 1793134879.2973547,
+      "addr": "47.88.14.212:3128",
+      "proto": "HTTP",
+      "cc": "US",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 62.0,
+      "egress_ip": "47.88.14.212",
+      "latency_ms": 84
     },
     {
       "status": "gold",
@@ -2160,6 +2172,18 @@
       "score": 50.0,
       "egress_ip": "82.115.6.216",
       "latency_ms": 16147
+    },
+    {
+      "status": "gold",
+      "gated_at": 1793134879.296779,
+      "addr": "92.116.213.203:8080",
+      "proto": "HTTP",
+      "cc": "DE",
+      "tier": "T1",
+      "kind": "unknown",
+      "score": 50.0,
+      "egress_ip": "92.116.213.203",
+      "latency_ms": 5960
     },
     {
       "status": "gold",
@@ -13236,6 +13260,30 @@
       "score": 43.0,
       "egress_ip": "103.90.233.17",
       "latency_ms": 7730
+    },
+    {
+      "status": "gold",
+      "gated_at": 1793134879.297097,
+      "addr": "202.58.77.31:8080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "36.73.215.117",
+      "latency_ms": 13022
+    },
+    {
+      "status": "gold",
+      "gated_at": 1793134879.2975295,
+      "addr": "9.154.247.186:8080",
+      "proto": "HTTP",
+      "cc": "ID",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 43.0,
+      "egress_ip": "9.154.247.186",
+      "latency_ms": 6236
     },
     {
       "status": "gold",
