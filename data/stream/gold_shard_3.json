@@ -70,5 +70,41 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-10-29T20:30:38Z"
+  },
+  {
+    "addr": "45.74.31.40:12447",
+    "proto": "SOCKS",
+    "latency_ms": 2509,
+    "egress_ip": "",
+    "gated_at": 1793306189.728429,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 41.6,
+    "first_seen": "2026-10-29T20:36:48Z"
+  },
+  {
+    "addr": "143.255.86.212:999",
+    "proto": "HTTP",
+    "latency_ms": 4700,
+    "egress_ip": "143.255.86.215",
+    "gated_at": 1793306191.1111667,
+    "cc": "VE",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-29T20:36:48Z"
+  },
+  {
+    "addr": "201.4.65.21:8080",
+    "proto": "HTTP",
+    "latency_ms": 5366,
+    "egress_ip": "201.4.65.21",
+    "gated_at": 1793306190.676436,
+    "cc": "TR",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-29T20:36:48Z"
   }
 ]
