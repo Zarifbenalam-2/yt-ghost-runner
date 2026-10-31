@@ -262,5 +262,89 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-10-31T08:48:31Z"
+  },
+  {
+    "addr": "24.144.86.14:80",
+    "proto": "HTTP",
+    "latency_ms": 90,
+    "egress_ip": "24.144.86.14",
+    "gated_at": 1793436922.8080487,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 62.0,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "45.74.31.41:7349",
+    "proto": "SOCKS",
+    "latency_ms": 1857,
+    "egress_ip": "",
+    "gated_at": 1793436934.2861583,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 46.5,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "45.74.31.41:12697",
+    "proto": "SOCKS",
+    "latency_ms": 2221,
+    "egress_ip": "",
+    "gated_at": 1793436933.1422226,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 43.8,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "45.74.31.40:11393",
+    "proto": "SOCKS",
+    "latency_ms": 2981,
+    "egress_ip": "",
+    "gated_at": 1793436937.4410605,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.1,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "45.74.31.47:16055",
+    "proto": "SOCKS",
+    "latency_ms": 7527,
+    "egress_ip": "",
+    "gated_at": 1793436958.100966,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "45.74.31.47:12533",
+    "proto": "SOCKS",
+    "latency_ms": 5195,
+    "egress_ip": "",
+    "gated_at": 1793436972.7444994,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-10-31T08:56:12Z"
+  },
+  {
+    "addr": "125.26.45.69:8080",
+    "proto": "HTTP",
+    "latency_ms": 4662,
+    "egress_ip": "159.192.141.91",
+    "gated_at": 1793436942.8154783,
+    "cc": "TH",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-10-31T08:56:12Z"
   }
 ]
