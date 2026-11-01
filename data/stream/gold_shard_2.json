@@ -142,5 +142,29 @@
     "type": "proxy-flagged",
     "score": 37.0,
     "first_seen": "2026-11-01T16:10:25Z"
+  },
+  {
+    "addr": "188.226.27.24:1080",
+    "proto": "SOCKS",
+    "latency_ms": 6516,
+    "egress_ip": "88.210.12.209",
+    "gated_at": 1793549751.5180373,
+    "cc": "NL",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-11-01T16:16:19Z"
+  },
+  {
+    "addr": "45.74.31.41:6684",
+    "proto": "SOCKS",
+    "latency_ms": 3855,
+    "egress_ip": "",
+    "gated_at": 1793549752.5227244,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-01T16:16:19Z"
   }
 ]
