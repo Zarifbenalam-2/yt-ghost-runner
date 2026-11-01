@@ -118,5 +118,29 @@
     "type": "datacenter",
     "score": 35.0,
     "first_seen": "2026-11-01T16:04:03Z"
+  },
+  {
+    "addr": "45.74.31.47:8894",
+    "proto": "SOCKS",
+    "latency_ms": 3122,
+    "egress_ip": "",
+    "gated_at": 1793549384.0713732,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-01T16:10:25Z"
+  },
+  {
+    "addr": "9.154.247.186:1080",
+    "proto": "HTTP",
+    "latency_ms": 7118,
+    "egress_ip": "9.154.247.186",
+    "gated_at": 1793549364.1945143,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.0,
+    "first_seen": "2026-11-01T16:10:25Z"
   }
 ]
