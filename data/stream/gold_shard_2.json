@@ -334,5 +334,89 @@
     "type": "proxy-flagged",
     "score": 32.0,
     "first_seen": "2026-11-01T09:12:55Z"
+  },
+  {
+    "addr": "42.115.72.145:1058",
+    "proto": "SOCKS",
+    "latency_ms": 1597,
+    "egress_ip": "42.115.72.145",
+    "gated_at": 1793524691.6036677,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 53.4,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "42.115.72.145:1071",
+    "proto": "SOCKS",
+    "latency_ms": 1593,
+    "egress_ip": "116.104.152.58",
+    "gated_at": 1793524696.00597,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 53.4,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "42.115.72.145:1108",
+    "proto": "SOCKS",
+    "latency_ms": 1872,
+    "egress_ip": "42.117.137.116",
+    "gated_at": 1793524692.9009206,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "residential",
+    "score": 51.4,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "42.115.72.145:1094",
+    "proto": "SOCKS",
+    "latency_ms": 1604,
+    "egress_ip": "",
+    "gated_at": 1793524691.3945541,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 48.3,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "45.74.31.46:28510",
+    "proto": "SOCKS",
+    "latency_ms": 2307,
+    "egress_ip": "",
+    "gated_at": 1793524694.356007,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 43.1,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "103.147.134.71:8081",
+    "proto": "HTTP",
+    "latency_ms": 9394,
+    "egress_ip": "103.147.134.71",
+    "gated_at": 1793524702.297376,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-11-01T09:19:07Z"
+  },
+  {
+    "addr": "147.161.247.9:11838",
+    "proto": "HTTP",
+    "latency_ms": 11694,
+    "egress_ip": "",
+    "gated_at": 1793524747.7906256,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-01T09:19:07Z"
   }
 ]
