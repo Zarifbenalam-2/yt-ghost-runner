@@ -154,5 +154,77 @@
     "type": "proxy-flagged",
     "score": 37.0,
     "first_seen": "2026-11-03T11:43:45Z"
+  },
+  {
+    "addr": "13.115.246.29:18080",
+    "proto": "SOCKS",
+    "latency_ms": 561,
+    "egress_ip": "13.115.246.29",
+    "gated_at": 1793706548.2954292,
+    "cc": "JP",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 60.1,
+    "first_seen": "2026-11-03T11:50:02Z"
+  },
+  {
+    "addr": "89.167.118.3:1080",
+    "proto": "SOCKS",
+    "latency_ms": 839,
+    "egress_ip": "89.167.118.3",
+    "gated_at": 1793706542.0577981,
+    "cc": "DE",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 58.0,
+    "first_seen": "2026-11-03T11:50:02Z"
+  },
+  {
+    "addr": "3.143.199.84:1080",
+    "proto": "HTTP",
+    "latency_ms": 1164,
+    "egress_ip": "3.143.199.84",
+    "gated_at": 1793706542.6157212,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 55.6,
+    "first_seen": "2026-11-03T11:50:02Z"
+  },
+  {
+    "addr": "45.74.31.42:45371",
+    "proto": "SOCKS",
+    "latency_ms": 1643,
+    "egress_ip": "",
+    "gated_at": 1793706546.8543377,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 48.1,
+    "first_seen": "2026-11-03T11:50:02Z"
+  },
+  {
+    "addr": "45.74.31.41:17767",
+    "proto": "SOCKS",
+    "latency_ms": 2043,
+    "egress_ip": "",
+    "gated_at": 1793706548.1012375,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 45.1,
+    "first_seen": "2026-11-03T11:50:02Z"
+  },
+  {
+    "addr": "45.74.31.40:15525",
+    "proto": "SOCKS",
+    "latency_ms": 2502,
+    "egress_ip": "",
+    "gated_at": 1793706548.2610552,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 41.7,
+    "first_seen": "2026-11-03T11:50:02Z"
   }
 ]
