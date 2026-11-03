@@ -406,5 +406,89 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-11-03T19:20:49Z"
+  },
+  {
+    "addr": "45.9.72.212:2080",
+    "proto": "HTTP",
+    "latency_ms": 758,
+    "egress_ip": "45.9.72.212",
+    "gated_at": 1793733973.7646582,
+    "cc": "FI",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 58.6,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "147.161.246.36:11368",
+    "proto": "HTTP",
+    "latency_ms": 832,
+    "egress_ip": "",
+    "gated_at": 1793733963.2730348,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 54.1,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "45.74.31.40:16353",
+    "proto": "SOCKS",
+    "latency_ms": 2126,
+    "egress_ip": "",
+    "gated_at": 1793733973.2523112,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 44.5,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "45.74.31.41:14032",
+    "proto": "SOCKS",
+    "latency_ms": 7080,
+    "egress_ip": "",
+    "gated_at": 1793733973.3549707,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "45.74.31.40:16976",
+    "proto": "SOCKS",
+    "latency_ms": 3236,
+    "egress_ip": "",
+    "gated_at": 1793733981.6145945,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "45.74.31.40:14338",
+    "proto": "SOCKS",
+    "latency_ms": 3734,
+    "egress_ip": "",
+    "gated_at": 1793733984.3145564,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-03T19:26:47Z"
+  },
+  {
+    "addr": "45.74.31.40:10128",
+    "proto": "SOCKS",
+    "latency_ms": 11237,
+    "egress_ip": "",
+    "gated_at": 1793733988.6749728,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-03T19:26:47Z"
   }
 ]
