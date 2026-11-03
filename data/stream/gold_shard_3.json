@@ -178,5 +178,89 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-11-03T19:14:47Z"
+  },
+  {
+    "addr": "147.161.246.36:11368",
+    "proto": "HTTP",
+    "latency_ms": 764,
+    "egress_ip": "",
+    "gated_at": 1793733676.8160052,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 54.6,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "147.161.246.36:10088",
+    "proto": "HTTP",
+    "latency_ms": 770,
+    "egress_ip": "",
+    "gated_at": 1793733677.0253177,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 54.5,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "78.17.173.220:8081",
+    "proto": "HTTP",
+    "latency_ms": 804,
+    "egress_ip": "78.17.173.220",
+    "gated_at": 1793733677.1300662,
+    "cc": "PL",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 53.3,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "45.74.31.47:9989",
+    "proto": "SOCKS",
+    "latency_ms": 1841,
+    "egress_ip": "",
+    "gated_at": 1793733684.4285817,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 46.6,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "116.104.152.58:1112",
+    "proto": "SOCKS",
+    "latency_ms": 1729,
+    "egress_ip": "116.104.154.193",
+    "gated_at": 1793733684.3922384,
+    "cc": "VN",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 46.4,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "16.176.232.186:14227",
+    "proto": "HTTP",
+    "latency_ms": 2646,
+    "egress_ip": "",
+    "gated_at": 1793733680.7024848,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 40.6,
+    "first_seen": "2026-11-03T19:22:08Z"
+  },
+  {
+    "addr": "45.74.31.46:15049",
+    "proto": "SOCKS",
+    "latency_ms": 7876,
+    "egress_ip": "",
+    "gated_at": 1793733728.8360922,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-03T19:22:08Z"
   }
 ]
