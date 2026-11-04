@@ -238,5 +238,89 @@
     "type": "residential",
     "score": 42.7,
     "first_seen": "2026-11-04T07:15:07Z"
+  },
+  {
+    "addr": "94.183.151.226:18080",
+    "proto": "HTTP",
+    "latency_ms": 576,
+    "egress_ip": "94.183.151.226",
+    "gated_at": 1793776925.795814,
+    "cc": "NL",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 60.0,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "147.161.246.36:11284",
+    "proto": "HTTP",
+    "latency_ms": 615,
+    "egress_ip": "",
+    "gated_at": 1793776924.7383835,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 55.7,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "147.161.246.36:12802",
+    "proto": "HTTP",
+    "latency_ms": 618,
+    "egress_ip": "",
+    "gated_at": 1793776924.7645984,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 55.6,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "16.176.232.186:43612",
+    "proto": "HTTP",
+    "latency_ms": 5594,
+    "egress_ip": "",
+    "gated_at": 1793776935.7158372,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "45.74.31.41:10994",
+    "proto": "SOCKS",
+    "latency_ms": 3414,
+    "egress_ip": "",
+    "gated_at": 1793776936.257645,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "45.74.31.41:11112",
+    "proto": "SOCKS",
+    "latency_ms": 2874,
+    "egress_ip": "103.255.134.61",
+    "gated_at": 1793776930.1178465,
+    "cc": "IN",
+    "tier": "T2",
+    "type": "proxy-flagged",
+    "score": 37.9,
+    "first_seen": "2026-11-04T07:22:36Z"
+  },
+  {
+    "addr": "195.133.92.11:1080",
+    "proto": "SOCKS",
+    "latency_ms": 2902,
+    "egress_ip": "195.133.92.11",
+    "gated_at": 1793776932.0964084,
+    "cc": "PT",
+    "tier": "T2",
+    "type": "datacenter",
+    "score": 35.7,
+    "first_seen": "2026-11-04T07:22:36Z"
   }
 ]
