@@ -3,5 +3,18 @@
   "of_runners": 20,
   "cap_per_ip": 4,
   "reach": 1,
-  "exits": []
+  "exits": [
+    {
+      "status": "gold",
+      "gated_at": 1793777142.4628332,
+      "addr": "195.133.92.11:1080",
+      "proto": "SOCKS",
+      "cc": "PT",
+      "tier": "T2",
+      "kind": "unknown",
+      "score": 35.7,
+      "egress_ip": "195.133.92.11",
+      "latency_ms": 2902
+    }
+  ]
 }
