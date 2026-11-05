@@ -226,5 +226,29 @@
     "type": "datacenter",
     "score": 35.0,
     "first_seen": "2026-11-05T17:48:06Z"
+  },
+  {
+    "addr": "45.74.31.41:9764",
+    "proto": "SOCKS",
+    "latency_ms": 11380,
+    "egress_ip": "116.206.174.173",
+    "gated_at": 1793900891.7417073,
+    "cc": "NZ",
+    "tier": "T1",
+    "type": "residential",
+    "score": 50.0,
+    "first_seen": "2026-11-05T17:48:13Z"
+  },
+  {
+    "addr": "45.74.31.41:8804",
+    "proto": "SOCKS",
+    "latency_ms": 6792,
+    "egress_ip": "",
+    "gated_at": 1793900890.624561,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-05T17:48:13Z"
   }
 ]
