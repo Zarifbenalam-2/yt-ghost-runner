@@ -142,5 +142,65 @@
     "type": "residential",
     "score": 38.0,
     "first_seen": "2026-11-05T02:05:34Z"
+  },
+  {
+    "addr": "147.161.246.39:11638",
+    "proto": "HTTP",
+    "latency_ms": 502,
+    "egress_ip": "147.161.247.11",
+    "gated_at": 1793844732.0129974,
+    "cc": "CH",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 60.5,
+    "first_seen": "2026-11-05T02:12:45Z"
+  },
+  {
+    "addr": "205.164.46.6:3147",
+    "proto": "HTTP",
+    "latency_ms": 4026,
+    "egress_ip": "205.164.46.6",
+    "gated_at": 1793844742.633024,
+    "cc": "US",
+    "tier": "T1",
+    "type": "datacenter",
+    "score": 42.0,
+    "first_seen": "2026-11-05T02:12:45Z"
+  },
+  {
+    "addr": "45.177.147.119:80",
+    "proto": "HTTP",
+    "latency_ms": 683,
+    "egress_ip": "45.177.147.119",
+    "gated_at": 1793844732.5380232,
+    "cc": "AR",
+    "tier": "T2",
+    "type": "residential",
+    "score": 60.2,
+    "first_seen": "2026-11-05T02:12:45Z"
+  },
+  {
+    "addr": "160.19.103.182:8080",
+    "proto": "HTTP",
+    "latency_ms": 622,
+    "egress_ip": "160.19.103.182",
+    "gated_at": 1793844733.299771,
+    "cc": "LY",
+    "tier": "T3",
+    "type": "residential",
+    "score": 55.6,
+    "first_seen": "2026-11-05T02:12:45Z"
+  },
+  {
+    "addr": "103.46.11.91:3125",
+    "proto": "HTTP",
+    "latency_ms": 13821,
+    "egress_ip": "103.46.11.91",
+    "gated_at": 1793844765.7954266,
+    "cc": "ID",
+    "tier": "T2",
+    "type": "residential",
+    "score": 43.0,
+    "first_seen": "2026-11-05T02:12:45Z"
   }
 ]
