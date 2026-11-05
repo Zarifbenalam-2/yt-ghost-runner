@@ -250,5 +250,29 @@
     "type": "residential",
     "score": 43.0,
     "first_seen": "2026-11-05T01:57:06Z"
+  },
+  {
+    "addr": "206.223.84.45:8891",
+    "proto": "HTTP",
+    "latency_ms": 422,
+    "egress_ip": "206.223.84.45",
+    "gated_at": 1793844135.8838747,
+    "cc": "US",
+    "tier": "T1",
+    "type": "proxy-flagged",
+    "score": 63.1,
+    "first_seen": "2026-11-05T02:03:10Z"
+  },
+  {
+    "addr": "160.19.103.182:8080",
+    "proto": "HTTP",
+    "latency_ms": 7993,
+    "egress_ip": "",
+    "gated_at": 1793844189.868219,
+    "cc": "??",
+    "tier": "T3",
+    "type": "residential",
+    "score": 38.0,
+    "first_seen": "2026-11-05T02:03:10Z"
   }
 ]
